@@ -1,5 +1,5 @@
 # KAAP-Portal
-# KAAP Auto House — Factuur & Register
+Factuur & Register
 
 **[→ App openen](https://kelliank98.github.io/KAAP-Portal/)**
 
