@@ -38,7 +38,8 @@
   .panel{background:#fff;border:.7px solid var(--rule);border-radius:4px;padding:12px 14px;position:relative;}
   .panel .cap{font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:var(--navy);}
   .panel .cap::after{content:"";display:block;width:26px;height:1px;background:var(--gold);margin-top:3px;margin-bottom:9px;}
-  .frow{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .frow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;}
+  .frow:nth-of-type(even){background:var(--row-alt);}
   .frow label{font-size:9px;color:var(--grey);font-weight:300;width:80px;flex-shrink:0;}
   .frow input{flex:1;border:0;background:transparent;font-family:inherit;font-size:9.5px;color:var(--ink);padding:3px 4px;border-radius:3px;transition:background .12s;}
   .frow input:hover,.frow input:focus{background:var(--field);outline:none;}
@@ -171,16 +172,16 @@
     <div class="panels">
       <div class="panel">
         <div class="cap">KLANT</div>
-        <div class="frow"><label>Naam</label><input id="k_naam" value="Dhr. G.J. Evers" autocomplete="off"></div>
-        <div class="frow"><label>Adres</label><input id="k_adres" value="Kerkstraat 25" autocomplete="off"></div>
-        <div class="frow"><label>Plaats</label><input id="k_plaats" value="8433 LJ Haulerwijk" autocomplete="off"></div>
+        <div class="frow"><label>Naam</label><input id="k_naam" value="" autocomplete="off"></div>
+        <div class="frow"><label>Adres</label><input id="k_adres" value="" autocomplete="off"></div>
+        <div class="frow"><label>Plaats</label><input id="k_plaats" value="" autocomplete="off"></div>
         <div class="frow"><label>Telefoon</label><input id="k_tel" value="" autocomplete="off"></div>
         <div class="frow"><label>E-mail</label><input id="k_mail" value="" autocomplete="off"></div>
         <div class="autocomplete" id="ac-klant"></div>
       </div>
       <div class="panel">
         <div class="cap">GEGEVENS</div>
-        <div class="frow"><label>Debiteurnr.</label><input id="g_deb" value="29949"></div>
+        <div class="frow"><label>Debiteurnr.</label><input id="g_deb" value="" autocomplete="off"></div>
         <div class="frow"><label>Type</label><input id="g_type" value="Gebruikte auto — particulier"></div>
         <div class="frow"><label>Betaaltermijn</label><input id="g_term" value="8 dagen"></div>
       </div>
@@ -217,7 +218,7 @@
     <h2>Register</h2>
     <div class="sub">Zoek op klantnaam, plaats, kenteken, factuurnummer of merk.</div>
     <div class="searchbar">
-      <input id="q" placeholder="Zoek… bijv. Evers, KND-84-J, 1000 of BMW">
+      <input id="q" placeholder="Zoek op klantnaam, kenteken, factuurnummer of merk">
       <button class="btn" id="btn-link-new">Nieuw register aanmaken</button>
       <button class="btn ghost" id="btn-link-open" style="color:var(--navy);border-color:var(--rule);">Bestaand koppelen</button>
       <button class="btn ghost" id="btn-backup-folder" style="color:var(--navy);border-color:var(--rule);">Back-upmap kiezen</button>
@@ -543,6 +544,7 @@ let adminMode=false;
 function recalc(){
   const tb=$('spec-body');tb.innerHTML='';let grand=0,btwVerkoop=0;
   saleItems.forEach((s,i)=>{
+    if(!(s.merk||'').trim() && parseNum(s.prijs)===0) return; // leeg voertuig niet tonen
     const c=saleCalc(s);btwVerkoop+=c.btw;
     const shown = adminMode ? (c.total - c.restbpm) : c.total;  // admin: bedrag ná aftrek rest-BPM
     grand+=shown;
@@ -557,6 +559,7 @@ function recalc(){
     }
   });
   inruilItems.forEach((it,i)=>{
+    if(!(it.merk||'').trim() && parseNum(it.bedrag)===0) return; // lege inruil niet tonen
     const c=inruilCalc(it);grand-=c.credit;
     const naam=it.merk||('Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
     tb.insertAdjacentHTML('beforeend',`<tr><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
@@ -783,9 +786,17 @@ function renderStats(){
   $('stat-bars').innerHTML=keys.length?keys.map(k=>`<div class="bar-row"><span class="lbl">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(months[k]/max*100)}%">${fmt(months[k])}</div></div></div>`).join(''):'<div class="empty">Nog geen data.</div>';
 }
 
-saleItems=[{merk:'BMW 545e PHEV xDrive',kenteken:'KND-84-J',bj:'01-12-2021',km:'87.000 km',ch:'WBA31CH00NCJ46658',kl:'Blauw metallic',gar:'6 maanden',prijs:'€ 37.745,00',restbpm:'€ 0,00',regime:'btw',price:'incl'}];
-inruilItems=[{merk:'Opel Ampera-e BE 60kW',kenteken:'TR-259-J',bj:'29-09-2018',km:'190.000 km',ch:'W0VF86E00K4100034',kl:'Grijs metallic',gar:'Geen',bedrag:'€ 8.000,00',regime:'btw'}];
+saleItems=[blankSale()];
+inruilItems=[blankInruil()];
 renderSales();renderInruil();recalc();
+/* start met de datum van vandaag en het eerstvolgende vrije factuurnummer */
+(function initNewInvoice(){
+  const d=new Date();
+  $('f_datum').value=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
+  let max=999;
+  loadDB().forEach(f=>{const n=parseInt(f.nr);if(!isNaN(n)&&n>=1000&&n<=9999&&n>max)max=n;});
+  $('f_nr').value=String(max+1);
+})();
 restoreLink();restoreBackupDir();checkExtReminder();
 </script>
 </body>
