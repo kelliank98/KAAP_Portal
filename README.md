@@ -1,4 +1,4 @@
-# KAAP-Portal
+# KAAP Portal
 Factuur & Register
 
 [→ App openen](https://kelliank98.github.io/KAAP-Portal/)
