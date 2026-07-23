@@ -1,6 +1,6 @@
 # KAAP-Portal
 Factuur & Register
 
-**[→ App openen](https://kelliank98.github.io/KAAP-Portal/)**
+**[→ App openen](github.com/kelliank98/KAAP-Portal)**
 Factuurgenerator met register, statistieken en automatische back-up.
 
