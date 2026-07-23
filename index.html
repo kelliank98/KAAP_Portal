@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAAP Auto House — Facturen &amp; Register</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
+  :root{
+    --navy:#1B2841;--gold:#C0A062;--gold-soft:#D8C296;--ink:#2B3345;--grey:#6E7688;
+    --light:#9AA1B0;--ivory:#FBFAF7;--field:#F3F1EB;--row-alt:#F7F5F0;--rule:#E4E1D8;--white:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#E8E6E0;font-family:'Poppins',sans-serif;color:var(--ink);}
+  body{padding:20px 16px 80px;}
+  .nav{max-width:900px;margin:0 auto 18px;background:var(--navy);border-radius:10px;padding:14px 18px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 6px 24px rgba(27,40,65,.18);}
+  .nav .brand{color:#fff;font-size:14px;font-weight:500;margin-right:auto;letter-spacing:.4px;}
+  .nav .brand span{display:block;font-size:11px;font-weight:300;color:var(--gold-soft);letter-spacing:0;}
+  .tab{border:0;background:#2C3A52;color:#C3CADB;font-family:inherit;font-size:12px;font-weight:500;padding:9px 16px;border-radius:7px;cursor:pointer;transition:all .15s;}
+  .tab.active{background:var(--gold);color:var(--navy);}
+  .view{display:none;} .view.active{display:block;}
+  .actionbar{max-width:900px;margin:0 auto 16px;background:var(--navy);border-radius:10px;padding:12px 18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;box-shadow:0 6px 24px rgba(27,40,65,.18);}
+  .btn{border:1px solid var(--gold);background:var(--gold);color:var(--navy);font-family:inherit;font-size:12px;font-weight:500;padding:9px 16px;border-radius:7px;cursor:pointer;transition:all .15s;}
+  .btn:hover{background:var(--gold-soft);border-color:var(--gold-soft);}
+  .btn.ghost{background:transparent;color:var(--gold-soft);} .btn.ghost:hover{background:#2C3A52;color:#fff;}
+  .sheet{max-width:900px;margin:0 auto;background:var(--ivory);border-top:3px solid var(--gold);box-shadow:0 8px 40px rgba(0,0,0,.14);padding:34px 40px 0;}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;}
+  .logo{width:200px;height:auto;} .slogan{color:var(--gold);font-style:italic;font-size:11px;font-weight:300;margin-top:4px;}
+  .company{text-align:right;color:var(--grey);font-size:10.5px;font-weight:300;line-height:1.55;} .company b{color:var(--ink);font-weight:500;}
+  .titleband{background:var(--navy);color:#fff;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);padding:11px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .titleband .t{font-size:16px;font-weight:500;letter-spacing:5px;}
+  .titleband .meta{font-size:11px;font-weight:300;display:flex;gap:16px;}
+  .titleband .meta label{color:#AEB6C6;margin-right:5px;}
+  .titleband input{background:transparent;border:0;border-bottom:1px solid #46536e;color:#fff;font-family:inherit;font-size:11px;width:82px;padding:2px 0;}
+  .titleband input:focus{outline:none;border-bottom-color:var(--gold);}
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+  .panel{background:#fff;border:.7px solid var(--rule);border-radius:4px;padding:12px 14px;position:relative;}
+  .panel .cap{font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:var(--navy);}
+  .panel .cap::after{content:"";display:block;width:26px;height:1px;background:var(--gold);margin-top:3px;margin-bottom:9px;}
+  .frow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;}
+  .frow:nth-of-type(even){background:var(--row-alt);}
+  .frow label{font-size:9px;color:var(--grey);font-weight:300;width:80px;flex-shrink:0;}
+  .frow input{flex:1;border:0;background:transparent;font-family:inherit;font-size:9.5px;color:var(--ink);padding:3px 4px;border-radius:3px;transition:background .12s;}
+  .frow input:hover,.frow input:focus{background:var(--field);outline:none;}
+  .autocomplete{position:absolute;z-index:20;background:#fff;border:1px solid var(--rule);border-radius:5px;box-shadow:0 8px 24px rgba(0,0,0,.12);left:14px;right:14px;top:52px;max-height:180px;overflow:auto;display:none;}
+  .autocomplete div{padding:7px 10px;font-size:10px;cursor:pointer;border-bottom:.5px solid var(--rule);}
+  .autocomplete div:hover{background:var(--field);} .autocomplete div small{color:var(--grey);display:block;font-size:8.5px;}
+  .section-h{display:flex;align-items:center;gap:12px;margin:0 0 8px;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--navy);white-space:nowrap;}
+  .section-h::after{content:"";flex:1;height:1px;background:var(--gold);}
+  .add-btn{border:1px solid var(--gold);background:transparent;color:var(--navy);font-family:inherit;font-size:10px;font-weight:500;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;}
+  .add-btn:hover{background:var(--gold);color:#fff;} .add-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .vcard{border:.7px solid var(--rule);border-left:2px solid var(--gold);border-radius:4px;padding:10px 12px;margin-bottom:12px;background:#fff;}
+  .vcard.sale{border-left-color:var(--navy);}
+  .vc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+  .vc-title{font-size:8.5px;font-weight:500;letter-spacing:1px;color:var(--navy);}
+  .vc-tools{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .seg{display:flex;background:var(--field);border-radius:6px;padding:2px;}
+  .seg button{border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:9px;font-weight:500;padding:4px 9px;border-radius:4px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+  .seg button.active{background:var(--navy);color:#fff;} .seg.gold button.active{background:var(--gold);color:var(--navy);}
+  .vc-del{border:0;background:transparent;color:#B04A4A;font-size:13px;cursor:pointer;line-height:1;padding:2px 4px;border-radius:4px;}
+  .vc-del:hover{background:#f7e9e9;}
+  .vc-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;}
+  .vrow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;}
+  .vrow:nth-child(4n+1),.vrow:nth-child(4n+2){background:var(--row-alt);}
+  .vrow label{font-size:8.5px;color:var(--light);font-weight:300;width:82px;flex-shrink:0;}
+  .vrow input{flex:1;border:0;background:transparent;font-family:inherit;font-weight:500;font-size:9.5px;color:var(--ink);padding:2px 3px;border-radius:3px;}
+  .vrow input:hover,.vrow input:focus{background:#EDEAE0;outline:none;}
+  .disclaimer{font-size:8px;font-style:italic;color:var(--grey);margin:2px 0 16px;}
+  table.spec{width:100%;border-collapse:collapse;margin-bottom:6px;}
+  table.spec thead th{background:var(--navy);color:#fff;font-size:9px;font-weight:500;text-align:left;padding:7px 10px;}
+  table.spec thead th.r{text-align:right;}
+  table.spec tbody td{padding:7px 10px;border-bottom:.5px solid var(--rule);font-size:9.5px;}
+  table.spec tbody td.r{text-align:right;font-variant-numeric:tabular-nums;}
+  table.spec tr.strong td{font-weight:500;color:var(--navy);}
+  table.spec tr.sub td{color:var(--grey);font-size:8.6px;padding-left:22px;background:var(--row-alt);}
+  .totalrow{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);padding:9px 12px;margin-top:2px;}
+  .totalrow .lab{font-size:11px;font-weight:500;letter-spacing:2px;} .totalrow .val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .pay{background:var(--field);border-left:2px solid var(--gold);padding:12px 14px;margin:18px 0 0;}
+  .pay .top{font-size:9px;font-weight:300;color:var(--ink);margin-bottom:6px;}
+  .pay .bank{display:flex;gap:26px;flex-wrap:wrap;font-size:9.5px;font-weight:500;color:var(--navy);}
+  .foot{background:var(--navy);color:#fff;border-top:1.5px solid var(--gold);margin:22px -40px 0;padding:12px 40px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:7px;}
+  .foot b{font-weight:500;font-size:8px;letter-spacing:.5px;} .foot .muted{color:#C3CADB;font-weight:300;} .foot .right{text-align:right;}
+  .card{max-width:900px;margin:0 auto 18px;background:#fff;border-radius:10px;padding:22px 26px;box-shadow:0 4px 20px rgba(0,0,0,.07);}
+  .card h2{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:4px;letter-spacing:.3px;}
+  .card .sub{font-size:11px;color:var(--grey);margin-bottom:18px;}
+  .searchbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .searchbar input{flex:1;min-width:200px;border:1px solid var(--rule);border-radius:8px;padding:11px 14px;font-family:inherit;font-size:13px;color:var(--ink);}
+  .searchbar input:focus{outline:none;border-color:var(--gold);}
+  table.reg{width:100%;border-collapse:collapse;font-size:12px;}
+  table.reg th{text-align:left;font-weight:500;color:var(--navy);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid var(--rule);}
+  table.reg th.r{text-align:right;}
+  table.reg td{padding:10px;border-bottom:1px solid var(--rule);color:var(--ink);}
+  table.reg td.r{text-align:right;font-variant-numeric:tabular-nums;}
+  table.reg tr:hover td{background:var(--row-alt);}
+  table.reg .mono{font-variant-numeric:tabular-nums;color:var(--grey);}
+  table.reg .kenteken{display:inline-block;background:var(--field);border:1px solid var(--rule);border-radius:3px;padding:1px 6px;font-size:11px;font-weight:500;color:var(--navy);letter-spacing:.5px;margin:1px;}
+  .act{border:0;background:transparent;cursor:pointer;color:var(--gold);font-family:inherit;font-size:12px;font-weight:500;padding:3px 6px;border-radius:4px;}
+  .act:hover{background:var(--field);} .act.del{color:#B04A4A;}
+  .empty{text-align:center;color:var(--light);padding:40px;font-size:13px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;}
+  .stat{background:var(--navy);border-radius:10px;padding:18px;color:#fff;border-left:3px solid var(--gold);}
+  .stat .n{font-size:22px;font-weight:700;color:var(--gold-soft);font-variant-numeric:tabular-nums;}
+  .stat .l{font-size:11px;color:#C3CADB;font-weight:300;margin-top:2px;}
+  .barwrap{max-width:900px;margin:0 auto;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;}
+  .bar-row .lbl{width:80px;color:var(--grey);}
+  .bar-track{flex:1;background:var(--field);border-radius:5px;height:22px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--navy),#33445f);border-right:2px solid var(--gold);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:10px;font-variant-numeric:tabular-nums;min-width:2px;}
+  .hint{max-width:900px;margin:14px auto 0;font-size:11px;color:#6b6b6b;text-align:center;line-height:1.6;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:8px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.25);border-left:3px solid var(--gold);opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;}
+  .toast.show{opacity:1;}
+  @media print{
+    @page{size:A4;margin:0;}
+    html,body{background:#fff;padding:0;}
+    .nav,.actionbar,.hint,.view:not(.active),.vc-tools .seg,.add-btn,.vc-del,.autocomplete{display:none!important;}
+    .vc-tools::after{content:attr(data-print);font-size:8.5px;color:var(--grey);}
+    .sheet{box-shadow:none;max-width:none;margin:0;padding:14mm 16mm 0;border-top:2mm solid var(--gold);
+      transform-origin:top center;}
+    .foot{margin-left:-16mm;margin-right:-16mm;padding-left:16mm;padding-right:16mm;}
+    input{background:transparent!important;}
+    /* keep blocks intact across the (single) page */
+    .vcard,.panel,tr,.totalrow,.pay,.section-h{break-inside:avoid;page-break-inside:avoid;}
+    /* compact spacing so more fits */
+    .head{margin-bottom:14px!important;}
+    .panels{margin-bottom:12px!important;}
+    .vcard{margin-bottom:7px!important;padding:7px 10px!important;}
+    .vrow{padding:2.5px 6px!important;}
+    .section-h{margin-bottom:5px!important;}
+    .pay{margin-top:10px!important;padding:9px 12px!important;}
+    .foot{margin-top:12px!important;}
+  }
+  @media(max-width:640px){.panels,.vc-grid{grid-template-columns:1fr;}.nav,.actionbar{flex-direction:column;align-items:stretch;}.sheet{padding:20px;}.foot{margin:22px -20px 0;padding:12px 20px;}}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="brand">KAAP Auto House<span>Facturen &amp; Register</span></div>
+  <button class="tab active" data-view="gen">Nieuwe factuur</button>
+  <button class="tab" data-view="reg">Register</button>
+  <button class="tab" data-view="stat">Statistieken</button>
+</div>
+
+<div class="view active" id="view-gen">
+  <div class="actionbar">
+    <div class="seg" style="background:#2C3A52;padding:3px;border-radius:8px;margin-right:auto;">
+      <button type="button" id="dv-verkoop" style="border:0;background:var(--gold);color:var(--navy);font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Verkoop</button>
+      <button type="button" id="dv-boek" style="border:0;background:transparent;color:#C3CADB;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Boekhouding</button>
+    </div>
+    <button class="btn ghost" id="btn-new">Leeg formulier</button>
+    <button class="btn ghost" id="btn-dupe">Dupliceren</button>
+    <button class="btn ghost" id="btn-credit">Crediteren</button>
+    <button class="btn" id="btn-save">Opslaan in register</button>
+    <button class="btn" onclick="window.print()">Printen / PDF</button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="head">
+      <div>
+        <svg class="logo" viewBox="0 0 707 221" xmlns="http://www.w3.org/2000/svg" aria-label="Auto House Kaap">
+          <path fill="none" stroke="#1B2841" stroke-width="7" stroke-linecap="round" d="M112 128 C150 120 175 122 205 120 C260 92 300 84 360 84 C440 84 505 118 545 118"/>
+          <path fill="none" stroke="#1B2841" stroke-width="7" stroke-linecap="round" d="M205 120 C230 118 480 118 520 118"/>
+          <text x="55" y="180" font-family="Poppins, sans-serif" font-weight="700" font-size="62" fill="#1B2841" letter-spacing="1">AUTO HOUSE</text>
+          <text x="470" y="205" font-family="Poppins, sans-serif" font-weight="500" font-size="26" fill="#1B2841" letter-spacing="6">KAAP</text>
+        </svg>
+        <div class="slogan">Uw partner in luxe en premium wagens</div>
+      </div>
+      <div class="company"><b>KAAP Auto House B.V.</b><br>Parallelweg 1, 9363 TG Marum<br>Tel. 0594 230 260<br>info@kaapautohouse.nl<br>www.kaapautohouse.nl</div>
+    </div>
+
+    <div class="titleband">
+      <div class="t">FACTUUR<span id="admin-tag" style="display:none;font-size:9px;letter-spacing:2px;color:var(--gold-soft);margin-left:10px;">— ADMINISTRATIEKOPIE</span></div>
+      <div class="meta"><span><label>Nr.</label><input id="f_nr" value="1000"></span><span><label>Datum</label><input id="f_datum" value="20-07-2026"></span></div>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="cap">KLANT</div>
+        <div class="frow"><label>Naam</label><input id="k_naam" value="" autocomplete="off"></div>
+        <div class="frow"><label>Adres</label><input id="k_adres" value="" autocomplete="off"></div>
+        <div class="frow"><label>Plaats</label><input id="k_plaats" value="" autocomplete="off"></div>
+        <div class="frow"><label>Telefoon</label><input id="k_tel" value="" autocomplete="off"></div>
+        <div class="frow"><label>E-mail</label><input id="k_mail" value="" autocomplete="off"></div>
+        <div class="autocomplete" id="ac-klant"></div>
+      </div>
+      <div class="panel">
+        <div class="cap">GEGEVENS</div>
+        <div class="frow"><label>Debiteurnr.</label><input id="g_deb" value="" autocomplete="off"></div>
+        <div class="frow"><label>Type</label><input id="g_type" value="Gebruikte auto — particulier"></div>
+        <div class="frow"><label>Betaaltermijn</label><input id="g_term" value="8 dagen"></div>
+      </div>
+    </div>
+
+    <div class="section-h">LEVERING VOERTUIG(EN)<button type="button" class="add-btn" id="btn-add-sale">+ Voertuig</button></div>
+    <div id="sale-container"></div>
+
+    <div class="section-h">INKOOP VOERTUIG(EN) — INRUIL<button type="button" class="add-btn" id="btn-add-inruil">+ Inruilauto</button></div>
+    <div id="inruil-container"></div>
+    <div class="disclaimer">Verkoper verklaart bij aankoop van het inruilvoertuig geen recht op vooraftrek BTW te hebben genoten.</div>
+
+    <div class="section-h">SPECIFICATIE</div>
+    <table class="spec"><thead><tr><th>Omschrijving</th><th class="r">Bedrag</th></tr></thead><tbody id="spec-body"></tbody></table>
+    <div class="totalrow"><span class="lab">TE BETALEN</span><span class="val" id="out_total">€ 0,00</span></div>
+    <div class="totalrow" id="btw-row" style="display:none;background:var(--field);border-top:none;border-bottom:1px solid var(--gold);"><span class="lab" style="color:var(--navy);letter-spacing:1px;">BTW OVER VERKOPEN (AF TE DRAGEN)</span><span class="val" id="out_btw_afdracht" style="color:var(--navy);">€ 0,00</span></div>
+
+    <div class="pay">
+      <div class="top">Gelieve het factuurbedrag binnen <span id="pay_term">8</span> dagen te voldoen onder vermelding van het factuurnummer.</div>
+      <div class="bank"><span>IBAN&nbsp;&nbsp;NL45 INGB 0116 2668 05</span><span>BIC&nbsp;&nbsp;INGBNL2A</span><span>t.n.v. KAAP Auto House B.V.</span></div>
+    </div>
+
+    <div class="foot">
+      <div><b>KAAP AUTO HOUSE B.V.</b><br><span class="muted">KvK 98487450 · BTW NL868516363B01 · IBAN NL45 INGB 0116 2668 05</span></div>
+      <div class="right">Parallelweg 1, 9363 TG Marum · 0594 230 260<br><span class="muted">www.kaapautohouse.nl · info@kaapautohouse.nl</span></div>
+    </div>
+  </div>
+
+  <div class="hint">Elk voertuig heeft een eigen <b>BTW / Marge</b>-keuze en <b>incl./excl.</b>-invoer; verkoopvoertuigen ook een <b>rest-BPM</b>-veld. Tot 5 verkoop- en 5 inruilvoertuigen.</div>
+</div>
+
+<div class="view" id="view-reg">
+  <div class="card">
+    <h2>Register</h2>
+    <div class="sub">Zoek op klantnaam, plaats, kenteken, factuurnummer of merk.</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div class="seg" style="background:var(--field);padding:3px;border-radius:8px;">
+        <button type="button" id="rv-verkoop" class="active" style="border:0;background:var(--navy);color:#fff;font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Verkoop</button>
+        <button type="button" id="rv-boek" style="border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Boekhouding</button>
+      </div>
+      <span id="rv-hint" style="font-size:11px;color:var(--grey);"></span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label style="font-size:11px;color:var(--grey);">Periode</label>
+        <select id="per-jaar" style="border:1px solid var(--rule);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:11.5px;color:var(--ink);background:#fff;"></select>
+        <select id="per-deel" style="border:1px solid var(--rule);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:11.5px;color:var(--ink);background:#fff;">
+          <option value="">Heel jaar</option>
+          <option value="Q1">Q1 (jan-mrt)</option>
+          <option value="Q2">Q2 (apr-jun)</option>
+          <option value="Q3">Q3 (jul-sep)</option>
+          <option value="Q4">Q4 (okt-dec)</option>
+          <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maart</option>
+          <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+          <option value="07">Juli</option><option value="08">Augustus</option><option value="09">September</option>
+          <option value="10">Oktober</option><option value="11">November</option><option value="12">December</option>
+        </select>
+      </span>
+    </div>
+    <div class="searchbar">
+      <input id="q" placeholder="Zoek op klantnaam, kenteken, factuurnummer of merk">
+      <button class="btn" id="btn-link-new">Nieuw register aanmaken</button>
+      <button class="btn ghost" id="btn-link-open" style="color:var(--navy);border-color:var(--rule);">Bestaand koppelen</button>
+      <button class="btn ghost" id="btn-backup-folder" style="color:var(--navy);border-color:var(--rule);">Back-upmap kiezen</button>
+      <button class="btn ghost" id="btn-restore" style="color:var(--navy);border-color:var(--rule);">Herstel…</button>
+      <button class="btn" id="btn-export">Back-up exporteren</button>
+      <button class="btn ghost" id="btn-import">Back-up importeren</button>
+      <input type="file" id="file-import" accept="application/json" style="display:none">
+    </div>
+    <div id="link-status" style="font-size:11px;color:var(--grey);margin:-8px 0 4px;"></div>
+    <div id="backup-status" style="font-size:11px;color:var(--grey);margin:0 0 16px;"></div>
+    <div id="ext-reminder" style="display:none;border:1px solid #E0C98A;border-left:4px solid var(--gold);background:#FBF6E9;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:12.5px;font-weight:500;color:var(--navy);margin-bottom:6px;">Tijd voor een externe back-up</div>
+      <div id="ext-reminder-text" style="font-size:11.5px;color:var(--ink);line-height:1.6;margin-bottom:10px;"></div>
+      <div style="font-size:11px;color:var(--grey);line-height:1.7;margin-bottom:12px;">
+        <b>Zo doe je het:</b><br>
+        1. Klik hieronder op <b>“Nu back-up maken”</b> — er wordt een bestand gedownload.<br>
+        2. Verplaats dat bestand naar een plek <b>buiten</b> Google Drive (bijv. je NAS of een externe schijf).<br>
+        3. Klik daarna op <b>“Gedaan”</b> zodat de teller opnieuw begint.
+      </div>
+      <button class="btn" id="ext-do">Nu back-up maken</button>
+      <button class="btn ghost" id="ext-done" style="color:var(--navy);border-color:var(--rule);">Gedaan</button>
+      <button class="btn ghost" id="ext-later" style="color:var(--grey);border-color:var(--rule);">Later herinneren</button>
+    </div>
+    <div id="restore-panel" style="display:none;border:1px solid var(--rule);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--row-alt);">
+      <div style="font-size:12px;font-weight:500;color:var(--navy);margin-bottom:8px;">Herstel een eerdere back-up</div>
+      <div id="restore-list" style="max-height:220px;overflow:auto;font-size:12px;"></div>
+      <button class="btn ghost" id="btn-restore-close" style="margin-top:10px;color:var(--navy);border-color:var(--rule);">Sluiten</button>
+    </div>
+    <table class="reg"><thead><tr><th>Datum</th><th>Nr.</th><th>Klant</th><th>Kenteken(s)</th><th>Voertuig(en)</th><th class="r" id="th-bedrag">Bedrag</th><th class="r" id="th-extra" style="display:none">BTW</th><th class="r">Actie</th></tr></thead><tbody id="reg-body"></tbody></table>
+    <div class="empty" id="reg-empty" style="display:none">Nog geen facturen opgeslagen.</div>
+  </div>
+</div>
+
+<div class="view" id="view-stat">
+  <div class="card">
+    <h2>Statistieken</h2>
+    <div class="sub">Op basis van alle opgeslagen facturen.</div>
+    <div class="stats" id="stat-cards"></div>
+    <div class="section-h" style="color:var(--navy);margin-top:8px">OMZET PER MAAND</div>
+    <div class="barwrap" id="stat-bars"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BTW=0.21, KEY='kaap_facturen_v2', MAX=5;
+const $=id=>document.getElementById(id);
+/* lokale cache (offline mirror van cloud, of enige opslag in lokale modus) */
+function loadDB(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
+function saveDB(l){localStorage.setItem(KEY,JSON.stringify(l));fileWrite(l);writeBackup(l);}
+
+/* ===== Google Drive-koppeling via File System Access API =====
+   Desktop (Chrome/Edge): koppel 1x een .json-bestand in je Drive-map; daarna
+   schrijft de app bij ELKE registerwijziging automatisch naar dat bestand.
+   Mobiel/Safari: valt terug op de knoppen Back-up exporteren/importeren. */
+const FSA = ('showOpenFilePicker' in window);
+let fileHandle=null, writing=false, writeQueued=false;
+
+// handle bewaren tussen sessies via IndexedDB
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('kaap_fs',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbSet(k,v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('h','readwrite');t.objectStore('h').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('h','readonly');const q=t.objectStore('h').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+
+function setLinkStatus(txt,ok){const el=$('link-status');if(!el)return;el.textContent=txt;el.style.color=ok?'#2e7d54':'var(--grey)';}
+
+async function verifyPerm(h){
+  if(!h)return false;
+  const opts={mode:'readwrite'};
+  if((await h.queryPermission(opts))==='granted')return true;
+  if((await h.requestPermission(opts))==='granted')return true;
+  return false;
+}
+
+async function fileWrite(list){
+  if(!FSA||!fileHandle)return;
+  if(writing){writeQueued=true;return;}
+  writing=true;
+  try{
+    const w=await fileHandle.createWritable();
+    await w.write(JSON.stringify(list,null,2));
+    await w.close();
+    const t=new Date();setLinkStatus('Gekoppeld · laatst opgeslagen '+t.toLocaleTimeString('nl-NL'),true);
+  }catch(e){setLinkStatus('Kon niet schrijven naar bestand ('+e.message+')',false);}
+  writing=false;
+  if(writeQueued){writeQueued=false;fileWrite(loadDB());}
+}
+
+async function fileReadInto(){
+  if(!fileHandle)return;
+  try{
+    const f=await fileHandle.getFile();const txt=await f.text();
+    if(txt.trim()){const arr=JSON.parse(txt);if(Array.isArray(arr)){saveDBNoWrite(arr);renderReg($('q')?$('q').value:'');}}
+  }catch(e){/* leeg of nieuw bestand */}
+}
+function saveDBNoWrite(l){localStorage.setItem(KEY,JSON.stringify(l));}
+
+async function linkNew(){
+  if(!FSA){toast('Automatisch koppelen werkt alleen in Chrome/Edge op desktop. Gebruik hier Back-up exporteren/importeren.');return;}
+  try{
+    const nh=await window.showSaveFilePicker({suggestedName:'KAAP_register.json',types:[{description:'KAAP register',accept:{'application/json':['.json']}}]});
+    await bindHandle(nh, true);
+  }catch(e){if(e.name!=='AbortError')toast('Aanmaken mislukt: '+e.message);}
+}
+async function linkExisting(){
+  if(!FSA){toast('Automatisch koppelen werkt alleen in Chrome/Edge op desktop. Gebruik hier Back-up exporteren/importeren.');return;}
+  try{
+    const [h]=await window.showOpenFilePicker({types:[{description:'KAAP register',accept:{'application/json':['.json']}}],multiple:false});
+    await bindHandle(h, false);
+  }catch(e){if(e.name!=='AbortError')toast('Koppelen mislukt: '+e.message);}
+}
+async function bindHandle(h, isNew){
+  fileHandle=h;
+  if(!(await verifyPerm(fileHandle))){setLinkStatus('Geen schrijfrechten gegeven',false);return;}
+  await idbSet('handle',fileHandle);
+  const local=loadDB();
+  let fileData=[];
+  try{const f=await fileHandle.getFile();const t=await f.text();if(t.trim())fileData=JSON.parse(t)||[];}catch(e){}
+  const by={};[...fileData,...local].forEach(f=>{by[f.nr]=f;}); // lokaal wint bij gelijk nr
+  saveDB(Object.values(by)); // schrijft meteen naar bestand
+  renderReg($('q')?$('q').value:'');
+  toast(isNew?'Nieuw register aangemaakt — voortaan automatisch opslaan':'Register gekoppeld — voortaan automatisch opslaan');
+}
+
+async function restoreLink(){
+  if(!FSA)return;
+  try{
+    const h=await idbGet('handle');
+    if(h){fileHandle=h;
+      if((await h.queryPermission({mode:'readwrite'}))==='granted'){await fileReadInto();setLinkStatus('Gekoppeld (automatisch opslaan actief)',true);}
+      else{setLinkStatus('Gekoppeld bestand gevonden — klik “Bestaand koppelen” om rechten te herstellen',false);}
+    } else setLinkStatus(FSA?'Nog geen register gekoppeld — maak er een aan of koppel een bestaand bestand':'Automatisch koppelen werkt alleen in Chrome/Edge op desktop. Gebruik hier Back-up exporteren/importeren.',false);
+  }catch(e){}
+}
+
+/* ===== AUTOMATISCHE BACK-UPS naar een map in je Drive ===== */
+let backupDir=null;
+const MAX_BACKUPS=20;
+function setBackupStatus(txt,ok){const el=$('backup-status');if(!el)return;el.textContent=txt;el.style.color=ok?'#2e7d54':'var(--grey)';}
+
+async function chooseBackupFolder(){
+  if(!FSA){toast('Back-upmap werkt alleen in Chrome/Edge op desktop.');return;}
+  try{
+    const dir=await window.showDirectoryPicker({mode:'readwrite'});
+    backupDir=dir;
+    await idbSet('backupDir',dir);
+    setBackupStatus('Back-upmap gekoppeld — er worden automatisch kopieën bewaard',true);
+    toast('Back-upmap gekoppeld');
+    await writeBackup(loadDB(),true); // meteen een eerste back-up
+  }catch(e){if(e.name!=='AbortError')toast('Map kiezen mislukt: '+e.message);}
+}
+
+async function ensureBackupPerm(){
+  if(!backupDir)return false;
+  const o={mode:'readwrite'};
+  if((await backupDir.queryPermission(o))==='granted')return true;
+  if((await backupDir.requestPermission(o))==='granted')return true;
+  return false;
+}
+
+let backupBusy=false;
+async function writeBackup(list, force){
+  if(!FSA||!backupDir)return;
+  if(backupBusy && !force)return;
+  backupBusy=true;
+  try{
+    if(!(await ensureBackupPerm())){setBackupStatus('Geen schrijfrechten voor back-upmap',false);backupBusy=false;return;}
+    const d=new Date();
+    const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+String(d.getSeconds()).padStart(2,'0');
+    const name='KAAP_backup_'+stamp+'.json';
+    const fh=await backupDir.getFileHandle(name,{create:true});
+    const w=await fh.createWritable();
+    await w.write(JSON.stringify(list,null,2));
+    await w.close();
+    await pruneBackups();
+    setBackupStatus('Back-upmap actief · laatste back-up '+d.toLocaleTimeString('nl-NL'),true);
+  }catch(e){setBackupStatus('Back-up mislukt: '+e.message,false);}
+  backupBusy=false;
+}
+
+async function listBackups(){
+  if(!backupDir)return [];
+  const items=[];
+  for await(const [name,handle] of backupDir.entries()){
+    if(handle.kind==='file' && /^KAAP_backup_.*\.json$/.test(name)) items.push({name,handle});
+  }
+  items.sort((a,b)=>a.name<b.name?1:-1); // nieuwste eerst
+  return items;
+}
+async function pruneBackups(){
+  const items=await listBackups();
+  for(let i=MAX_BACKUPS;i<items.length;i++){
+    try{await backupDir.removeEntry(items[i].name);}catch(e){}
+  }
+}
+
+async function openRestore(){
+  if(!backupDir){toast('Kies eerst een back-upmap.');return;}
+  if(!(await ensureBackupPerm()))return;
+  const items=await listBackups();
+  const box=$('restore-list');box.innerHTML='';
+  if(!items.length){box.innerHTML='<div style="color:var(--light)">Nog geen back-ups gevonden.</div>';}
+  items.forEach(it=>{
+    const m=it.name.match(/KAAP_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})/);
+    const label=m?`${m[3]}-${m[2]}-${m[1]} ${m[4]}:${m[5]}:${m[6]}`:it.name;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid var(--rule);';
+    row.innerHTML=`<span>${label}</span>`;
+    const btn=document.createElement('button');btn.className='act';btn.textContent='Terugzetten';
+    btn.onclick=async()=>{
+      if(!confirm('Dit vervangt je huidige register door de back-up van '+label+'. Doorgaan?'))return;
+      try{
+        const f=await it.handle.getFile();const t=await f.text();const arr=JSON.parse(t);
+        if(Array.isArray(arr)){saveDB(arr);renderReg($('q')?$('q').value:'');toast('Hersteld naar '+label);$('restore-panel').style.display='none';}
+      }catch(e){toast('Herstellen mislukt: '+e.message);}
+    };
+    row.appendChild(btn);box.appendChild(row);
+  });
+  $('restore-panel').style.display='block';
+}
+
+async function restoreBackupDir(){
+  if(!FSA)return;
+  try{
+    const d=await idbGet('backupDir');
+    if(d){backupDir=d;
+      if((await d.queryPermission({mode:'readwrite'}))==='granted')setBackupStatus('Back-upmap actief (automatische kopieën aan)',true);
+      else setBackupStatus('Back-upmap gevonden — klik “Back-upmap kiezen” om rechten te herstellen',false);
+    } else setBackupStatus('Nog geen back-upmap — kies er een voor extra veiligheid',false);
+  }catch(e){}
+}
+
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function parseNum(s){if(s==null)return 0;let x=String(s).replace(/[^0-9,.-]/g,'').trim();if(!x)return 0;x=x.replace(/\./g,'').replace(',','.');const n=parseFloat(x);return isNaN(n)?0:n;}
+function fmt(n){return '€ '+n.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){return String(s==null?'':s).replace(/"/g,'&quot;');}
+
+let saleItems=[], inruilItems=[];
+function blankSale(){return {merk:'',kenteken:'',bj:'',km:'',ch:'',kl:'',gar:'',prijs:'€ 0,00',restbpm:'€ 0,00',regime:'btw',price:'incl'};}
+function blankInruil(){return {merk:'',kenteken:'',bj:'',km:'',ch:'',kl:'',gar:'',bedrag:'€ 0,00',regime:'btw'};}
+
+function saleCalc(s){
+  const p=parseNum(s.prijs), rb=parseNum(s.restbpm);
+  // Bij creditfacturen zijn de bedragen negatief; niet afkappen op 0.
+  const base0=p-rb;
+  const base=(p>=0 && base0<0)?0:base0;   // alleen corrigeren bij invoerfout op positieve prijs
+  if(s.regime==='marge'){return {excl:base,btw:0,restbpm:rb,total:p};}
+  if(s.price==='incl'){const excl=base/(1+BTW);const btw=base-excl;return {excl,btw,restbpm:rb,total:excl+btw+rb};}
+  const excl=p,btw=p*BTW;return {excl,btw,restbpm:rb,total:excl+btw+rb};
+}
+function inruilCalc(it){const e=parseNum(it.bedrag);if(it.regime==='marge')return {excl:e,btw:0,incl:e,credit:e};const excl=e,btw=e*BTW,incl=e+btw;return {excl,btw,incl,credit:incl};}
+
+function renderSales(){
+  const cont=$('sale-container');cont.innerHTML='';
+  saleItems.forEach((s,i)=>{
+    const priceLabel=s.regime==='marge'?'Verkoopprijs':(s.price==='incl'?'Verkoopprijs incl.':'Verkoopprijs excl.');
+    const div=document.createElement('div');div.className='vcard sale';
+    div.innerHTML=`
+      <div class="vc-head">
+        <span class="vc-title">VERKOOPVOERTUIG ${i+1}</span>
+        <div class="vc-tools" data-print="${s.regime==='marge'?'Marge':'BTW '+(s.price==='incl'?'(incl.)':'(excl.)')}">
+          <div class="seg regime"><button type="button" data-r="btw" class="${s.regime==='btw'?'active':''}">BTW</button><button type="button" data-r="marge" class="${s.regime==='marge'?'active':''}">Marge</button></div>
+          <div class="seg gold price" ${s.regime==='marge'?'style="opacity:.4;pointer-events:none"':''}><button type="button" data-p="incl" class="${s.price==='incl'?'active':''}">incl.</button><button type="button" data-p="excl" class="${s.price==='excl'?'active':''}">excl.</button></div>
+          ${saleItems.length>1?'<button type="button" class="vc-del" data-del title="Verwijderen">✕</button>':''}
+        </div>
+      </div>
+      <div class="vc-grid">
+        <div class="vrow"><label>Merk / type</label><input data-f="merk" value="${esc(s.merk)}"></div>
+        <div class="vrow"><label>Kenteken</label><input data-f="kenteken" value="${esc(s.kenteken)}"></div>
+        <div class="vrow"><label>Bouwjaar</label><input data-f="bj" value="${esc(s.bj)}"></div>
+        <div class="vrow"><label>Km-stand</label><input data-f="km" value="${esc(s.km)}"></div>
+        <div class="vrow"><label>Chassisnr.</label><input data-f="ch" value="${esc(s.ch)}"></div>
+        <div class="vrow"><label>Kleur</label><input data-f="kl" value="${esc(s.kl)}"></div>
+        <div class="vrow"><label>Garantie</label><input data-f="gar" value="${esc(s.gar)}"></div>
+        <div class="vrow"><label>${priceLabel}</label><input data-f="prijs" inputmode="decimal" value="${esc(s.prijs)}"></div>
+        <div class="vrow" ${s.regime==='marge'?'style="opacity:.4;pointer-events:none"':''}><label>Rest-BPM</label><input data-f="restbpm" inputmode="decimal" value="${esc(s.restbpm)}"></div>
+      </div>`;
+    cont.appendChild(div);
+    div.querySelectorAll('input[data-f]').forEach(inp=>{
+      inp.addEventListener('input',()=>{saleItems[i][inp.dataset.f]=inp.value;recalc();});
+      if(['prijs','restbpm'].includes(inp.dataset.f))inp.addEventListener('blur',()=>{inp.value=fmt(parseNum(inp.value));saleItems[i][inp.dataset.f]=inp.value;recalc();});
+      else if(typeof bindVehicleAc==='function') bindVehicleAc(inp,inp.dataset.f,i,false);
+    });
+    div.querySelectorAll('.regime button').forEach(bt=>bt.onclick=()=>{saleItems[i].regime=bt.dataset.r;renderSales();recalc();});
+    div.querySelectorAll('.price button').forEach(bt=>bt.onclick=()=>{saleItems[i].price=bt.dataset.p;renderSales();recalc();});
+    const del=div.querySelector('[data-del]');if(del)del.onclick=()=>{saleItems.splice(i,1);renderSales();recalc();};
+  });
+  $('btn-add-sale').disabled=saleItems.length>=MAX;
+}
+function renderInruil(){
+  const cont=$('inruil-container');cont.innerHTML='';
+  inruilItems.forEach((it,i)=>{
+    const div=document.createElement('div');div.className='vcard';
+    div.innerHTML=`
+      <div class="vc-head">
+        <span class="vc-title">INRUILAUTO ${i+1}</span>
+        <div class="vc-tools" data-print="${it.regime==='marge'?'Marge':'BTW'}">
+          <div class="seg regime"><button type="button" data-r="btw" class="${it.regime==='btw'?'active':''}">BTW</button><button type="button" data-r="marge" class="${it.regime==='marge'?'active':''}">Marge</button></div>
+          ${inruilItems.length>1?'<button type="button" class="vc-del" data-del title="Verwijderen">✕</button>':''}
+        </div>
+      </div>
+      <div class="vc-grid">
+        <div class="vrow"><label>Merk / type</label><input data-f="merk" value="${esc(it.merk)}"></div>
+        <div class="vrow"><label>Kenteken</label><input data-f="kenteken" value="${esc(it.kenteken)}"></div>
+        <div class="vrow"><label>Bouwjaar</label><input data-f="bj" value="${esc(it.bj)}"></div>
+        <div class="vrow"><label>Km-stand</label><input data-f="km" value="${esc(it.km)}"></div>
+        <div class="vrow"><label>Chassisnr.</label><input data-f="ch" value="${esc(it.ch)}"></div>
+        <div class="vrow"><label>Kleur</label><input data-f="kl" value="${esc(it.kl)}"></div>
+        <div class="vrow"><label>Garantie</label><input data-f="gar" value="${esc(it.gar)}"></div>
+        <div class="vrow"><label>${it.regime==='marge'?'Inruilwaarde':'Inruilwaarde excl.'}</label><input data-f="bedrag" inputmode="decimal" value="${esc(it.bedrag)}"></div>
+      </div>`;
+    cont.appendChild(div);
+    div.querySelectorAll('input[data-f]').forEach(inp=>{
+      inp.addEventListener('input',()=>{inruilItems[i][inp.dataset.f]=inp.value;recalc();});
+      if(inp.dataset.f==='bedrag')inp.addEventListener('blur',()=>{inp.value=fmt(parseNum(inp.value));inruilItems[i].bedrag=inp.value;recalc();});
+      else if(typeof bindVehicleAc==='function') bindVehicleAc(inp,inp.dataset.f,i,true);
+    });
+    div.querySelectorAll('.regime button').forEach(bt=>bt.onclick=()=>{inruilItems[i].regime=bt.dataset.r;renderInruil();recalc();});
+    const del=div.querySelector('[data-del]');if(del)del.onclick=()=>{inruilItems.splice(i,1);renderInruil();recalc();};
+  });
+  $('btn-add-inruil').disabled=inruilItems.length>=MAX;
+}
+
+let adminMode=false;
+function recalc(){
+  const tb=$('spec-body');tb.innerHTML='';let grand=0,btwVerkoop=0;
+  saleItems.forEach((s,i)=>{
+    if(!(s.merk||'').trim() && parseNum(s.prijs)===0 && parseNum(s.restbpm)===0) return; // leeg voertuig niet tonen
+    const c=saleCalc(s);btwVerkoop+=c.btw;
+    const shown = adminMode ? (c.total - c.restbpm) : c.total;  // admin: bedrag ná aftrek rest-BPM
+    grand+=shown;
+    const naam=s.merk||('Verkoopvoertuig '+(i+1));const tag=s.regime==='marge'?' (marge)':' (BTW)';
+    const suffix = (adminMode && c.restbpm>0) ? ' — na aftrek rest-BPM' : ' — verkoopprijs';
+    tb.insertAdjacentHTML('beforeend',`<tr><td>${naam}${tag}${suffix}</td><td class="r">${fmt(shown)}</td></tr>`);
+    if(s.regime==='marge'){tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>bijzondere regeling gebruikte goederen — margeregeling</td><td class="r"></td></tr>`);}
+    else{
+      if(c.restbpm>0 && adminMode)tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>rest-BPM afgetrokken (geen BTW)</td><td class="r">− ${fmt(c.restbpm)}</td></tr>`);
+      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>verkoop excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
+      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21%</td><td class="r">${fmt(c.btw)}</td></tr>`);
+    }
+  });
+  inruilItems.forEach((it,i)=>{
+    if(!(it.merk||'').trim() && parseNum(it.bedrag)===0) return; // lege inruil niet tonen
+    const c=inruilCalc(it);grand-=c.credit;
+    const naam=it.merk||('Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
+    tb.insertAdjacentHTML('beforeend',`<tr><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
+    if(it.regime!=='marge'){
+      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
+      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21%</td><td class="r">${fmt(c.btw)}</td></tr>`);
+    }
+  });
+  $('out_total').textContent=fmt(grand);
+  $('out_btw_afdracht').textContent=fmt(btwVerkoop);
+  $('btw-row').style.display = adminMode ? 'flex' : 'none';
+  return {total:grand};
+}
+
+// Klantfactuur: volledige bedragen. Administratiekopie: bedrag ná aftrek rest-BPM.
+// Schaal de factuur zo dat hij altijd op één A4 past.
+function fitSheet(){
+  const sheet=$('sheet');
+  sheet.style.zoom='1';
+  const probe=document.createElement('div');
+  probe.style.cssText='height:100mm;position:absolute;visibility:hidden;';
+  document.body.appendChild(probe);
+  const pxPerMM=probe.getBoundingClientRect().height/100;
+  probe.remove();
+  const usable=286*pxPerMM;          // 297mm A4 minus ruimere veiligheidsmarge
+  const h=sheet.scrollHeight;        // ongeschaalde hoogte
+  if(h>usable){
+    const z=Math.max(0.3, (usable/h)*0.985);
+    sheet.style.zoom=z.toFixed(4);
+  }
+}
+function unfitSheet(){ $('sheet').style.zoom='1'; }
+function veiligeNaam(s){return String(s||'').replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'_').slice(0,40);}
+function stelBestandsnaamIn(){
+  const nr=$('f_nr').value||'factuur';
+  const klant=veiligeNaam($('k_naam').value)||'klant';
+  document.title=(adminMode?'Administratie':'Factuur')+'_'+nr+'_'+klant;
+}
+function herstelTitel(){document.title='KAAP Auto House \u2014 Facturen & Register';}
+window.addEventListener('beforeprint', ()=>{stelBestandsnaamIn();fitSheet();});
+window.addEventListener('afterprint', ()=>{ unfitSheet(); herstelTitel(); });
+/* Weergavestand van de factuur: Verkoop (klant) of Boekhouding (administratie).
+   Blijft staan tot je hem zelf omzet — printen verandert de stand niet. */
+function setDocMode(m){
+  adminMode = (m==='boek');
+  const a=$('dv-verkoop'), b=$('dv-boek');
+  const base='border:0;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;';
+  const on='background:var(--gold);color:var(--navy);', off='background:transparent;color:#C3CADB;';
+  if(a)a.style.cssText=base+(adminMode?off:on);
+  if(b)b.style.cssText=base+(adminMode?on:off);
+  const tag=$('admin-tag'); if(tag)tag.style.display = adminMode ? 'inline' : 'none';
+  recalc();
+}
+
+$('btn-add-sale').onclick=()=>{if(saleItems.length<MAX){saleItems.push(blankSale());renderSales();recalc();}};
+$('btn-add-inruil').onclick=()=>{if(inruilItems.length<MAX){inruilItems.push(blankInruil());renderInruil();recalc();}};
+$('g_term').addEventListener('input',e=>{$('pay_term').textContent=(e.target.value.match(/\d+/)||['8'])[0];});
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-'+t.dataset.view).classList.add('active');
+  if(t.dataset.view==='reg'){vulJaarKeuze();setRegMode(regMode);checkExtReminder();}if(t.dataset.view==='stat')renderStats();
+});
+
+function collect(){const keep=adminMode;adminMode=false;const c=recalc();adminMode=keep;recalc();return {id:Date.now(),nr:$('f_nr').value,datum:$('f_datum').value,klant:{naam:$('k_naam').value,adres:$('k_adres').value,plaats:$('k_plaats').value,tel:$('k_tel').value,mail:$('k_mail').value,deb:$('g_deb').value},type:$('g_type').value,term:$('g_term').value,sales:JSON.parse(JSON.stringify(saleItems)),inruil:JSON.parse(JSON.stringify(inruilItems)),amounts:c};}
+function fillForm(f){
+  $('f_nr').value=f.nr;$('f_datum').value=f.datum;
+  $('k_naam').value=f.klant.naam||'';$('k_adres').value=f.klant.adres||'';$('k_plaats').value=f.klant.plaats||'';$('k_tel').value=f.klant.tel||'';$('k_mail').value=f.klant.mail||'';$('g_deb').value=f.klant.deb||'';
+  $('g_type').value=f.type;$('g_term').value=f.term;$('pay_term').textContent=(f.term.match(/\d+/)||['8'])[0];
+  if(Array.isArray(f.sales)&&f.sales.length){saleItems=JSON.parse(JSON.stringify(f.sales));}
+  else if(f.lev){const sp=f.spec||{};saleItems=[{merk:f.lev.merk||'',kenteken:f.lev.kenteken||'',bj:f.lev.bj||'',km:f.lev.km||'',ch:f.lev.ch||'',kl:f.lev.kl||'',gar:f.lev.gar||'',prijs:sp.a_verkoop||'€ 0,00',restbpm:sp.a_bpm||'€ 0,00',regime:f.regime||'btw',price:f.priceMode||'incl'}];}
+  else{saleItems=[blankSale()];}
+  if(!saleItems.length)saleItems=[blankSale()];
+  if(Array.isArray(f.inruil)){inruilItems=JSON.parse(JSON.stringify(f.inruil));}
+  else if(f.ink){inruilItems=[{merk:f.ink.merk||'',kenteken:f.ink.kenteken||'',bj:f.ink.bj||'',km:f.ink.km||'',ch:f.ink.ch||'',kl:f.ink.kl||'',gar:f.ink.gar||'',bedrag:(f.spec&&f.spec.a_inruil)||'€ 0,00',regime:'btw'}];}
+  else{inruilItems=[blankInruil()];}
+  if(!inruilItems.length)inruilItems=[blankInruil()];
+  renderSales();renderInruil();recalc();
+}
+
+$('dv-verkoop').onclick=()=>setDocMode('verkoop');
+$('dv-boek').onclick=()=>setDocMode('boek');
+$('btn-save').onclick=()=>{
+  const list=loadDB();const rec=collect();
+  const idx=list.findIndex(x=>x.nr===rec.nr);
+  if(idx>=0){
+    const best=list[idx];
+    const anderNaam=(best.klant&&best.klant.naam||'')!==(rec.klant&&rec.klant.naam||'');
+    let w='Let op: factuurnummer '+rec.nr+' bestaat al';
+    w += anderNaam ? ' en staat op naam van "'+(best.klant.naam||'onbekend')+'".' : '.';
+    w += '\n\nOverschrijven werkt die factuur bij. Wil je een nieuwe factuur maken, klik Annuleren en gebruik "Leeg formulier".';
+    w += '\n\nBestaande factuur overschrijven?';
+    if(!confirm(w))return;
+    rec.id=best.id;list[idx]=rec;toast('Factuur '+rec.nr+' bijgewerkt');
+  } else { list.push(rec);toast('Factuur '+rec.nr+' opgeslagen'); }
+  saveDB(list);
+};
+$('btn-new').onclick=()=>{
+  if(!confirm('Leeg formulier openen? Niet-opgeslagen gegevens gaan verloren.'))return;
+  adminMode=false;$('admin-tag').style.display='none';  // altijd terug naar klantfactuur
+  ['k_naam','k_adres','k_plaats','k_tel','k_mail','g_deb'].forEach(i=>$(i).value='');
+  $('g_type').value='Gebruikte auto — particulier';$('g_term').value='8 dagen';$('pay_term').textContent='8';
+  saleItems=[blankSale()];inruilItems=[blankInruil()];renderSales();renderInruil();recalc();
+  const list=loadDB();let max=999;
+  list.forEach(f=>{const n=parseInt(f.nr);if(!isNaN(n)&&n>=1000&&n<=9999&&n>max)max=n;});
+  $('f_nr').value=String(max+1);
+  const d=new Date();$('f_datum').value=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
+  toast('Leeg formulier — nr. '+(max+1));
+};
+
+/* ===== SLIMME INVULHULP =====
+   Werkt op alle klant- en voertuigvelden. Toont eerder opgeslagen waarden;
+   kies je er een, dan vult hij de bijbehorende gegevens automatisch aan. */
+
+function allSales(){const o=[];loadDB().forEach(f=>(f.sales||[]).forEach(s=>o.push(s)));return o;}
+function allInruil(){const o=[];loadDB().forEach(f=>(f.inruil||[]).forEach(s=>o.push(s)));return o;}
+function allKlanten(){
+  const seen={},o=[];
+  loadDB().forEach(f=>{const k=f.klant||{};const key=(k.naam||'').toLowerCase().trim();
+    if(key&&!seen[key]){seen[key]=1;o.push(k);}});
+  return o;
+}
+
+function acBox(){
+  let b=document.getElementById('ac-float');
+  if(!b){b=document.createElement('div');b.id='ac-float';
+    b.style.cssText='position:absolute;z-index:9999;background:#fff;border:1px solid var(--rule);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.16);max-height:230px;overflow:auto;display:none;min-width:230px;';
+    document.body.appendChild(b);}
+  return b;
+}
+function hideAc(){const b=document.getElementById('ac-float');if(b)b.style.display='none';}
+function showAc(input,items,onPick){
+  const b=acBox();b.innerHTML='';
+  if(!items.length){hideAc();return;}
+  items.slice(0,8).forEach(it=>{
+    const row=document.createElement('div');
+    row.style.cssText='padding:8px 11px;font-size:11px;cursor:pointer;border-bottom:.5px solid var(--rule);';
+    row.innerHTML='<b style="font-weight:500">'+it.label+'</b>'+(it.sub?'<div style="color:var(--grey);font-size:9.5px;margin-top:2px">'+it.sub+'</div>':'');
+    row.onmouseenter=()=>row.style.background='var(--field)';
+    row.onmouseleave=()=>row.style.background='';
+    row.onmousedown=e=>{e.preventDefault();onPick(it.data);hideAc();};
+    b.appendChild(row);
+  });
+  const r=input.getBoundingClientRect();
+  b.style.left=(r.left+window.scrollX)+'px';
+  b.style.top=(r.bottom+window.scrollY+3)+'px';
+  b.style.minWidth=Math.max(230,r.width)+'px';
+  b.style.display='block';
+}
+function uniqBy(arr,fn){const s={},o=[];arr.forEach(x=>{const k=(fn(x)||'').toLowerCase().trim();if(k&&!s[k]){s[k]=1;o.push(x);}});return o;}
+function match(v,q){return (v||'').toLowerCase().includes(q);}
+
+/* --- Klantvelden --- */
+function fillKlant(k){
+  $('k_naam').value=k.naam||'';$('k_adres').value=k.adres||'';$('k_plaats').value=k.plaats||'';
+  $('k_tel').value=k.tel||'';$('k_mail').value=k.mail||'';if(k.deb)$('g_deb').value=k.deb;
+}
+[['k_naam','naam'],['k_adres','adres'],['k_plaats','plaats'],['k_tel','tel'],['k_mail','mail'],['g_deb','deb']].forEach(([id,veld])=>{
+  const el=$(id); if(!el)return;
+  el.addEventListener('input',()=>{
+    const q=el.value.toLowerCase().trim(); if(q.length<2){hideAc();return;}
+    const hits=uniqBy(allKlanten().filter(k=>match(k[veld],q)),k=>k[veld]);
+    showAc(el,hits.map(k=>({label:k[veld]||k.naam,sub:[k.naam,k.plaats,k.tel,k.mail].filter(Boolean).join(' · '),data:k})),fillKlant);
+  });
+  el.addEventListener('blur',()=>setTimeout(hideAc,120));
+});
+
+/* --- Voertuigvelden (verkoop + inruil) --- */
+function bindVehicleAc(input,field,index,isInruil){
+  input.addEventListener('input',()=>{
+    const q=input.value.toLowerCase().trim(); if(q.length<2){hideAc();return;}
+    const pool=isInruil?allInruil():allSales();
+    const hits=uniqBy(pool.filter(v=>match(v[field],q)),v=>v[field]);
+    showAc(input,hits.map(v=>({
+      label:v[field]||'',
+      sub:[v.merk,v.kenteken,v.bj,v.km].filter(Boolean).join(' · '),
+      data:v
+    })),(v)=>{
+      const tgt=isInruil?inruilItems[index]:saleItems[index];
+      ['merk','kenteken','bj','km','ch','kl','gar'].forEach(k=>{if(v[k])tgt[k]=v[k];});
+      if(isInruil)renderInruil(); else renderSales();
+      recalc();
+    });
+  });
+  input.addEventListener('blur',()=>setTimeout(hideAc,120));
+}
+document.addEventListener('scroll',hideAc,true);
+window.addEventListener('resize',hideAc);
+
+function kentekens(f){return (f.sales||[]).map(x=>x.kenteken).filter(Boolean);}
+function merken(f){return (f.sales||[]).map(x=>x.merk).filter(Boolean);}
+
+/* ===== Registerweergave: Verkoop (klant) of Boekhouding (administratie) ===== */
+let regMode='verkoop';
+function invoiceFigures(f){
+  // herberekent vanuit de opgeslagen voertuigen, zodat beide standen kloppen
+  let klantTot=0, boekTot=0, btwAfdracht=0, restbpmTot=0;
+  (f.sales||[]).forEach(s=>{
+    const c=saleCalc(s);
+    klantTot+=c.total;
+    boekTot+=(c.total-c.restbpm);
+    btwAfdracht+=c.btw;
+    restbpmTot+=c.restbpm;
+  });
+  (f.inruil||[]).forEach(it=>{const c=inruilCalc(it);klantTot-=c.credit;boekTot-=c.credit;});
+  return {klantTot,boekTot,btwAfdracht,restbpmTot};
+}
+function setRegMode(m){
+  regMode=m;
+  const a=$('rv-verkoop'), b=$('rv-boek');
+  if(a&&b){
+    const on='background:var(--navy);color:#fff;', off='background:transparent;color:var(--grey);';
+    const base='border:0;font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;';
+    a.style.cssText=base+(m==='verkoop'?on:off);
+    b.style.cssText=base+(m==='boek'?on:off);
+  }
+  const h=$('rv-hint');
+  if(h)h.textContent = m==='boek'
+    ? 'Bedragen ná aftrek rest-BPM, met af te dragen BTW. Openen geeft de administratiekopie.'
+    : 'Bedragen zoals de klant ze betaalt.';
+  renderReg($('q')?$('q').value:'');
+}
+
+
+/* ===== Volgend vrij factuurnummer ===== */
+function volgendNummer(){
+  let max=999;
+  loadDB().forEach(f=>{const n=parseInt(String(f.nr).replace(/\D/g,''));if(!isNaN(n)&&n>=1000&&n<=9999&&n>max)max=n;});
+  return String(max+1);
+}
+function vandaag(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();}
+
+/* ===== 2. Factuur dupliceren ===== */
+function dupliceerFactuur(){
+  if(!confirm('Deze factuur dupliceren naar een nieuw factuurnummer?\n\nAlle gegevens worden gekopieerd; het nummer en de datum worden vernieuwd.'))return;
+  $('f_nr').value=volgendNummer();
+  $('f_datum').value=vandaag();
+  setDocMode('verkoop');
+  toast('Gedupliceerd — nieuw nummer '+$('f_nr').value);
+}
+
+/* ===== 5. Creditfactuur ===== */
+function maakCreditfactuur(){
+  const bronNr=$('f_nr').value;
+  if(!confirm('Creditfactuur maken voor factuur '+bronNr+'?\n\nAlle bedragen worden negatief. De oorspronkelijke factuur blijft ongewijzigd in het register staan.'))return;
+  const neg=v=>{const n=parseNum(v);return fmt(n>0?-n:n);};
+  saleItems.forEach(s=>{s.prijs=neg(s.prijs);s.restbpm=neg(s.restbpm);});
+  inruilItems.forEach(it=>{it.bedrag=neg(it.bedrag);});
+  const nieuwNr=volgendNummer();
+  $('g_type').value='Creditfactuur bij factuur '+bronNr;
+  $('f_nr').value=nieuwNr;
+  $('f_datum').value=vandaag();
+  setDocMode('verkoop');
+  renderSales();renderInruil();recalc();
+  toast('Creditfactuur '+$('f_nr').value+' aangemaakt');
+}
+
+/* ===== 3. Periodefilter ===== */
+function factuurMaand(f){
+  const m=String(f.datum||'').split('-');   // dd-mm-jjjj
+  return m.length===3 ? {maand:m[1],jaar:m[2]} : null;
+}
+function vulJaarKeuze(){
+  const sel=$('per-jaar'); if(!sel)return;
+  const jaren={};
+  loadDB().forEach(f=>{const d=factuurMaand(f);if(d)jaren[d.jaar]=1;});
+  const lijst=Object.keys(jaren).sort().reverse();
+  const huidig=sel.value;
+  sel.innerHTML='<option value="">Alle jaren</option>'+lijst.map(j=>`<option value="${j}">${j}</option>`).join('');
+  if(huidig && (huidig===''||jaren[huidig])) sel.value=huidig;
+}
+function inPeriode(f){
+  const jaar=$('per-jaar')?$('per-jaar').value:'';
+  const deel=$('per-deel')?$('per-deel').value:'';
+  if(!jaar && !deel) return true;
+  const d=factuurMaand(f); if(!d) return false;
+  if(jaar && d.jaar!==jaar) return false;
+  if(!deel) return true;
+  if(deel.startsWith('Q')){
+    const q={Q1:['01','02','03'],Q2:['04','05','06'],Q3:['07','08','09'],Q4:['10','11','12']}[deel];
+    return q.includes(d.maand);
+  }
+  return d.maand===deel;
+}
+
+function renderReg(filter=''){
+  const list=loadDB().slice().sort((a,b)=>b.id-a.id);const q=(filter||'').toLowerCase().trim();
+  const body=$('reg-body');body.innerHTML='';$('reg-empty').style.display=list.length?'none':'block';
+  list.filter(f=>{
+    if(!inPeriode(f))return false;
+    if(!q)return true;
+    const hay=[f.klant.naam,f.klant.plaats,f.nr,...kentekens(f),...merken(f),...(f.inruil||[]).map(x=>x.kenteken)].join(' ').toLowerCase();
+    return hay.includes(q);
+  }).forEach(f=>{
+    const kt=kentekens(f);const mk=merken(f);
+    const fig=invoiceFigures(f);
+    const bedrag = regMode==='boek' ? fig.boekTot : (f.amounts&&f.amounts.total!=null?f.amounts.total:fig.klantTot);
+    const extra = regMode==='boek' ? `<td class="r" style="color:var(--gold);font-weight:500">${fmt(fig.btwAfdracht)}</td>` : '';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="mono">${f.datum}</td><td class="mono">${f.nr}</td><td>${f.klant.naam}<br><small style="color:var(--grey)">${f.klant.plaats||''}</small></td><td>${kt.length?kt.map(k=>`<span class="kenteken">${k}</span>`).join(''):'—'}</td><td>${mk.join(', ')||'—'}${(f.sales&&f.sales.length>1)?` <small style="color:var(--grey)">(${f.sales.length}×)</small>`:''}</td><td class="r">${fmt(bedrag)}</td>${extra}<td class="r"><button class="act" data-open="${f.id}">Openen</button><button class="act del" data-del="${f.id}">✕</button></td>`;
+    body.appendChild(tr);
+  });
+  const th=$('th-extra'); if(th)th.style.display = regMode==='boek' ? '' : 'none';
+  const thb=$('th-bedrag'); if(thb)thb.textContent = regMode==='boek' ? 'Bedrag excl. rest-BPM' : 'Bedrag';
+  // totaalregel onderaan
+  const shown=list.filter(f=>{
+    if(!inPeriode(f))return false;
+    if(!q)return true;
+    const hay=[f.klant.naam,f.klant.plaats,f.nr,...kentekens(f),...merken(f),...(f.inruil||[]).map(x=>x.kenteken)].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  if(shown.length){
+    let sBedrag=0,sBtw=0;
+    shown.forEach(f=>{const g=invoiceFigures(f);
+      sBedrag += regMode==='boek' ? g.boekTot : ((f.amounts&&f.amounts.total!=null)?f.amounts.total:g.klantTot);
+      sBtw += g.btwAfdracht;});
+    const tot=document.createElement('tr');
+    tot.style.cssText='background:var(--navy);color:#fff;';
+    const extraCol = regMode==='boek' ? `<td class="r" style="color:var(--gold);font-weight:600;padding:11px 10px">${fmt(sBtw)}</td>` : '';
+    tot.innerHTML=`<td colspan="5" style="padding:11px 10px;font-weight:500;letter-spacing:.5px;font-size:11px">TOTAAL (${shown.length} ${shown.length===1?'factuur':'facturen'})</td><td class="r" style="font-weight:600;padding:11px 10px">${fmt(sBedrag)}</td>${extraCol}<td></td>`;
+    body.appendChild(tot);
+  }
+  body.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
+    const f=loadDB().find(x=>x.id==b.dataset.open);
+    if(f){
+      fillForm(f);
+      setDocMode(regMode==='boek' ? 'boek' : 'verkoop');
+      document.querySelector('.tab[data-view="gen"]').click();
+      toast('Factuur '+f.nr+(adminMode?' geladen (administratiekopie)':' geladen'));
+    }});
+  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('Verwijderen uit register?'))return;saveDB(loadDB().filter(x=>x.id!=b.dataset.del));renderReg($('q').value);toast('Verwijderd');});
+}
+$('q').addEventListener('input',e=>renderReg(e.target.value));
+$('btn-dupe').onclick=dupliceerFactuur;
+$('btn-credit').onclick=maakCreditfactuur;
+$('per-jaar').onchange=()=>renderReg($('q').value);
+$('per-deel').onchange=()=>renderReg($('q').value);
+$('rv-verkoop').onclick=()=>setRegMode('verkoop');
+$('rv-boek').onclick=()=>setRegMode('boek');
+
+/* ===== Herinnering externe back-up (elke 30 dagen) ===== */
+const EXTKEY='kaap_last_ext_backup';
+const EXT_DAGEN=30;
+function extDoExport(){
+  const d=JSON.stringify(loadDB(),null,2);
+  const b=new Blob([d],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='KAAP_facturen_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  toast('Back-up gedownload — zet hem buiten Google Drive');
+}
+function extMarkDone(){localStorage.setItem(EXTKEY,String(Date.now()));checkExtReminder();toast('Genoteerd — volgende herinnering over '+EXT_DAGEN+' dagen');}
+function extSnooze(){localStorage.setItem(EXTKEY,String(Date.now()-(EXT_DAGEN-7)*86400000));checkExtReminder();toast('Over 7 dagen opnieuw herinnerd');}
+function checkExtReminder(){
+  const el=$('ext-reminder'); if(!el)return;
+  const last=parseInt(localStorage.getItem(EXTKEY)||'0');
+  if(!last){ // nog nooit: begin de teller vandaag, geen melding
+    localStorage.setItem(EXTKEY,String(Date.now())); el.style.display='none'; return;
+  }
+  const dagen=Math.floor((Date.now()-last)/86400000);
+  if(dagen>=EXT_DAGEN){
+    $('ext-reminder-text').textContent='Je laatste externe back-up was '+dagen+' dagen geleden. Google Drive beschermt je tegen veel, maar niet tegen problemen met je Google-account zelf. Bewaar daarom eens per maand een kopie buiten Drive.';
+    el.style.display='block';
+  } else el.style.display='none';
+}
+
+$('btn-export').onclick=()=>{extDoExport();};
+
+$('btn-link-new').onclick=linkNew;
+$('btn-link-open').onclick=linkExisting;
+$('btn-backup-folder').onclick=chooseBackupFolder;
+$('btn-restore').onclick=openRestore;
+$('btn-restore-close').onclick=()=>{$('restore-panel').style.display='none';};
+$('ext-do').onclick=extDoExport;
+$('ext-done').onclick=extMarkDone;
+$('ext-later').onclick=extSnooze;
+$('btn-import').onclick=()=>$('file-import').click();
+$('file-import').onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(!Array.isArray(imp))throw 0;const cur=loadDB();const by={};cur.forEach(f=>by[f.nr]=f);imp.forEach(f=>by[f.nr]=f);saveDB(Object.values(by));renderReg();toast('Geïmporteerd ('+imp.length+')');}catch(err){toast('Ongeldig bestand');}};r.readAsText(file);};
+
+function renderStats(){
+  const list=loadDB();const n=list.length;
+  const omzet=list.reduce((s,f)=>s+(f.sales||[]).reduce((a,v)=>a+saleCalc(v).total,0),0);
+  const btwTot=list.reduce((s,f)=>s+(f.sales||[]).reduce((a,v)=>a+saleCalc(v).btw,0),0);
+  const cars=list.reduce((s,f)=>s+((f.sales||[]).length),0);
+  const gem=n?omzet/n:0;
+  $('stat-cards').innerHTML=`<div class="stat"><div class="n">${n}</div><div class="l">Facturen</div></div><div class="stat"><div class="n">${cars}</div><div class="l">Verkochte voertuigen</div></div><div class="stat"><div class="n">${fmt(omzet)}</div><div class="l">Omzet (verkooptotaal)</div></div><div class="stat"><div class="n">${fmt(gem)}</div><div class="l">Gemiddeld per factuur</div></div><div class="stat"><div class="n">${fmt(btwTot)}</div><div class="l">BTW (indicatief)</div></div>`;
+  const months={};
+  list.forEach(f=>{const m=(f.datum||'').split('-').slice(1).reverse().join('-');if(m){const tot=(f.sales||[]).reduce((a,v)=>a+saleCalc(v).total,0);months[m]=(months[m]||0)+tot;}});
+  const keys=Object.keys(months).sort();const max=Math.max(1,...Object.values(months));
+  $('stat-bars').innerHTML=keys.length?keys.map(k=>`<div class="bar-row"><span class="lbl">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(months[k]/max*100)}%">${fmt(months[k])}</div></div></div>`).join(''):'<div class="empty">Nog geen data.</div>';
+}
+
+saleItems=[blankSale()];
+inruilItems=[blankInruil()];
+renderSales();renderInruil();recalc();
+/* start met de datum van vandaag en het eerstvolgende vrije factuurnummer */
+(function initNewInvoice(){
+  const d=new Date();
+  $('f_datum').value=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
+  let max=999;
+  loadDB().forEach(f=>{const n=parseInt(f.nr);if(!isNaN(n)&&n>=1000&&n<=9999&&n>max)max=n;});
+  $('f_nr').value=String(max+1);
+})();
+restoreLink();restoreBackupDir();checkExtReminder();
+</script>
+</body>
+</html>
