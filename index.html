@@ -139,6 +139,7 @@
   <div class="brand">KAAP Auto House<span>Facturen &amp; Register</span></div>
   <button class="tab active" data-view="gen">Nieuwe factuur</button>
   <button class="tab" data-view="reg">Register</button>
+  <button class="tab" data-view="voor">Voorraad</button>
   <button class="tab" data-view="stat">Statistieken</button>
 </div>
 
@@ -276,6 +277,39 @@
     </div>
     <table class="reg"><thead><tr><th>Datum</th><th>Nr.</th><th>Klant</th><th>Kenteken(s)</th><th>Voertuig(en)</th><th class="r" id="th-bedrag">Bedrag</th><th class="r" id="th-extra" style="display:none">BTW</th><th class="r">Actie</th></tr></thead><tbody id="reg-body"></tbody></table>
     <div class="empty" id="reg-empty" style="display:none">Nog geen facturen opgeslagen.</div>
+  </div>
+</div>
+
+<div class="view" id="view-voor">
+  <div class="card">
+    <h2>Voorraad</h2>
+    <div class="sub">Inruilauto's komen hier automatisch binnen. Verkochte auto's worden groen gemarkeerd zodra ze op een factuur staan.</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div class="seg" style="background:var(--field);padding:3px;border-radius:8px;">
+        <button type="button" id="vf-alles" style="border:0;background:var(--navy);color:#fff;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Alles</button>
+        <button type="button" id="vf-voorraad" style="border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">In voorraad</button>
+        <button type="button" id="vf-verkocht" style="border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Verkocht</button>
+      </div>
+      <span style="margin-left:auto;display:flex;gap:8px;">
+        <button class="btn" id="btn-voor-add">+ Auto toevoegen</button>
+      </span>
+    </div>
+
+    <div class="searchbar" style="margin-bottom:14px;">
+      <input id="vq" placeholder="Zoek op merk, kenteken of chassisnummer">
+    </div>
+
+    <div id="voor-cards" class="stats" style="margin-bottom:18px;"></div>
+
+    <table class="reg">
+      <thead><tr>
+        <th style="width:26px"></th><th>Voertuig</th><th>Kenteken</th><th>Binnen</th><th class="r">Dagen</th>
+        <th class="r">Inkoop</th><th class="r">Kosten</th><th class="r">Verkocht</th><th class="r">Marge</th><th class="r">Actie</th>
+      </tr></thead>
+      <tbody id="voor-body"></tbody>
+    </table>
+    <div class="empty" id="voor-empty" style="display:none">Nog geen auto's in voorraad. Voeg er een toe, of maak een factuur met een inruilauto.</div>
   </div>
 </div>
 
@@ -572,7 +606,7 @@ function renderInruil(){
 
 let adminMode=false;
 function recalc(){
-  const tb=$('spec-body');tb.innerHTML='';let grand=0,btwVerkoop=0;
+  const tb=$('spec-body');tb.innerHTML='';let grand=0,btwVerkoop=0,inruilInkoop=0;
   saleItems.forEach((s,i)=>{
     if(!(s.merk||'').trim() && parseNum(s.prijs)===0 && parseNum(s.restbpm)===0) return; // leeg voertuig niet tonen
     const c=saleCalc(s);btwVerkoop+=c.btw;
@@ -590,17 +624,33 @@ function recalc(){
   });
   inruilItems.forEach((it,i)=>{
     if(!(it.merk||'').trim() && parseNum(it.bedrag)===0) return; // lege inruil niet tonen
-    const c=inruilCalc(it);grand-=c.credit;
+    const c=inruilCalc(it);
+    if(!adminMode) grand-=c.credit;   // klantfactuur: inruil gaat er wél af
+    else inruilInkoop+=c.credit;      // administratie: aparte inkoopregel, niet aftrekken
     const naam=it.merk||('Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
-    tb.insertAdjacentHTML('beforeend',`<tr><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
-    if(it.regime!=='marge'){
-      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
-      tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21%</td><td class="r">${fmt(c.btw)}</td></tr>`);
+    if(adminMode){
+      // Administratie: inruil is een INKOOP, geen verlaging van de omzet
+      tb.insertAdjacentHTML('beforeend',`<tr><td style="color:var(--grey)">Inkoop inruil${tag}: ${naam}</td><td class="r" style="color:var(--grey)">${fmt(c.credit)}</td></tr>`);
+      if(it.regime!=='marge'){
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21% (voorbelasting)</td><td class="r">${fmt(c.btw)}</td></tr>`);
+      }
+    } else {
+      tb.insertAdjacentHTML('beforeend',`<tr><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
+      if(it.regime!=='marge'){
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21%</td><td class="r">${fmt(c.btw)}</td></tr>`);
+      }
     }
   });
+  if(adminMode && inruilInkoop>0){
+    tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td style="font-style:italic">Inruil wordt niet van de omzet afgetrokken; dit is een aparte inkoop.</td><td class="r"></td></tr>`);
+  }
   $('out_total').textContent=fmt(grand);
   $('out_btw_afdracht').textContent=fmt(btwVerkoop);
   $('btw-row').style.display = adminMode ? 'flex' : 'none';
+  const totLbl=document.querySelector('.totalrow .lab');
+  if(totLbl)totLbl.textContent = adminMode ? 'OMZET (BTW-GRONDSLAG + REST-BPM)' : 'TE BETALEN';
   return {total:grand};
 }
 
@@ -652,7 +702,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $('view-'+t.dataset.view).classList.add('active');
-  if(t.dataset.view==='reg'){vulJaarKeuze();setRegMode(regMode);checkExtReminder();}if(t.dataset.view==='stat')renderStats();
+  if(t.dataset.view==='reg'){vulJaarKeuze();setRegMode(regMode);checkExtReminder();}if(t.dataset.view==='stat')renderStats();if(t.dataset.view==='voor')setVoorFilter(voorFilter);
 });
 
 function collect(){const keep=adminMode;adminMode=false;const c=recalc();adminMode=keep;recalc();return {id:Date.now(),nr:$('f_nr').value,datum:$('f_datum').value,klant:{naam:$('k_naam').value,adres:$('k_adres').value,plaats:$('k_plaats').value,tel:$('k_tel').value,mail:$('k_mail').value,deb:$('g_deb').value},type:$('g_type').value,term:$('g_term').value,sales:JSON.parse(JSON.stringify(saleItems)),inruil:JSON.parse(JSON.stringify(inruilItems)),amounts:c};}
@@ -687,6 +737,7 @@ $('btn-save').onclick=()=>{
     rec.id=best.id;list[idx]=rec;toast('Factuur '+rec.nr+' bijgewerkt');
   } else { list.push(rec);toast('Factuur '+rec.nr+' opgeslagen'); }
   saveDB(list);
+  if(typeof syncVoorraad==='function')syncVoorraad();
 };
 $('btn-new').onclick=()=>{
   if(!confirm('Leeg formulier openen? Niet-opgeslagen gegevens gaan verloren.'))return;
@@ -795,8 +846,11 @@ function invoiceFigures(f){
     btwAfdracht+=c.btw;
     restbpmTot+=c.restbpm;
   });
-  (f.inruil||[]).forEach(it=>{const c=inruilCalc(it);klantTot-=c.credit;boekTot-=c.credit;});
-  return {klantTot,boekTot,btwAfdracht,restbpmTot};
+  // Inruil verlaagt wél wat de klant betaalt, maar NIET je omzet/BTW-grondslag.
+  // De inruilauto is een aparte inkoop en staat los van de af te dragen BTW.
+  let inruilTot=0;
+  (f.inruil||[]).forEach(it=>{const c=inruilCalc(it);klantTot-=c.credit;inruilTot+=c.credit;});
+  return {klantTot,boekTot,btwAfdracht,restbpmTot,inruilTot};
 }
 function setRegMode(m){
   regMode=m;
@@ -924,6 +978,11 @@ function renderReg(filter=''){
   body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('Verwijderen uit register?'))return;saveDB(loadDB().filter(x=>x.id!=b.dataset.del));renderReg($('q').value);toast('Verwijderd');});
 }
 $('q').addEventListener('input',e=>renderReg(e.target.value));
+$('btn-voor-add').onclick=()=>bewerkAuto(null);
+$('vf-alles').onclick=()=>setVoorFilter('alles');
+$('vf-voorraad').onclick=()=>setVoorFilter('voorraad');
+$('vf-verkocht').onclick=()=>setVoorFilter('verkocht');
+$('vq').addEventListener('input',renderVoorraad);
 $('btn-dupe').onclick=dupliceerFactuur;
 $('btn-credit').onclick=maakCreditfactuur;
 $('per-jaar').onchange=()=>renderReg($('q').value);
@@ -969,6 +1028,190 @@ $('ext-done').onclick=extMarkDone;
 $('ext-later').onclick=extSnooze;
 $('btn-import').onclick=()=>$('file-import').click();
 $('file-import').onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(!Array.isArray(imp))throw 0;const cur=loadDB();const by={};cur.forEach(f=>by[f.nr]=f);imp.forEach(f=>by[f.nr]=f);saveDB(Object.values(by));renderReg();toast('Geïmporteerd ('+imp.length+')');}catch(err){toast('Ongeldig bestand');}};r.readAsText(file);};
+
+
+/* ================= VOORRAADBEHEER =================
+   - Inruilauto's van facturen komen automatisch in de voorraad
+   - Auto's die op een factuur als verkoopvoertuig staan -> gemarkeerd als verkocht
+   - Handmatig toevoegen kan ook (bijv. inkoop Duitsland)
+   Sleutel per auto: kenteken (of chassisnr als kenteken ontbreekt)
+*/
+const VKEY='kaap_voorraad_v1';
+let voorFilter='alles';
+function loadVoor(){try{return JSON.parse(localStorage.getItem(VKEY))||[]}catch(e){return[]}}
+function saveVoor(l){localStorage.setItem(VKEY,JSON.stringify(l));fileWrite(loadDB());}
+function autoSleutel(v){return String((v.kenteken||v.ch||'').replace(/[\s-]/g,'')).toUpperCase();}
+function blankAuto(){return {id:Date.now(),merk:'',kenteken:'',bj:'',km:'',ch:'',kl:'',
+  binnen:vandaag(),inkoop:'€ 0,00',kosten:'€ 0,00',bron:'handmatig',
+  verkocht:false,verkoopBedrag:'',verkoopDatum:'',factuurNr:''};}
+
+function parseDatum(s){
+  const p=String(s||'').split('-');
+  if(p.length!==3)return null;
+  return new Date(+p[2],+p[1]-1,+p[0]);
+}
+function dagenInVoorraad(a){
+  const d=parseDatum(a.binnen); if(!d)return '—';
+  const eind=a.verkocht&&a.verkoopDatum?parseDatum(a.verkoopDatum):new Date();
+  if(!eind)return '—';
+  return Math.max(0,Math.round((eind-d)/86400000));
+}
+function autoMarge(a){
+  if(!a.verkocht)return null;
+  return parseNum(a.verkoopBedrag)-parseNum(a.inkoop)-parseNum(a.kosten);
+}
+
+/* Synchroniseer voorraad met alle opgeslagen facturen */
+function syncVoorraad(){
+  const lijst=loadVoor();
+  const byKey={}; lijst.forEach(a=>{const k=autoSleutel(a); if(k)byKey[k]=a;});
+  let gewijzigd=false;
+
+  loadDB().forEach(f=>{
+    // inruilauto's -> voorraad in
+    (f.inruil||[]).forEach(it=>{
+      if(!(it.merk||'').trim() && !(it.kenteken||'').trim())return;
+      const k=autoSleutel(it); if(!k)return;
+      if(!byKey[k]){
+        const a=blankAuto();
+        a.merk=it.merk||'';a.kenteken=it.kenteken||'';a.bj=it.bj||'';a.km=it.km||'';
+        a.ch=it.ch||'';a.kl=it.kl||'';a.binnen=f.datum||vandaag();
+        a.inkoop=it.bedrag||'€ 0,00';a.bron='inruil bij factuur '+f.nr;
+        byKey[k]=a;lijst.push(a);gewijzigd=true;
+      }
+    });
+    // verkoopvoertuigen -> markeer als verkocht
+    (f.sales||[]).forEach(s=>{
+      if(!(s.merk||'').trim() && !(s.kenteken||'').trim())return;
+      const k=autoSleutel(s); if(!k)return;
+      const a=byKey[k];
+      if(a && !a.verkocht){
+        a.verkocht=true;a.verkoopBedrag=s.prijs||'';a.verkoopDatum=f.datum||'';a.factuurNr=f.nr;
+        gewijzigd=true;
+      }
+    });
+  });
+  if(gewijzigd)saveVoor(lijst);
+  return lijst;
+}
+
+function renderVoorraad(){
+  const lijst=syncVoorraad();
+  const q=($('vq')?$('vq').value:'').toLowerCase().trim();
+  const body=$('voor-body'); if(!body)return;
+  body.innerHTML='';
+
+  const zicht=lijst.filter(a=>{
+    if(voorFilter==='voorraad'&&a.verkocht)return false;
+    if(voorFilter==='verkocht'&&!a.verkocht)return false;
+    if(!q)return true;
+    return [a.merk,a.kenteken,a.ch,a.kl].join(' ').toLowerCase().includes(q);
+  });
+
+  $('voor-empty').style.display=lijst.length?'none':'block';
+
+  zicht.forEach(a=>{
+    const marge=autoMarge(a);
+    const kleur=a.verkocht?'#2E7D54':'#D08B2C';
+    const dagen=dagenInVoorraad(a);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${kleur}"></span></td>
+      <td><b style="font-weight:500">${a.merk||'—'}</b><br><small style="color:var(--grey)">${a.bj||''} ${a.km?'· '+a.km:''}</small></td>
+      <td><span class="kenteken">${a.kenteken||'—'}</span></td>
+      <td class="mono">${a.binnen||'—'}</td>
+      <td class="r mono">${dagen}</td>
+      <td class="r">${fmt(parseNum(a.inkoop))}</td>
+      <td class="r">${fmt(parseNum(a.kosten))}</td>
+      <td class="r">${a.verkocht?fmt(parseNum(a.verkoopBedrag)):'<span style="color:'+kleur+'">in voorraad</span>'}</td>
+      <td class="r" style="color:${marge==null?'var(--light)':(marge>=0?'#2E7D54':'#B04A4A')};font-weight:500">${marge==null?'—':fmt(marge)}</td>
+      <td class="r"><button class="act" data-vedit="${a.id}">Wijzig</button><button class="act del" data-vdel="${a.id}">✕</button></td>`;
+    body.appendChild(tr);
+  });
+
+  // totaalregel
+  if(zicht.length){
+    let inkTot=0,kosTot=0,margeTot=0,nVoor=0;
+    zicht.forEach(a=>{inkTot+=parseNum(a.inkoop);kosTot+=parseNum(a.kosten);
+      const m=autoMarge(a); if(m!=null)margeTot+=m; if(!a.verkocht)nVoor++;});
+    const tot=document.createElement('tr');
+    tot.style.cssText='background:var(--navy);color:#fff;';
+    tot.innerHTML=`<td></td><td colspan="4" style="padding:11px 10px;font-size:11px;font-weight:500;letter-spacing:.5px">TOTAAL (${zicht.length} auto's, ${nVoor} in voorraad)</td>
+      <td class="r" style="padding:11px 10px;font-weight:600">${fmt(inkTot)}</td>
+      <td class="r" style="padding:11px 10px;font-weight:600">${fmt(kosTot)}</td>
+      <td></td>
+      <td class="r" style="padding:11px 10px;font-weight:600;color:var(--gold)">${fmt(margeTot)}</td><td></td>`;
+    body.appendChild(tot);
+  }
+
+  // kaartjes
+  const inVoorraad=lijst.filter(a=>!a.verkocht);
+  const verkocht=lijst.filter(a=>a.verkocht);
+  const kapitaal=inVoorraad.reduce((s,a)=>s+parseNum(a.inkoop)+parseNum(a.kosten),0);
+  const totMarge=verkocht.reduce((s,a)=>s+(autoMarge(a)||0),0);
+  const gemDagen=verkocht.length?Math.round(verkocht.reduce((s,a)=>{const d=dagenInVoorraad(a);return s+(typeof d==='number'?d:0);},0)/verkocht.length):0;
+  const langst=inVoorraad.reduce((mx,a)=>{const d=dagenInVoorraad(a);return (typeof d==='number'&&d>mx)?d:mx;},0);
+  $('voor-cards').innerHTML=`
+    <div class="stat"><div class="n">${inVoorraad.length}</div><div class="l">In voorraad</div></div>
+    <div class="stat"><div class="n">${fmt(kapitaal)}</div><div class="l">Vastgelegd kapitaal</div></div>
+    <div class="stat"><div class="n">${verkocht.length}</div><div class="l">Verkocht</div></div>
+    <div class="stat"><div class="n">${fmt(totMarge)}</div><div class="l">Totale marge</div></div>
+    <div class="stat"><div class="n">${gemDagen}</div><div class="l">Gem. dagen tot verkoop</div></div>
+    <div class="stat"><div class="n">${langst}</div><div class="l">Langst in voorraad (dagen)</div></div>`;
+
+  body.querySelectorAll('[data-vedit]').forEach(b=>b.onclick=()=>bewerkAuto(b.dataset.vedit));
+  body.querySelectorAll('[data-vdel]').forEach(b=>b.onclick=()=>{
+    if(!confirm('Deze auto uit de voorraad verwijderen?'))return;
+    saveVoor(loadVoor().filter(x=>String(x.id)!==String(b.dataset.vdel)));renderVoorraad();toast('Verwijderd');
+  });
+}
+
+/* Bewerken / toevoegen via een eenvoudig formulier in een overlay */
+function bewerkAuto(id){
+  const lijst=loadVoor();
+  const a=id?lijst.find(x=>String(x.id)===String(id)):blankAuto();
+  if(!a)return;
+  const nieuw=!id;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(27,40,65,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const f=(lbl,key,ph='')=>`<div class="frow" style="margin-bottom:0"><label style="width:110px">${lbl}</label><input data-k="${key}" value="${esc(a[key]||'')}" placeholder="${ph}" style="flex:1;border:1px solid var(--rule);border-radius:5px;padding:6px 8px;font-size:11px;font-family:inherit;"></div>`;
+  ov.innerHTML=`<div style="background:var(--ivory);border-top:3px solid var(--gold);border-radius:10px;padding:24px 26px;width:520px;max-width:95vw;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:3px">${nieuw?'Auto toevoegen':'Auto wijzigen'}</div>
+      <div style="font-size:11px;color:var(--grey);margin-bottom:16px">${a.bron?('Bron: '+a.bron):''}</div>
+      ${f('Merk / type','merk','bijv. BMW 545e')}
+      ${f('Kenteken','kenteken','XX-123-Y')}
+      ${f('Bouwjaar','bj','01-12-2021')}
+      ${f('Km-stand','km','87.000 km')}
+      ${f('Chassisnr.','ch','')}
+      ${f('Kleur','kl','')}
+      ${f('Binnengekomen','binnen','dd-mm-jjjj')}
+      ${f('Inkoopprijs','inkoop','€ 0,00')}
+      ${f('Kosten','kosten','€ 0,00')}
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn ghost" id="ov-annuleer" style="color:var(--navy);border-color:var(--rule)">Annuleren</button>
+        <button class="btn" id="ov-ok">Opslaan</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#ov-annuleer').onclick=()=>ov.remove();
+  ov.querySelector('#ov-ok').onclick=()=>{
+    ov.querySelectorAll('input[data-k]').forEach(inp=>{a[inp.dataset.k]=inp.value;});
+    ['inkoop','kosten'].forEach(k=>{a[k]=fmt(parseNum(a[k]));});
+    if(nieuw)lijst.push(a);
+    saveVoor(lijst);ov.remove();renderVoorraad();toast(nieuw?'Auto toegevoegd':'Auto bijgewerkt');
+  };
+}
+
+function setVoorFilter(f){
+  voorFilter=f;
+  const map={alles:'vf-alles',voorraad:'vf-voorraad',verkocht:'vf-verkocht'};
+  const base='border:0;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;';
+  Object.entries(map).forEach(([k,id])=>{
+    const el=$(id); if(!el)return;
+    el.style.cssText=base+(k===f?'background:var(--navy);color:#fff;':'background:transparent;color:var(--grey);');
+  });
+  renderVoorraad();
+}
 
 function renderStats(){
   const list=loadDB();const n=list.length;
