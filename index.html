@@ -73,7 +73,10 @@
   table.spec tbody td{padding:7px 10px;border-bottom:.5px solid var(--rule);font-size:9.5px;}
   table.spec tbody td.r{text-align:right;font-variant-numeric:tabular-nums;}
   table.spec tr.strong td{font-weight:500;color:var(--navy);}
-  table.spec tr.sub td{color:var(--grey);font-size:8.6px;padding-left:22px;background:var(--row-alt);}
+  table.spec tr.sub td{color:var(--grey);font-size:8.6px;padding-left:22px;background:#F4F2EC;}
+  table.spec tr.hoofd td{background:#E3E7EE;box-shadow:inset 3px 0 0 var(--navy);}
+  table.spec tr.inkoop td{background:#EFE6D2;box-shadow:inset 3px 0 0 var(--gold);}
+  table.spec tr.sub-in td{background:#F7F1E3;box-shadow:inset 3px 0 0 var(--gold-soft);}
   .totalrow{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);padding:9px 12px;margin-top:2px;}
   .totalrow .lab{font-size:11px;font-weight:500;letter-spacing:2px;} .totalrow .val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
   .pay{background:var(--field);border-left:2px solid var(--gold);padding:12px 14px;margin:18px 0 0;}
@@ -146,8 +149,8 @@
 <div class="view active" id="view-gen">
   <div class="actionbar">
     <div class="seg" style="background:#2C3A52;padding:3px;border-radius:8px;margin-right:auto;">
-      <button type="button" id="dv-verkoop" style="border:0;background:var(--gold);color:var(--navy);font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Verkoop</button>
-      <button type="button" id="dv-boek" style="border:0;background:transparent;color:#C3CADB;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Boekhouding</button>
+      <button type="button" id="dv-verkoop" style="border:0;background:var(--gold);color:var(--navy);font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Extern</button>
+      <button type="button" id="dv-boek" style="border:0;background:transparent;color:#C3CADB;font-family:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:6px;cursor:pointer;">Intern</button>
     </div>
     <button class="btn ghost" id="btn-new">Leeg formulier</button>
     <button class="btn ghost" id="btn-dupe">Dupliceren</button>
@@ -171,7 +174,7 @@
     </div>
 
     <div class="titleband">
-      <div class="t">FACTUUR<span id="admin-tag" style="display:none;font-size:9px;letter-spacing:2px;color:var(--gold-soft);margin-left:10px;">— ADMINISTRATIEKOPIE</span></div>
+      <div class="t">FACTUUR<span id="admin-tag" style="display:none;font-size:9px;letter-spacing:2px;color:var(--gold-soft);margin-left:10px;">— INTERNE KOPIE</span></div>
       <div class="meta"><span><label>Nr.</label><input id="f_nr" value="1000"></span><span><label>Datum</label><input id="f_datum" value="20-07-2026"></span></div>
     </div>
 
@@ -225,8 +228,8 @@
     <div class="sub">Zoek op klantnaam, plaats, kenteken, factuurnummer of merk.</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
       <div class="seg" style="background:var(--field);padding:3px;border-radius:8px;">
-        <button type="button" id="rv-verkoop" class="active" style="border:0;background:var(--navy);color:#fff;font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Verkoop</button>
-        <button type="button" id="rv-boek" style="border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Boekhouding</button>
+        <button type="button" id="rv-verkoop" class="active" style="border:0;background:var(--navy);color:#fff;font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Extern</button>
+        <button type="button" id="rv-boek" style="border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:12px;font-weight:500;padding:8px 18px;border-radius:6px;cursor:pointer;">Intern</button>
       </div>
       <span id="rv-hint" style="font-size:11px;color:var(--grey);"></span>
       <span style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -614,7 +617,7 @@ function recalc(){
     grand+=shown;
     const naam=s.merk||('Verkoopvoertuig '+(i+1));const tag=s.regime==='marge'?' (marge)':' (BTW)';
     const suffix = (adminMode && c.restbpm>0) ? ' — na aftrek rest-BPM' : ' — verkoopprijs';
-    tb.insertAdjacentHTML('beforeend',`<tr><td>${naam}${tag}${suffix}</td><td class="r">${fmt(shown)}</td></tr>`);
+    tb.insertAdjacentHTML('beforeend',`<tr class="hoofd"><td>${naam}${tag}${suffix}</td><td class="r">${fmt(shown)}</td></tr>`);
     if(s.regime==='marge'){tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>bijzondere regeling gebruikte goederen — margeregeling</td><td class="r"></td></tr>`);}
     else{
       if(c.restbpm>0 && adminMode)tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>rest-BPM afgetrokken (geen BTW)</td><td class="r">− ${fmt(c.restbpm)}</td></tr>`);
@@ -630,13 +633,13 @@ function recalc(){
     const naam=it.merk||('Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
     if(adminMode){
       // Administratie: inruil is een INKOOP, geen verlaging van de omzet
-      tb.insertAdjacentHTML('beforeend',`<tr><td style="color:var(--grey)">Inkoop inruil${tag}: ${naam}</td><td class="r" style="color:var(--grey)">${fmt(c.credit)}</td></tr>`);
+      tb.insertAdjacentHTML('beforeend',`<tr class="inkoop"><td>Inkoop inruil${tag}: ${naam}</td><td class="r">${fmt(c.credit)}</td></tr>`);
       if(it.regime!=='marge'){
-        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
-        tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21% (voorbelasting)</td><td class="r">${fmt(c.btw)}</td></tr>`);
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub sub-in"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
+        tb.insertAdjacentHTML('beforeend',`<tr class="sub sub-in"><td>BTW 21% (voorbelasting)</td><td class="r">${fmt(c.btw)}</td></tr>`);
       }
     } else {
-      tb.insertAdjacentHTML('beforeend',`<tr><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
+      tb.insertAdjacentHTML('beforeend',`<tr class="hoofd"><td>Inruil${tag}: ${naam}</td><td class="r">− ${fmt(c.credit)}</td></tr>`);
       if(it.regime!=='marge'){
         tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>waarvan excl. BTW</td><td class="r">${fmt(c.excl)}</td></tr>`);
         tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>BTW 21%</td><td class="r">${fmt(c.btw)}</td></tr>`);
@@ -650,7 +653,7 @@ function recalc(){
   $('out_btw_afdracht').textContent=fmt(btwVerkoop);
   $('btw-row').style.display = adminMode ? 'flex' : 'none';
   const totLbl=document.querySelector('.totalrow .lab');
-  if(totLbl)totLbl.textContent = adminMode ? 'OMZET (BTW-GRONDSLAG + REST-BPM)' : 'TE BETALEN';
+  if(totLbl)totLbl.textContent = adminMode ? 'OMZET (INTERN)' : 'TE BETALEN';
   return {total:grand};
 }
 
@@ -676,7 +679,7 @@ function veiligeNaam(s){return String(s||'').replace(/[^\w\s-]/g,'').trim().repl
 function stelBestandsnaamIn(){
   const nr=$('f_nr').value||'factuur';
   const klant=veiligeNaam($('k_naam').value)||'klant';
-  document.title=(adminMode?'Administratie':'Factuur')+'_'+nr+'_'+klant;
+  document.title=(adminMode?'Intern':'Factuur')+'_'+nr+'_'+klant;
 }
 function herstelTitel(){document.title='KAAP Auto House \u2014 Facturen & Register';}
 window.addEventListener('beforeprint', ()=>{stelBestandsnaamIn();fitSheet();});
@@ -863,8 +866,8 @@ function setRegMode(m){
   }
   const h=$('rv-hint');
   if(h)h.textContent = m==='boek'
-    ? 'Bedragen ná aftrek rest-BPM, met af te dragen BTW. Openen geeft de administratiekopie.'
-    : 'Bedragen zoals de klant ze betaalt.';
+    ? 'Interne weergave: omzet ná aftrek rest-BPM, inruil apart als inkoop, met af te dragen BTW.'
+    : 'Externe weergave: de bedragen zoals de klant ze betaalt.';
   renderReg($('q')?$('q').value:'');
 }
 
@@ -948,7 +951,7 @@ function renderReg(filter=''){
     body.appendChild(tr);
   });
   const th=$('th-extra'); if(th)th.style.display = regMode==='boek' ? '' : 'none';
-  const thb=$('th-bedrag'); if(thb)thb.textContent = regMode==='boek' ? 'Bedrag excl. rest-BPM' : 'Bedrag';
+  const thb=$('th-bedrag'); if(thb)thb.textContent = regMode==='boek' ? 'Omzet excl. rest-BPM' : 'Bedrag';
   // totaalregel onderaan
   const shown=list.filter(f=>{
     if(!inPeriode(f))return false;
@@ -973,7 +976,7 @@ function renderReg(filter=''){
       fillForm(f);
       setDocMode(regMode==='boek' ? 'boek' : 'verkoop');
       document.querySelector('.tab[data-view="gen"]').click();
-      toast('Factuur '+f.nr+(adminMode?' geladen (administratiekopie)':' geladen'));
+      toast('Factuur '+f.nr+(adminMode?' geladen (intern)':' geladen'));
     }});
   body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('Verwijderen uit register?'))return;saveDB(loadDB().filter(x=>x.id!=b.dataset.del));renderReg($('q').value);toast('Verwijderd');});
 }
