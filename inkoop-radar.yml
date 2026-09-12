@@ -1,0 +1,62 @@
+# KAAP Inkoop-radar – ophaler
+# Draait elke 2 uur (07:00–22:00 NL-tijd), leest profiles.json, schrijft results.json en
+# stuurt optioneel een e-mail bij nieuwe advertenties.
+name: Inkoop-radar
+
+on:
+  schedule:
+    - cron: "0 5-20/2 * * *"      # UTC; = 07:00–22:00 (zomertijd) / 06:00–21:00 (wintertijd)
+  workflow_dispatch:               # handmatig starten via Actions > Inkoop-radar > Run workflow
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inkoop-radar
+  cancel-in-progress: false
+
+env:
+  PROFILES: profiles.json          # pad in de repo (zelfde map als inkoop.html)
+  RESULTS: results.json
+
+jobs:
+  ophalen:
+    runs-on: ubuntu-latest
+    env:
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Ophalen
+        id: fetch
+        run: node tools/inkoop-fetch.mjs "$PROFILES" "$RESULTS"
+
+      - name: results.json vastleggen
+        run: |
+          git config user.name "inkoop-radar"
+          git config user.email "inkoop-radar@users.noreply.github.com"
+          git add "$RESULTS"
+          git diff --cached --quiet || git commit -m "Inkoop-radar: resultaten $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push
+
+      # Optioneel: e-mail bij nieuwe advertenties.
+      # Zet in Settings > Secrets and variables > Actions de secrets MAIL_TO, MAIL_USERNAME, MAIL_PASSWORD
+      # (bijv. een Gmail-adres met een app-wachtwoord). Zonder MAIL_TO wordt deze stap overgeslagen.
+      - name: E-mail bij nieuwe advertenties
+        if: ${{ env.MAIL_TO != '' && steps.fetch.outputs.new == 'true' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Inkoop-radar: ${{ steps.fetch.outputs.count }} nieuwe advertentie(s)"
+          to: ${{ secrets.MAIL_TO }}
+          from: KAAP Inkoop-radar
+          convert_markdown: true
+          html_body: file://new_items.md
