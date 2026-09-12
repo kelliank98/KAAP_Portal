@@ -1,5 +1,143 @@
 {
- "generated": "2026-09-12T18:07:38.737Z",
+ "generated": "2026-09-12T21:13:39.385Z",
  "tool": "inkoop-fetch 1.02",
- "profiles": {}
+ "profiles": {
+  "rmohrms3a0v9": {
+   "naam": "BMW x3 M-sport, m sport 2021+",
+   "sites": {
+    "as24de:M-sport": {
+     "naam": "AutoScout24 DE",
+     "land": "DE",
+     "variant": "M-sport",
+     "url": "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=M-sport",
+     "checked": "2026-09-12T21:13:39.385Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: 5er, X2, X1, 2er, 3er)."
+    },
+    "as24de:m sport": {
+     "naam": "AutoScout24 DE",
+     "land": "DE",
+     "variant": "m sport",
+     "url": "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=m+sport",
+     "checked": "2026-09-12T21:13:43.644Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: 5er, X2, X1, 2er, 3er)."
+    },
+    "kleinanzeigen:M-sport": {
+     "naam": "Kleinanzeigen",
+     "land": "DE",
+     "variant": "M-sport",
+     "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::30000/x3-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2021,2023+autos.km_i:,75000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+     "checked": "2026-09-12T21:13:47.527Z",
+     "count": null,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "kleinanzeigen:m sport": {
+     "naam": "Kleinanzeigen",
+     "land": "DE",
+     "variant": "m sport",
+     "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::30000/x3-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2021,2023+autos.km_i:,75000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+     "checked": "2026-09-12T21:13:53.070Z",
+     "count": null,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "as24nl:M-sport": {
+     "naam": "AutoScout24 NL",
+     "land": "NL",
+     "variant": "M-sport",
+     "url": "https://www.autoscout24.nl/lst/bmw/x3?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=M-sport",
+     "checked": "2026-09-12T21:13:58.485Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: X2, X1, 2 Series, 3 Series)."
+    },
+    "as24nl:m sport": {
+     "naam": "AutoScout24 NL",
+     "land": "NL",
+     "variant": "m sport",
+     "url": "https://www.autoscout24.nl/lst/bmw/x3?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=m+sport",
+     "checked": "2026-09-12T21:14:02.511Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: X2, X1, 2 Series, 3 Series)."
+    },
+    "marktplaats:M-sport": {
+     "naam": "Marktplaats",
+     "land": "NL",
+     "variant": "M-sport",
+     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3000000|q:x3+M-sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-09-12T21:14:05.861Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "marktplaats:m sport": {
+     "naam": "Marktplaats",
+     "land": "NL",
+     "variant": "m sport",
+     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3000000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-09-12T21:14:08.545Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "as24be:M-sport": {
+     "naam": "AutoScout24 BE",
+     "land": "BE",
+     "variant": "M-sport",
+     "url": "https://www.autoscout24.be/nl/lst/bmw/x3?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=M-sport",
+     "checked": "2026-09-12T21:14:10.661Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: X1, 3 Series, X2)."
+    },
+    "as24be:m sport": {
+     "naam": "AutoScout24 BE",
+     "land": "BE",
+     "variant": "m sport",
+     "url": "https://www.autoscout24.be/nl/lst/bmw/x3?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=30000&fuel=2&version=m+sport",
+     "checked": "2026-09-12T21:14:15.010Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: X1, 3 Series, X2)."
+    },
+    "twodehands:M-sport": {
+     "naam": "2dehands",
+     "land": "BE",
+     "variant": "M-sport",
+     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3000000|q:x3+M-sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-09-12T21:14:18.598Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "twodehands:m sport": {
+     "naam": "2dehands",
+     "land": "BE",
+     "variant": "m sport",
+     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3000000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-09-12T21:14:21.148Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    }
+   }
+  }
+ }
 }
