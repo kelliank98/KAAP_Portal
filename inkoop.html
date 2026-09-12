@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KAAP Inkoop-radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#101010; --ink2:#1C1C1C; --bronze:#A77446; --bronze-soft:#D9C3A8; --bronze-pale:#F4ECE2;
+  --paper:#FFFFFF; --sand:#F3F0EB; --line:#E2DCD3; --muted:#6E6863; --text:#1C1C1C;
+  --ok:#2F7D4F; --ok-bg:#E6F2EA; --warn:#B4580A; --warn-bg:#FBEEDF; --bad:#A3322B; --bad-bg:#F8E5E3;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--sand);color:var(--text);font-family:"Inter Tight",system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--bronze)}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.01em}
+h2{font-size:20px;margin-bottom:14px}
+h3{font-size:16px;margin-bottom:8px}
+p{margin:0 0 10px}
+small,.muted{color:var(--muted)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--sand);padding:1px 5px;border-radius:4px;word-break:break-all}
+
+header{background:var(--ink);color:#fff;border-bottom:3px solid var(--bronze)}
+.hwrap{max-width:1160px;margin:0 auto;padding:18px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:baseline;gap:12px;padding-bottom:14px}
+.brand h1{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+.brand span{color:var(--bronze-soft);font-size:13px;margin-left:4px}
+nav{display:flex;gap:2px}
+nav button{background:transparent;border:0;color:#CFC8BF;padding:12px 16px;border-bottom:3px solid transparent;margin-bottom:-3px;cursor:pointer;font-weight:500}
+nav button.on{color:#fff;border-bottom-color:#fff}
+nav button:hover{color:#fff}
+
+main{max-width:1160px;margin:0 auto;padding:22px 20px 60px}
+section.tab{display:none}
+section.tab.on{display:block}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.card + .card{margin-top:18px}
+
+.frm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.frm .full{grid-column:1 / -1}
+@media (max-width:520px){.frm{grid-template-columns:1fr}}
+label.f{display:block}
+.f > span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.f input[type=text],.f input[type=number],.f input[type=date],.f input[type=month],.f input[type=url],.f select,.f textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+.f input:focus,.f select:focus,.f textarea:focus,button:focus-visible{outline:2px solid var(--bronze);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;user-select:none;background:#fff;font-size:13.5px}
+.chip input{margin:0}
+.chip.on{border-color:var(--bronze);background:var(--bronze-pale)}
+.help{font-size:12.5px;color:var(--muted);margin-top:4px}
+.hist{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:-4px}
+.hist b{font-size:12px;color:var(--muted);font-weight:500;margin-right:2px}
+.hist .h{border:1px dashed var(--line);border-radius:999px;padding:3px 9px;font-size:12.5px;cursor:pointer;background:#fff;color:var(--muted)}
+.hist .h:hover{border-style:solid;border-color:var(--bronze);color:var(--text)}
+.hist .h.on{border-style:solid;border-color:var(--bronze);background:var(--bronze-pale);color:var(--text)}
+.hist .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;text-decoration:underline}
+
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:9px 14px;border-radius:var(--r);cursor:pointer;font-weight:500}
+.btn:hover{background:var(--ink2)}
+.btn.sec{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.sec:hover{border-color:var(--ink)}
+.btn.bronze{background:var(--bronze);border-color:var(--bronze)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.danger{background:#fff;color:var(--bad);border-color:var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.between{justify-content:space-between}
+.mt{margin-top:14px}
+
+.links{display:flex;flex-direction:column;gap:8px}
+.lnk{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;background:#fff}
+@media (max-width:640px){.lnk{grid-template-columns:1fr;gap:6px}}
+.lnk .site{font-weight:600}
+.lnk .site small{display:block;font-weight:400}
+.lnk .note{font-size:12.5px;color:var(--muted);word-break:break-word}
+.lnk.warn{border-left:3px solid var(--warn)}
+.lnk.miss{border-left:3px solid var(--bad)}
+.lnk.ok{border-left:3px solid var(--ok)}
+
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;border-bottom:1px solid var(--line);padding:8px 8px}
+table.t td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t tr.clk{cursor:pointer}
+table.t tr.clk:hover td{background:var(--sand)}
+.r{text-align:right;white-space:nowrap}
+.tag{display:inline-block;border-radius:4px;padding:2px 7px;font-size:12px;font-weight:500}
+.tag.nieuw{background:var(--sand)}
+.tag.bekeken{background:#E8EEF6;color:#2B4A78}
+.tag.bod{background:var(--warn-bg);color:var(--warn)}
+.tag.gekocht{background:var(--ok-bg);color:var(--ok)}
+.tag.afgewezen{background:var(--bad-bg);color:var(--bad)}
+.tag.btw{background:#E8EEF6;color:#2B4A78}
+.tag.marge{background:var(--bronze-pale);color:var(--bronze)}
+
+.bpm{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--sand)}
+.bpm .big{font-size:26px;font-weight:700;letter-spacing:-0.02em}
+.bpm dl{display:grid;grid-template-columns:auto auto;gap:4px 16px;margin:10px 0 0;font-size:14px}
+.bpm dt{color:var(--muted)}
+.bpm dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.bar{display:flex;height:14px;border-radius:4px;overflow:hidden;margin-top:10px;background:#E4DED6}
+.bar div{height:100%}
+.bar .b1{background:#9A8F82}.bar .b2{background:var(--bronze)}.bar .b3{background:var(--ink)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+.note{border-left:3px solid var(--bronze);background:var(--bronze-pale);padding:10px 14px;border-radius:0 var(--r) var(--r) 0;font-size:14px}
+.note.warn{border-color:var(--warn);background:var(--warn-bg)}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:var(--r);opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+details summary{cursor:pointer;font-weight:500}
+.prof{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff;cursor:pointer}
+.prof.on{border-color:var(--bronze);background:var(--bronze-pale)}
+.prof b{font-weight:600}
+.prof small{display:block;color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.kv span:nth-child(odd){color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.03 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <nav>
+      <button class="on" data-tab="profielen">Zoekprofielen</button>
+      <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
+      <button data-tab="instellingen">Instellingen</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+<!-- ============ ZOEKPROFIELEN ============ -->
+<section class="tab on" id="tab-profielen">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="row between"><h2 id="profTitle">Nieuw zoekprofiel</h2><button class="btn sec sm" id="btnNieuwProfiel">Nieuw</button></div>
+        <div class="frm">
+          <label class="f full"><span>Naam van het profiel (bijv. X5 M Sport 2020+)</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
+          <label class="f"><span>Merk</span><input type="text" id="p_merk" list="merkenlijst" placeholder="BMW"><datalist id="merkenlijst"></datalist></label>
+          <label class="f"><span>Model (leeg = hele merk)</span><input type="text" id="p_model" placeholder="X5"></label>
+          <label class="f"><span>Bouwjaar vanaf</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
+          <label class="f"><span>Bouwjaar tot (optioneel)</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
+          <label class="f"><span>Kilometerstand max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
+          <label class="f"><span>Vermogen min. (kW, optioneel)</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
+          <label class="f"><span>Prijs min. (€)</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
+          <label class="f"><span>Prijs max. (€)</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
+          <div class="f full"><span>Carrosserie</span><div class="chips" id="p_carr"></div></div>
+          <div class="f full"><span>Brandstof</span><div class="chips" id="p_brandstof"></div></div>
+          <label class="f full"><span>Uitvoering, zoekwoord in de titel (meerdere gescheiden door komma, elk wordt een aparte link)</span><input type="text" id="p_uitv" list="uitvlijst" placeholder="M Sport"><datalist id="uitvlijst"></datalist></label>
+          <div class="f full hist" id="hist_uitv"></div>
+          <label class="f full"><span>Uitvoering voor mobile.de, Duitse schrijfwijze (leeg = zelfde als hierboven)</span><input type="text" id="p_uitv_de" placeholder="M Sportpaket"></label>
+          <label class="f full"><span>Model op Duitse sites, als dat anders heet (bijv. 5er, V-Klasse)</span><input type="text" id="p_model_de" placeholder="leeg = zelfde als Model"></label>
+          <label class="f full"><span>Uitsluiten: resultaten met deze woorden in de titel worden verborgen en niet gemaild (komma-gescheiden)</span><input type="text" id="p_uitv_niet" list="nietlijst" placeholder="xLine, x-Line, Schaden"><datalist id="nietlijst"></datalist></label>
+          <div class="f full hist" id="hist_niet"></div>
+          <div class="f full"><span>Must-have opties (gestructureerd filter waar de site dat kan)</span><div class="chips" id="p_opties"></div>
+            <div class="hist" id="hist_opties"></div>
+            <div class="help">Max. 2 à 3 aanvinken. Dealers vinken opties niet consequent aan; elk extra vinkje kost je echte auto's.</div></div>
+          <div class="f full"><span>Sites voor dit profiel</span><div class="chips" id="p_sites"></div></div>
+        </div>
+        <div class="row mt">
+          <button class="btn" id="btnBewaarProfiel">Profiel bewaren</button>
+          <button class="btn sec" id="btnDupliceer">Dupliceren</button>
+          <button class="btn danger" id="btnVerwijderProfiel">Verwijderen</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Opgeslagen profielen</h3>
+        <div id="profLijst" class="links"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="row between"><h2>Zoeklinks</h2><button class="btn bronze sm" id="btnOpenAlle">Open alle</button></div>
+        <p class="muted" style="font-size:13.5px">Automaat staat overal vast. Open een link, controleer het resultaat, en sla de zoekopdracht daar op als alert. De site mailt je; deze app niet.</p>
+        <div id="linkLijst" class="links"></div>
+        <details class="mt"><summary>Model-koppeling per site (URL plakken)</summary>
+          <p class="help" style="margin-top:8px">Klopt een link niet (verkeerd model, 404)? Zoek het model één keer op de site zelf, kopieer de adresbalk en plak hieronder. De app onthoudt de koppeling voor dit merk en model.</p>
+          <div class="frm">
+            <label class="f"><span>Site</span><select id="leerSite"></select></label>
+            <label class="f full"><span>Geplakte URL</span><input type="url" id="leerUrl" placeholder="https://..."></label>
+          </div>
+          <div class="row mt"><button class="btn sec sm" id="btnLeer">Koppeling opslaan</button><span id="leerMsg" class="help"></span></div>
+        </details>
+      </div>
+      <div class="card" id="resCard">
+        <div class="row between"><h2>Gevonden resultaten</h2><div class="row"><button class="btn sec sm" id="btnResLaad">Vernieuwen</button><label class="btn sec sm" style="display:inline-block">Laad results.json van schijf<input type="file" id="fileRes" accept="application/json" style="display:none"></label><button class="btn sec sm" id="btnGezien">Markeer als gezien</button></div></div>
+        <p class="help" id="resMeta">Resultaten komen uit results.json, gevuld door de ophaler (GitHub Actions). Zie Instellingen.</p>
+        <div id="resLijst"></div>
+      </div>
+      <div class="card">
+        <h3>Zo filter je op uitvoering en opties</h3>
+        <div class="kv">
+          <span>Zoekwoord</span><span>Werkt op alle sites in de titel. AutoScout24 behandelt "M Sport" en "M-Sport" als hetzelfde; Marktplaats niet: gebruik daar spaties. mobile.de heeft de Duitse schrijfwijze nodig.</span>
+          <span>Sportpakket-vinkje</span><span>Gestructureerd, maar onderbenut: bij BMW X5 op AutoScout24 NL vangt het zoekwoord ruim 2,5× zoveel auto's als het vinkje. Zoekwoord eerst, vinkje als extra.</span>
+          <span>Opties</span><span>2 à 3 markers (panoramadak, head-up, luchtvering) filteren kale auto's er hard uit. Meer vinkjes = meer missers.</span>
+          <span>Prijs min. + kW min.</span><span>De robuustste proxy voor "geen kale auto": zet de ondergrens op wat een goed uitgevoerde auto minimaal kost.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KANDIDATEN & BPM ============ -->
+<section class="tab" id="tab-kandidaten">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="row between"><h2 id="kandTitle">Kandidaat / BPM-indicatie</h2><button class="btn sec sm" id="btnNieuwKand">Nieuw</button></div>
+        <div class="frm">
+          <label class="f full"><span>Omschrijving (merk, model, uitvoering)</span><input type="text" id="k_oms" placeholder="BMW X5 xDrive45e M Sport"></label>
+          <label class="f full"><span>Link naar advertentie</span><input type="url" id="k_url" placeholder="https://..."></label>
+          <label class="f"><span>Land van aankoop</span><select id="k_land"><option value="DE">Duitsland</option><option value="NL">Nederland</option><option value="BE">België</option><option value="DK">Denemarken</option></select></label>
+          <label class="f"><span>Zoekprofiel</span><select id="k_profiel"><option value="">(geen)</option></select></label>
+          <label class="f"><span>Vraagprijs (€, zoals geadverteerd)</span><input type="number" id="k_prijs" step="500" placeholder="62500"></label>
+          <label class="f"><span>BTW-status</span><select id="k_btw"><option value="btw">BTW-auto (MwSt. ausweisbar)</option><option value="marge">Marge (differenzbesteuert)</option></select></label>
+          <label class="f"><span>Kilometerstand</span><input type="number" id="k_km" step="1000" placeholder="85000"></label>
+          <label class="f"><span>Datum eerste toelating</span><input type="date" id="k_det"></label>
+          <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
+          <label class="f"><span>Plug-in hybride</span><select id="k_phev"><option value="0">Nee</option><option value="1">Ja</option></select></label>
+          <label class="f"><span>CO2 WLTP (g/km)</span><input type="number" id="k_co2w" placeholder="bijv. 187"></label>
+          <label class="f"><span>CO2 NEDC (g/km, alleen bij DET vóór 1-7-2020)</span><input type="number" id="k_co2n" placeholder="alleen indien bekend"></label>
+          <label class="f"><span>Verwachte RDW-keuringsdatum</span><input type="date" id="k_keuring"></label>
+          <label class="f"><span>Status</span><select id="k_status"><option value="nieuw">Nieuw</option><option value="bekeken">Bekeken</option><option value="bod">Bod gedaan</option><option value="gekocht">Gekocht</option><option value="afgewezen">Afgewezen</option></select></label>
+          <label class="f full"><span>Notitie</span><textarea id="k_notitie" rows="2"></textarea></label>
+        </div>
+        <div class="row mt">
+          <button class="btn" id="btnBewaarKand">Kandidaat bewaren</button>
+          <button class="btn danger" id="btnVerwijderKand">Verwijderen</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Indicatie BPM en kostprijs</h2>
+        <div id="bpmOut" class="bpm"><div class="muted">Vul brandstof, CO2 en datum eerste toelating in.</div></div>
+        <div class="note mt" style="font-size:13px">Indicatie op basis van de officiële tarieftabellen 2017 t/m 2026 en de forfaitaire afschrijvingstabel. Het gunstigste tarief tussen 2 maanden vóór de eerste toelating en de keuringsdatum wordt gekozen. Een koerslijst (bijv. Autotelex, XRAY) geeft bij veel auto's een hogere afschrijving en dus lagere BPM. Geen fiscaal advies.</div>
+      </div>
+      <div class="card">
+        <div class="row between"><h3>Kandidaten</h3><div class="row"><select id="filtStatus"><option value="">Alle statussen</option><option value="nieuw">Nieuw</option><option value="bekeken">Bekeken</option><option value="bod">Bod gedaan</option><option value="gekocht">Gekocht</option><option value="afgewezen">Afgewezen</option></select></div></div>
+        <div style="overflow:auto"><table class="t" id="kandTabel"><thead><tr><th>Auto</th><th>Land</th><th class="r">Vraagprijs</th><th class="r">BPM</th><th class="r">Kostprijs</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+        <div id="kandLeeg" class="empty">Nog geen kandidaten.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTELLINGEN ============ -->
+<section class="tab" id="tab-instellingen">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Kosten en aannames</h2>
+        <div class="frm">
+          <label class="f"><span>Transport Duitsland (€)</span><input type="number" id="s_tr_DE" step="50"></label>
+          <label class="f"><span>Transport België (€)</span><input type="number" id="s_tr_BE" step="50"></label>
+          <label class="f"><span>Transport Denemarken (€)</span><input type="number" id="s_tr_DK" step="50"></label>
+          <label class="f"><span>Transport Nederland (€)</span><input type="number" id="s_tr_NL" step="50"></label>
+          <label class="f"><span>Importkosten RDW/kenteken/leges (€)</span><input type="number" id="s_import" step="25"></label>
+          <label class="f"><span>Dagen tot RDW-keuring (standaard)</span><input type="number" id="s_keuring" step="1"></label>
+        </div>
+        <div class="row mt"><button class="btn" id="btnBewaarInst">Instellingen bewaren</button></div>
+      </div>
+      <div class="card">
+        <h2>Sites (standaard aan/uit voor nieuwe profielen)</h2>
+        <div class="chips" id="s_sites"></div>
+        <div class="help mt">Gaspedaal bundelt Marktplaats, AutoTrack en AutoScout24 NL. Draai Gaspedaal en AutoScout24 NL twee weken naast elkaar voordat je er één weglaat.</div>
+      </div>
+      <div class="card">
+        <h2>mobile.de merk-ID's</h2>
+        <p class="help">mobile.de werkt met nummers per merk en model. Merken staan hier; het model leer je per profiel via "Model-koppeling" (URL plakken).</p>
+        <div style="overflow:auto;max-height:280px"><table class="t" id="makeIdTabel"><thead><tr><th>Merk</th><th>ID</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="row mt"><input type="text" id="mk_naam" placeholder="Merk" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px"><input type="number" id="mk_id" placeholder="ID" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;width:110px"><button class="btn sec sm" id="btnMakeIdAdd">Toevoegen</button></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Automatisch ophalen (GitHub Actions)</h2>
+        <p class="help">De app zelf kan geen resultaten ophalen (browsers blokkeren dat). De meegeleverde ophaler draait in je GitHub-repo, leest <code>profiles.json</code>, haalt AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen op en schrijft <code>results.json</code>. mobile.de en Gaspedaal blokkeren dit; daar blijf je op de eigen alert van de site aangewezen.</p>
+        <div class="frm">
+          <label class="f full"><span>URL van results.json (leeg = zelfde map als deze app)</span><input type="url" id="s_resurl" placeholder="results.json"></label>
+        </div>
+        <div class="row mt">
+          <button class="btn" id="btnExportProfiles">Exporteer profiles.json</button>
+          <button class="btn sec" id="btnBewaarResUrl">URL bewaren</button>
+        </div>
+        <p class="help mt">Na elke wijziging in je profielen: opnieuw exporteren en <code>profiles.json</code> in de repo vervangen. Laatste run: <span id="s_lastrun">onbekend</span>.</p>
+      </div>
+      <div class="card">
+        <h2>Bladwijzer-knop: advertentie naar kandidaat</h2>
+        <p class="help">Sleep de knop hieronder naar je bladwijzerbalk. Sta je op een advertentie (mobile.de, AutoScout24, Marktplaats), klik erop: titel, prijs, kilometerstand, eerste toelating en CO2 worden uit de pagina gelezen en hier ingevuld. Controleer altijd; het is tekstherkenning.</p>
+        <a id="bookmarklet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP kandidaat</a>
+        <p class="help mt">Werkt alleen als deze app via https (GitHub Pages) draait; vanaf een lokaal bestand blokkeren browsers het openen.</p>
+      </div>
+      <div class="card">
+        <h2>Geleerde model-koppelingen</h2>
+        <div id="koppelLijst" class="links"></div>
+      </div>
+      <div class="card">
+        <h2>Gegevens</h2>
+        <div class="row">
+          <button class="btn sec" id="btnExport">Exporteer JSON</button>
+          <label class="btn sec" style="display:inline-block">Importeer JSON<input type="file" id="fileImport" accept="application/json" style="display:none"></label>
+          <button class="btn danger" id="btnReset">Alles wissen</button>
+        </div>
+        <p class="help mt">Opslag in deze browser (localStorage). Exporteer regelmatig naar je Drive-map, bijv. als KAAP_inkoop.json.</p>
+      </div>
+      <div class="card">
+        <details><summary>Tarieftabellen BPM (controle)</summary><div id="tabellen" style="font-size:13px;margin-top:10px"></div></details>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+/* =======================================================================
+   KAAP Inkoop-radar  v1.03
+   Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
+   "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
+   forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
+   ======================================================================= */
+const APP_VERSIE = '1.03';
+const STORE_KEY = 'kaap_inkoop_v1';
+
+// Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
+// diesel = toeslag per gram boven de grens. phev = eigen tabel (t/m 2024).
+const BPM_TABELLEN = [
+ {van:'2017-01-01',tot:'2017-12-31',methode:'NEDC',rows:[[0,353,2],[76,505,66],[102,2221,145],[150,9181,238],[168,13465,475]],phev:[[0,0,20],[30,600,90],[50,2400,300]],diesel:{grens:65,tarief:86.69},evVrij:true},
+ {van:'2018-01-01',tot:'2018-12-31',methode:'NEDC',rows:[[0,356,2],[73,502,63],[98,2077,139],[144,8471,229],[162,12593,458]],phev:[[0,0,19],[30,570,87],[50,2310,289]],diesel:{grens:63,tarief:87.38},evVrij:true},
+ {van:'2019-01-01',tot:'2019-12-31',methode:'NEDC',rows:[[0,360,2],[71,502,60],[95,1942,131],[139,7706,215],[156,11361,429]],phev:[[0,0,27],[30,810,113],[50,3070,271]],diesel:{grens:61,tarief:88.43},evVrij:true},
+ {van:'2020-01-01',tot:'2020-06-30',methode:'NEDC',rows:[[0,366,2],[68,502,59],[91,1859,129],[133,7277,212],[150,10881,424]],phev:[[0,0,27],[30,810,111],[50,3030,267]],diesel:{grens:59,tarief:89.85},evVrij:true},
+ {van:'2020-07-01',tot:'2020-12-31',methode:'WLTP',rows:[[0,366,1],[90,456,57],[116,1938,124],[162,7642,204],[180,11314,408]],phev:[[0,0,24],[34,816,83],[60,2974,199]],diesel:{grens:80,tarief:78.82},evVrij:true},
+ {van:'2021-01-01',tot:'2021-12-31',methode:'WLTP',rows:[[0,372,1],[86,458,60],[111,1958,132],[155,7766,216],[172,11438,432]],phev:[[0,0,24],[34,816,84],[60,3000,202]],diesel:{grens:77,tarief:83.59},evVrij:true},
+ {van:'2022-01-01',tot:'2022-12-31',methode:'WLTP',rows:[[0,376,1],[84,460,62],[109,2010,137],[152,7901,224],[168,11485,448]],phev:[[0,0,24],[34,816,85],[60,3026,204]],diesel:{grens:75,tarief:86.67},evVrij:true},
+ {van:'2023-01-01',tot:'2023-12-31',methode:'WLTP',rows:[[0,400,2],[82,564,68],[106,2196,149],[148,8454,244],[165,12602,488]],phev:[[0,0,26],[34,884,91],[60,3250,217]],diesel:{grens:73,tarief:94.30},evVrij:true},
+ {van:'2024-01-01',tot:'2024-12-31',methode:'WLTP',rows:[[0,440,2],[80,600,76],[104,2424,167],[145,9271,274],[161,13655,549]],phev:[[0,0,28],[34,952,100],[60,3552,239]],diesel:{grens:71,tarief:106.07},evVrij:true},
+ {van:'2025-01-01',tot:'2025-12-31',methode:'WLTP',rows:[[0,667,2],[79,825,79],[101,2563,173],[141,9483,284],[157,14027,568]],phev:null,diesel:{grens:70,tarief:109.87},evVrij:false},
+ {van:'2026-01-01',tot:'2026-12-31',methode:'WLTP',rows:[[0,687,2],[77,841,82],[100,2727,181],[139,9786,297],[155,14538,594]],phev:null,diesel:{grens:69,tarief:114.83},evVrij:false},
+];
+// Forfaitaire afschrijvingstabel: [start in maanden, basis %, % per (gedeeltelijke) maand daarna]
+const AFSCHRIJVING = [[0,0,12],[1,12,4],[3,20,3.5],[5,27,1.5],[9,33,1],[18,42,0.75],[30,51,0.5],[42,57,0.42],[54,62,0.42],[66,67,0.42],[78,72,0.25],[90,75,0.25],[102,78,0.25],[114,81,0.19]];
+const BTW_PCT = {DE:0.19, NL:0.21, BE:0.21, DK:0.25};
+
+// ---------- Sites ----------
+const SITES = {
+  mobile:     {naam:'mobile.de',        land:'DE', std:true,  mode:'build', poll:false, info:'Duitsland, handel + particulier. Model-koppeling nodig (URL plakken). Blokkeert automatisch ophalen: alleen link + eigen alert.'},
+  as24de:     {naam:'AutoScout24 DE',   land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Parameters geverifieerd; resultaten worden opgehaald.'},
+  kleinanzeigen:{naam:'Kleinanzeigen',  land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland, alleen gewerbliche aanbieders. Parameters geverifieerd; resultaten worden opgehaald.'},
+  as24nl:     {naam:'AutoScout24 NL',   land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Parameters geverifieerd; resultaten worden opgehaald.'},
+  gaspedaal:  {naam:'Gaspedaal',        land:'NL', std:true,  mode:'build', poll:false, info:'Bundelt Marktplaats, AutoTrack en AutoScout24 NL. Brandstof, automaat en zoekwoord stel je op de site in. Blokkeert automatisch ophalen.'},
+  marktplaats:{naam:'Marktplaats',      land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland, alleen bedrijven. Resultaten worden opgehaald.'},
+  as24be:     {naam:'AutoScout24 BE',   land:'BE', std:true,  mode:'build', poll:true,  info:'België, veel ex-lease BTW-auto\'s. Parameters geverifieerd; resultaten worden opgehaald.'},
+  twodehands: {naam:'2dehands',         land:'BE', std:true,  mode:'build', poll:true,  info:'België, zelfde platform als Marktplaats (zelfde filters en model-koppeling). Resultaten worden opgehaald.'},
+  twoememain: {naam:'2ememain',         land:'BE', std:false, mode:'build', poll:true,  info:'Franstalig België. Zelfde database als 2dehands (getest: identieke aantallen), alleen een Franse interface. Alleen aanzetten als je die taal wilt; anders overbodig.'},
+  gocar:      {naam:'Gocar',            land:'BE', std:false, mode:'paste', poll:false, info:'België (Roularta). Filter op de site, plak de volledige zoek-URL als koppeling.'},
+  vroom:      {naam:'Vroom',            land:'BE', std:false, mode:'paste', poll:false, info:'België (Mediahuis). Filter op de site, plak de volledige zoek-URL als koppeling.'},
+  bilbasen:   {naam:'Bilbasen (DK)',    land:'DK', std:false, mode:'build', poll:false, info:'Denemarken, alleen merk/model in de link; filters op de site.'},
+};
+const CARROSSERIE = [
+  {k:'suv',      l:'SUV',        mobile:'OffRoad',   as24:'4',  mp:'488'},
+  {k:'sedan',    l:'Sedan',      mobile:'Limousine', as24:'6',  mp:'483'},
+  {k:'station',  l:'Station',    mobile:'EstateCar', as24:'5',  mp:'484'},
+  {k:'coupe',    l:'Coupé',      mobile:'SportsCar', as24:'3',  mp:'486'},
+  {k:'cabrio',   l:'Cabrio',     mobile:'Cabrio',    as24:'2',  mp:'485'},
+  {k:'hatchback',l:'Hatchback',  mobile:null,        as24:'1',  mp:'481'},
+  {k:'mpv',      l:'MPV',        mobile:'Van',       as24:'12', mp:'482'},
+];
+const BRANDSTOF = [
+  {k:'benzine',  l:'Benzine',          mobile:['PETROL'],        as24:'B', mp:['473'], ka:'benzin'},
+  {k:'diesel',   l:'Diesel',           mobile:['DIESEL'],        as24:'D', mp:['474'], ka:'diesel'},
+  {k:'hybride',  l:'Hybride benzine',  mobile:['HYBRID'],        as24:'2', mp:['13838'], ka:'hybrid'},
+  {k:'phev',     l:'Plug-in hybride',  mobile:['HYBRID'],        as24:'2', mp:['13838'], mobileFe:'HYBRID_PLUGIN', ka:'hybrid'},  // 13956 (hybridType) is op Marktplaats/2dehands slecht ingevuld en snijdt ~30% weg
+  {k:'hybride_d',l:'Hybride diesel',   mobile:['HYBRID_DIESEL'], as24:'3', mp:['13839'], ka:'hybrid'},
+  {k:'ev',       l:'Elektrisch',       mobile:['ELECTRICITY'],   as24:'E', mp:['11756'], ka:'elektro'},
+];
+// Must-have opties: codes per site (null = site kent geen gestructureerd filter hiervoor)
+const OPTIES = [
+  {k:'sportpakket', l:'Sportpakket (M Sport / AMG Line / S line)', mobile:'SPORT_PACKAGE',        as24:'112', mp:'11797'},
+  {k:'pano',        l:'Panoramadak',                               mobile:'PANORAMIC_GLASS_ROOF', as24:'50',  mp:'11809'},
+  {k:'hud',         l:'Head-up display',                           mobile:'HEAD_UP_DISPLAY',      as24:'123', mp:'13967'},
+  {k:'lucht',       l:'Luchtvering',                               mobile:'AIR_SUSPENSION',       as24:'144', mp:null},
+  {k:'massage',     l:'Massagestoelen',                            mobile:'MASSAGE_SEATS',        as24:'145', mp:'11912'},
+  {k:'ventilatie',  l:'Stoelventilatie',                           mobile:'VENTILATED_SEATS',     as24:'154', mp:'11911'},
+  {k:'memory',      l:'Elektrische stoelen / memory',              mobile:'MEMORY_SEATS',         as24:'16',  mp:'11793'},
+  {k:'sound',       l:'Premium audio (H/K, B&W, Burmester)',       mobile:'SOUND_SYSTEM',         as24:'155', mp:'443381'},
+  {k:'cam360',      l:'360°-camera',                               mobile:null,                   as24:'187', mp:'13975'},
+  {k:'acc',         l:'Adaptieve cruise control',                  mobile:null,                   as24:'133', mp:'11914'},
+  {k:'trekhaak',    l:'Trekhaak',                                  mobile:null,                   as24:'20',  mp:'11564'},
+  {k:'keyless',     l:'Keyless entry',                             mobile:'KEYLESS_ENTRY',        as24:'153', mp:'11913'},
+  {k:'laser',       l:'Laser / matrix-LED',                        mobile:'GLARE_FREE_HIGH_BEAM', as24:'214', mp:'443383'},
+  {k:'night',       l:'Night vision',                              mobile:'NIGHT_VISION_ASSIST',  as24:'147', mp:'443379'},
+  {k:'stuur',       l:'Stuurwielverwarming',                       mobile:'HEATED_STEERING_WHEEL',as24:'136', mp:'11916'},
+  {k:'klep',        l:'Elektrische achterklep',                    mobile:'ELECTRIC_TAILGATE',    as24:'139', mp:'11803'},
+  {k:'leder',       l:'Lederen bekleding',                         mobile:null,                   as24:'6',   mp:'11550'},
+  {k:'sportstoel',  l:'Sportstoelen',                              mobile:'SPORT_SEATS',          as24:'117', mp:'11562'},
+  {k:'digitaal',    l:'Digitaal instrumentarium',                  mobile:'DIGITAL_COCKPIT',      as24:'224', mp:'443370'},
+  {k:'standkachel', l:'Standkachel',                               mobile:'AUXILIARY_HEATING',    as24:'52',  mp:'443382'},
+];
+// Marktplaats/2dehands merk-categorieën (l2CategoryId), nodig voor de ophaler
+const MP_L2 = {"abarth": 2932, "aiways": 3217, "aixam": 2152, "alfa-romeo": 92, "alpina": 2937, "alpine": 2936, "aston-martin": 2153, "audi": 93, "austin": 2154, "bentley": 2148, "bestelauto-s": 95, "bmw": 96, "bugatti": 2938, "buick": 97, "byd": 3213, "cadillac": 98, "chevrolet": 99, "chrysler": 100, "citroen": 101, "cupra": 3051, "dacia": 2660, "daewoo": 103, "daihatsu": 105, "dodge": 108, "dongfeng": 3227, "donkervoort": 109, "ds": 2933, "ferrari": 110, "fiat": 111, "fisker": 2829, "ford": 112, "ford-usa": 113, "genesis": 3223, "gmc": 2949, "honda": 114, "hongqi": 3221, "hummer": 2149, "hyundai": 115, "infiniti": 2659, "isuzu": 3212, "jaguar": 117, "jeep": 118, "kia": 119, "lada": 2155, "lamborghini": 122, "lancia": 123, "land-rover": 124, "landwind": 2831, "leapmotor": 3226, "lexus": 125, "lincoln": 2150, "lotus": 127, "lucid": 3218, "lynk-co": 3211, "maserati": 128, "mazda": 129, "mclaren": 2935, "mercedes-benz": 130, "mercury": 131, "mg": 132, "mini": 133, "mitsubishi": 134, "nio": 3214, "nissan": 135, "oldsmobile": 136, "oldtimers": 137, "opel": 138, "overige-auto-s": 139, "peugeot": 140, "polestar": 2934, "pontiac": 143, "porsche": 144, "renault": 146, "rolls-royce": 2156, "rover": 147, "saab": 148, "seat": 150, "seres": 3220, "skoda": 151, "smart": 152, "spyker": 2939, "ssangyong": 2151, "subaru": 153, "suzuki": 154, "tesla": 2830, "toyota": 155, "triumph": 156, "vinfast": 3216, "volkswagen": 157, "volvo": 158, "voyah": 3225, "vrachtwagens": 159, "xpeng": 3215, "zeekr": 3224};
+// mobile.de merk-ID's (website). Controleer bij twijfel via een geplakte URL; de geleerde koppeling gaat voor.
+const MAKE_IDS_STD = {
+  'Audi':1900,'BMW':3500,'Mercedes-Benz':17200,'Porsche':20100,'Volkswagen':25200,'Volvo':25100,
+  'Land Rover':14600,'Jaguar':13200,'Lexus':15200,'Maserati':16600,'Ferrari':8600,'Lamborghini':14400,
+  'Bentley':3100,'Rolls-Royce':21600,'Aston Martin':1750,'Alfa Romeo':900,'MINI':17700,'Tesla':135,
+  'Toyota':24100,'Skoda':22900,'Seat':22500,'Cupra':3,'Ford':9000,'Opel':19000,'Peugeot':19800,
+  'Renault':20700,'Kia':13900,'Hyundai':11600,'Mazda':16800,'Nissan':18700
+};
+
+// ---------- State ----------
+let S = laad();
+function laad(){
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch(e){ s = null; }
+  if (!s) s = {};
+  s.versie = APP_VERSIE;
+  s.instellingen = Object.assign({transport:{DE:400,BE:300,DK:750,NL:0}, importkosten:250, keuringDagen:14, sites:{}, makeIds:{}, koppelingen:{}}, s.instellingen||{});
+  s.instellingen.transport = Object.assign({DE:400,BE:300,DK:750,NL:0}, s.instellingen.transport||{});
+  for (const k in SITES) if (s.instellingen.sites[k] === undefined) s.instellingen.sites[k] = SITES[k].std;
+  s.instellingen.makeIds = Object.assign({}, MAKE_IDS_STD, s.instellingen.makeIds||{});
+  s.profielen = s.profielen || [];
+  s.kandidaten = s.kandidaten || [];
+  s.gezien = s.gezien || {};
+  s.geschiedenis = s.geschiedenis || {};   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
+  if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
+  return s;
+}
+function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+const $ = (q) => document.querySelector(q);
+const $$ = (q, root) => Array.from((root || document).querySelectorAll(q));
+const eur = (n) => (n==null||isNaN(n)) ? '–' : new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const eur2 = (n) => new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const num = (n) => new Intl.NumberFormat('nl-NL').format(n);
+const slug = (s) => (s||'').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const cap = (s) => (s||'').trim();
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+function isoPlus(d, days){ const x=new Date(d); x.setDate(x.getDate()+days); return x.toISOString().slice(0,10); }
+
+// ---------- BPM ----------
+function brutoUitTabel(rows, co2){
+  let row = rows[0];
+  for (const r of rows) if (r[0] < co2) row = r;
+  return row[1] + Math.max(0, co2 - row[0]) * row[2];
+}
+function berekenBpm(inp){
+  // inp: {brandstof, phev, co2w, co2n, det (Date), keuring (Date)}
+  const {brandstof, phev, co2w, co2n, det, keuring} = inp;
+  if (!det || isNaN(det) || !keuring || isNaN(keuring)) return {fout:'Datum eerste toelating ontbreekt.'};
+  const ev = brandstof === 'elektrisch';
+  const dieselachtig = brandstof === 'diesel' || brandstof === 'hybride_diesel';
+  const co2W = ev ? 0 : co2w, co2N = ev ? 0 : co2n;
+  if (!ev && (co2W==null || isNaN(co2W)) && (co2N==null || isNaN(co2N))) return {fout:'Vul de CO2-uitstoot in (WLTP, of NEDC bij oudere auto\'s).'};
+  const vanaf = new Date(det); vanaf.setMonth(vanaf.getMonth()-2); // tarief mag vanaf 2 maanden vóór DET
+  const opties = [];
+  for (const t of BPM_TABELLEN){
+    const tv = new Date(t.van), tt = new Date(t.tot);
+    if (tt < vanaf || tv > keuring) continue;
+    const co2 = t.methode === 'NEDC' ? co2N : co2W;
+    if (!ev && (co2==null || isNaN(co2))) continue;
+    if (t.methode === 'WLTP' && det < new Date('2020-07-01') && (co2W==null||isNaN(co2W))) continue;
+    let basis, label;
+    if (ev){
+      basis = t.evVrij ? 0 : t.rows[0][1]; label = t.evVrij ? 'nihiltarief' : 'vaste voet';
+    } else if (phev && t.phev){
+      basis = brutoUitTabel(t.phev, co2); label = 'PHEV-tabel';
+    } else {
+      basis = brutoUitTabel(t.rows, co2); label = 'personenauto';
+    }
+    let toeslag = 0;
+    if (dieselachtig && !ev) toeslag = Math.max(0, co2 - t.diesel.grens) * t.diesel.tarief;
+    opties.push({tabel:t, basis, toeslag, bruto: basis + toeslag, label, co2});
+  }
+  if (!opties.length) return {fout:'Geen tarieftabel voor deze periode (app kent 2017 t/m 2026). Controleer datum en CO2-methode.'};
+  opties.sort((a,b)=>a.bruto-b.bruto);
+  const keuze = opties[0];
+  const afs = afschrijvingPct(det, keuring);
+  const netto = Math.round(keuze.bruto * (100 - afs.pct) / 100);
+  return {keuze, alle:opties, afs, netto, bruto:Math.round(keuze.bruto), basis:Math.round(keuze.basis), toeslag:Math.round(keuze.toeslag)};
+}
+function afschrijvingPct(det, ref){
+  let months = (ref.getFullYear()-det.getFullYear())*12 + (ref.getMonth()-det.getMonth());
+  const anchorFor = (m) => { const a = new Date(det); a.setMonth(det.getMonth()+m); return a; };
+  let anchor = anchorFor(months);
+  if (anchor > ref) { months--; anchor = anchorFor(months); }
+  if (months < 0) months = 0;
+  const restDays = Math.max(0, Math.round((ref - anchor)/86400000));
+  let row = AFSCHRIJVING[0];
+  for (const r of AFSCHRIJVING) if (months >= r[0]) row = r;
+  let extra = months - row[0] + (restDays > 0 ? 1 : 0);
+  const pct = Math.min(100, Math.round((row[1] + extra*row[2])*100)/100);
+  return {pct, months, restDays, row};
+}
+
+// ---------- Kostprijs ----------
+function kostprijs(k, bpm){
+  const prijs = +k.prijs || 0;
+  const land = k.land || 'DE';
+  const netto = k.btw === 'btw' ? prijs / (1 + (BTW_PCT[land]||0.21)) : prijs;
+  const transport = +(S.instellingen.transport[land] || 0);
+  const imp = land === 'NL' ? 0 : +(S.instellingen.importkosten||0);
+  const bpmBedrag = land === 'NL' ? 0 : (bpm && !bpm.fout ? bpm.netto : null);
+  const totaal = (bpmBedrag==null) ? null : netto + transport + imp + bpmBedrag;
+  return {netto, transport, imp, bpm:bpmBedrag, totaal};
+}
+
+// ---------- Hulpfuncties links ----------
+// AutoScout24 gebruikt Engelse modelnamen: 5 Serie -> 5-series, V-Klasse -> v-class, RS 6 -> rs6.
+// Zoekwoord-slug: 'RS 6' -> rs6 (Kleinanzeigen vindt 'rs-6' niet), rest onaangeroerd.
+function kwSlug(s){
+  return slug((s||'').toString().toLowerCase().replace(/\b(rs|s|sq|m|gt|id|ex|q|a|c|e|x|v|t)\s+(\d)/g,'$1$2'));
+}
+function as24Slug(model){
+  let m = (model||'').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  m = m.replace(/\bklasse\b/g,'class').replace(/\bklass\b/g,'class');
+  m = m.replace(/^(\d)\s*(?:er|serie|reeks|series)\b/,'$1 series');
+  m = m.replace(/\b(serie|reeks)\b/g,'series');
+  m = m.replace(/\b(rs|s|sq|m|gt|id|ex)\s+(\d)/g,'$1$2');
+  return slug(m);
+}
+
+const splitList = (s) => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
+function koppeling(site, merk, model){ return S.instellingen.koppelingen[`${site}|${slug(merk)}|${slug(model)}`] || null; }
+function makeIdVoor(merk){
+  const m = cap(merk).toLowerCase();
+  for (const k in S.instellingen.makeIds) if (k.toLowerCase() === m) return S.instellingen.makeIds[k];
+  return null;
+}
+function bouwLinks(p){
+  const out = [];
+  const ctx = {
+    merkS: slug(p.merk), modelS: slug(p.model), modelAs24: as24Slug(p.model),
+    carr: CARROSSERIE.filter(c=>p.carr.includes(c.k)),
+    br: BRANDSTOF.filter(b=>p.brandstof.includes(b.k)),
+    opt: OPTIES.filter(o=>p.opties.includes(o.k)),
+  };
+  const uitvs = splitList(p.uitv);
+  const uitvsDe = splitList(p.uitvDe).length ? splitList(p.uitvDe) : uitvs;
+  for (const s of Object.keys(SITES)){
+    if (!p.sites[s]) continue;
+    const vars = ((s === 'mobile' || s === 'kleinanzeigen') ? uitvsDe : uitvs);
+    for (const v of (vars.length ? vars : [''])) out.push(bouwLink(s, p, v, ctx));
+  }
+  return out;
+}
+function bouwLink(s, p, v, c){
+  const L = {site:s, naam:SITES[s].naam, variant:v, status:'ok', note:'', url:''};
+  const yr = (a,b) => (a?a:'') + ':' + (b?b:'');
+  if (s === 'mobile'){
+    let kop = koppeling('mobile', p.merk, p.model);
+    if (!kop){
+      const mid = makeIdVoor(p.merk);
+      if (!mid){ L.status='miss'; L.note='Merk-ID voor mobile.de onbekend. Plak één keer een mobile.de-URL van dit model (Model-koppeling) of voeg het merk toe in Instellingen.'; return L; }
+      kop = mid + ';'; L.status='warn'; L.note='Model nog niet gekoppeld: de link toont het hele merk. Plak één keer de mobile.de-URL van dit model.';
+    }
+    const q = new URLSearchParams();
+    q.set('isSearchRequest','true'); q.set('s','Car'); q.set('vc','Car'); q.set('dam','false');
+    q.set('ms', kop + ';;' + v);
+    if (p.bjvan || p.bjtot) q.set('fr', yr(p.bjvan, p.bjtot));
+    if (p.km) q.set('ml', ':' + p.km);
+    if (p.pmin || p.pmax) q.set('p', yr(p.pmin, p.pmax));
+    q.set('tr','AUTOMATIC_GEAR');
+    c.br.forEach(b => b.mobile.forEach(f => q.append('ft', f)));
+    c.carr.filter(x=>x.mobile).forEach(x => q.append('c', x.mobile));
+    c.opt.filter(o=>o.mobile).forEach(o => q.append('fe', o.mobile));
+    c.br.filter(b=>b.mobileFe).forEach(b => q.append('fe', b.mobileFe));
+    q.set('st','DEALER'); q.set('sb','doc'); q.set('od','down');
+    L.url = 'https://suchen.mobile.de/fahrzeuge/search.html?' + q.toString();
+    if (!L.note) L.note = 'Controleer bij eerste gebruik: Händler, Automatik en carrosserie moeten aangevinkt staan.';
+    return L;
+  }
+  if (s === 'as24nl' || s === 'as24de' || s === 'as24be'){
+    const dom = {as24nl:['https://www.autoscout24.nl/lst','NL'], as24de:['https://www.autoscout24.de/lst','D'], as24be:['https://www.autoscout24.be/nl/lst','B']}[s];
+    const kop = koppeling('as24', p.merk, p.model);
+    const path = kop || (p.model ? `${c.merkS}/${c.modelAs24}` : c.merkS);
+    const q = new URLSearchParams();
+    q.set('atype','C'); q.set('cy', dom[1]); q.set('ustate','N,U'); q.set('damaged_listing','exclude');
+    q.set('sort','age'); q.set('desc','1'); q.set('custtype','D'); q.set('gear','A');
+    if (p.bjvan) q.set('fregfrom', p.bjvan); if (p.bjtot) q.set('fregto', p.bjtot);
+    if (p.km) q.set('kmto', p.km);
+    if (p.pmin) q.set('pricefrom', p.pmin); if (p.pmax) q.set('priceto', p.pmax);
+    if (c.br.length) q.set('fuel', [...new Set(c.br.map(b=>b.as24))].join(','));
+    if (c.carr.length) q.set('body', c.carr.map(x=>x.as24).join(','));
+    if (c.opt.length) q.set('eq', c.opt.map(o=>o.as24).join(','));
+    if (p.kw){ q.set('powertype','kw'); q.set('powerfrom', p.kw); }
+    if (v) q.set('version', v);
+    L.url = `${dom[0]}/${path}?` + q.toString();
+    if (!kop && p.model) L.note = `Model-slug automatisch afgeleid (${c.modelAs24}). 0 resultaten of verkeerd model? Plak de AutoScout24-URL van dit model.`;
+    else if (!p.model) L.note = 'Hele merk, geen model opgegeven.';
+    return L;
+  }
+  if (s === 'marktplaats' || s === 'twodehands' || s === 'twoememain'){
+    const LRP = {marktplaats:['https://www.marktplaats.nl','auto-s'], twodehands:['https://www.2dehands.be','auto-s'], twoememain:['https://www.2ememain.be','autos']};
+    const [host, pad] = LRP[s];
+    const kop = koppeling('marktplaats', p.merk, p.model); // "x5/618" (2dehands en 2ememain gebruiken dezelfde nummers)
+    const ids = ['534','10899','10882'];
+    let qtxt = v;
+    if (kop) ids.unshift(kop.split('/')[1]); else qtxt = (cap(p.model) + ' ' + v).trim();
+    c.br.forEach(b => ids.push(...b.mp));
+    c.carr.forEach(x => ids.push(x.mp));
+    c.opt.filter(o=>o.mp).forEach(o => ids.push(o.mp));
+    const uniq = [...new Set(ids)];
+    const parts = ['f:' + uniq.join(',')];
+    if (p.bjvan) parts.push('constructionYearFrom:' + p.bjvan);
+    if (p.bjtot) parts.push('constructionYearTo:' + p.bjtot);
+    if (p.km) parts.push('mileageTo:' + p.km);
+    if (p.pmin) parts.push('PriceCentsFrom:' + (p.pmin*100));
+    if (p.pmax) parts.push('PriceCentsTo:' + (p.pmax*100));
+    if (qtxt) parts.push('q:' + qtxt.split(/\s+/).map(encodeURIComponent).join('+'));
+    parts.push('sortBy:SORT_INDEX','sortOrder:DECREASING');
+    L.url = `${host}/l/${pad}/${c.merkS}/#` + parts.join('|');
+    // API-URL voor de ophaler (geverifieerd: attributesById + attributeRanges)
+    const a = new URLSearchParams();
+    a.set('l1CategoryId','91');
+    const l2 = MP_L2[c.merkS]; if (l2) a.set('l2CategoryId', l2);
+    uniq.forEach(id => a.append('attributesById[]', id));
+    if (p.bjvan || p.bjtot) a.append('attributeRanges[]', `constructionYear:${p.bjvan||''}:${p.bjtot||''}`);
+    if (p.km) a.append('attributeRanges[]', `mileage::${p.km}`);
+    if (p.pmin || p.pmax) a.append('attributeRanges[]', `PriceCents:${p.pmin?p.pmin*100:''}:${p.pmax?p.pmax*100:''}`);
+    if (qtxt) a.set('query', qtxt);
+    a.set('limit','30'); a.set('sortBy','SORT_INDEX'); a.set('sortOrder','DECREASING');
+    L.apiUrl = l2 ? `${host}/lrp/api/search?` + a.toString() : null;
+    // Geen model-id? De ophaler zoekt het zelf op in de merkpagina van de site.
+    if (l2 && !kop && p.model) L.resolve = {host, pad, merkSlug: c.merkS, model: cap(p.model)};
+    L.status = 'warn';
+    L.note = (kop || !p.model ? '' : 'Model-id nog niet bekend: de ophaler zoekt het zelf op; de link hierboven gebruikt het model als zoekwoord. ') + 'Controleer bij eerste gebruik of alle filters zijn overgenomen.';
+    return L;
+  }
+  if (s === 'kleinanzeigen'){
+    const seg = ['anbieter:gewerblich'];
+    if (p.pmin || p.pmax) seg.push(`preis:${p.pmin||''}:${p.pmax||''}`);
+    // Model als vrij zoekwoord: autos.model_s heeft per merk eigen waarden (gle_klasse, 5er) en
+    // wordt bij een onbekende waarde stil genegeerd - dan krijg je het hele merk terug.
+    // Zonder zoekwoord leest Kleinanzeigen het laatste padstuk (preis:...) als zoekterm; daarom valt het terug op het merk.
+    const kw = kwSlug([(p.modelDe || p.model || p.merk), v].filter(Boolean).join(' '));
+    const attrs = [`autos.marke_s:${slug(p.merk).replace(/-/g,'_')}`];
+    if (p.bjvan || p.bjtot) attrs.push(`autos.ez_i:${p.bjvan||''},${p.bjtot||''}`);
+    if (p.km) attrs.push(`autos.km_i:,${p.km}`);
+    attrs.push('autos.getriebe_s:automatik');
+    const fuels = [...new Set(c.br.map(b => b.ka).filter(Boolean))];
+    if (fuels.length === 1) attrs.push(`autos.fuel_s:${fuels[0]}`);
+    L.url = `https://www.kleinanzeigen.de/s-autos/${seg.join('/')}/${kw ? kw + '/' : ''}k0c216+` + attrs.join('+');
+    L.note = (fuels.length > 1 ? 'Meerdere brandstoffen: Kleinanzeigen filtert er maar één, daarom hier weggelaten. ' : '') + 'Model staat als zoekwoord in de titel; merk als filter.';
+    return L;
+  }
+  if (SITES[s].mode === 'paste'){
+    const kop = koppeling(s, p.merk, p.model);
+    if (kop){ L.url = kop; L.status = 'ok'; L.note = 'Geplakte zoek-URL. Filters wijzig je op de site en plak opnieuw.'; }
+    else { L.status = 'miss'; L.note = `${SITES[s].naam} kan deze app niet zelf opbouwen. Zoek op de site met je filters en plak de volledige URL bij Model-koppeling.`; }
+    return L;
+  }
+  if (s === 'gaspedaal'){
+    const kop = koppeling('gaspedaal', p.merk, p.model);
+    const path = kop || (p.model ? `${c.merkS}/${c.modelS}` : c.merkS);
+    const q = new URLSearchParams();
+    if (p.bjvan) q.set('bmin', p.bjvan); if (p.bjtot) q.set('bmax', p.bjtot);
+    if (p.km) q.set('kmax', p.km);
+    if (p.pmin) q.set('pmin', p.pmin); if (p.pmax) q.set('pmax', p.pmax);
+    q.set('srt','dt-d');
+    L.url = `https://www.gaspedaal.nl/${path}?` + q.toString();
+    L.status = 'warn';
+    L.note = 'Automaat, brandstof' + (v ? ', zoekwoord "' + v + '"' : '') + ' en opties op de site aanvinken; daarna opslaan als zoekopdracht.';
+    return L;
+  }
+  if (s === 'bilbasen'){
+    const kop = koppeling('bilbasen', p.merk, p.model);
+    const path = kop || (p.model ? `${c.merkS}/${c.modelS}` : c.merkS);
+    L.url = `https://www.bilbasen.dk/brugt/bil/${path}`;
+    L.status = 'warn'; L.note = 'Alleen merk/model in de link; alle filters op de site. Let op Deense exportprijs (registreringsafgift).';
+    return L;
+  }
+  L.status='miss'; L.note='Onbekende site'; return L;
+}
+function leerKoppeling(site, url, merk, model){
+  if (!cap(merk) || !cap(model)) return {ok:false, msg:'Vul eerst merk en model in.'};
+  let u; try { u = new URL(url.trim()); } catch(e){ return {ok:false, msg:'Geen geldige URL.'}; }
+  let key = site, val = null, m;
+  if (site === 'mobile'){
+    const ms = u.searchParams.get('ms');
+    if (ms){ const pt = ms.split(';'); if (pt[0]) val = pt[0] + ';' + (pt[1]||''); }
+    else { const mk = u.searchParams.get('makeModelVariant1.makeId'), md = u.searchParams.get('makeModelVariant1.modelId'); if (mk) val = mk + ';' + (md||''); }
+    if (!val) return {ok:false, msg:'Geen merk/model (ms=...) in deze mobile.de-URL. Kies merk én model op mobile.de en kopieer daarna de adresbalk.'};
+    if (!val.split(';')[1]) return {ok:false, msg:'Alleen het merk staat in de URL; kies ook het model.'};
+    S.instellingen.makeIds[cap(merk)] = +val.split(';')[0];
+  } else if (site.startsWith('as24')){
+    key = 'as24'; m = u.pathname.match(/\/lst\/([^\/?#]+)\/([^\/?#]+)/);
+    if (!m) return {ok:false, msg:'Geen /lst/merk/model in deze URL.'}; val = `${m[1]}/${m[2]}`;
+  } else if (site === 'marktplaats'){
+    m = u.pathname.match(/\/l\/auto-s\/([^\/]+)\/f\/([^\/]+)\/(\d+)\//);
+    if (!m) return {ok:false, msg:'Klik op Marktplaats eerst het model aan; de URL bevat dan /f/model/nummer/.'}; val = `${m[2]}/${m[3]}`;
+  } else if (site === 'gaspedaal'){
+    m = u.pathname.match(/^\/([^\/?#]+)\/([^\/?#]+)/);
+    if (!m) return {ok:false, msg:'Geen /merk/model in deze Gaspedaal-URL.'}; val = `${m[1]}/${m[2]}`;
+  } else if (site === 'bilbasen'){
+    m = u.pathname.match(/\/brugt\/bil\/([^\/?#]+)\/([^\/?#]+)/);
+    if (!m) return {ok:false, msg:'Geen /brugt/bil/merk/model in deze URL.'}; val = `${m[1]}/${m[2]}`;
+  } else if (site === 'twodehands' || site === 'twoememain'){
+    key = 'marktplaats'; m = u.pathname.match(/\/l\/(?:auto-s|autos)\/([^\/]+)\/f\/([^\/]+)\/(\d+)\//);
+    if (!m) return {ok:false, msg:`Klik op ${SITES[site].naam} eerst het model aan; de URL bevat dan /f/model/nummer/.`}; val = `${m[2]}/${m[3]}`;
+  } else if (SITES[site] && SITES[site].mode === 'paste'){
+    val = u.href;
+  } else if (site === 'kleinanzeigen'){
+    return {ok:false, msg:'Kleinanzeigen wordt automatisch opgebouwd; koppeling niet nodig.'};
+  }
+  S.instellingen.koppelingen[`${key}|${slug(merk)}|${slug(model)}`] = val;
+  bewaar();
+  return {ok:true, msg:`Gekoppeld: ${SITES[site].naam} ${merk} ${model} = ${val}`};
+}
+
+// ---------- UI: chips ----------
+function renderChips(el, items, gekozen, multi=true){
+  el.innerHTML = '';
+  items.forEach(it => {
+    const lab = document.createElement('label'); lab.className = 'chip' + (gekozen.includes(it.k) ? ' on':'');
+    const inp = document.createElement('input'); inp.type = multi ? 'checkbox' : 'radio'; inp.value = it.k; inp.checked = gekozen.includes(it.k);
+    inp.addEventListener('change', () => { lab.classList.toggle('on', inp.checked); el.dispatchEvent(new Event('chipchange')); });
+    lab.appendChild(inp); lab.appendChild(document.createTextNode(it.l));
+    el.appendChild(lab);
+  });
+}
+const chipValues = (el) => $$('input:checked', el).map(i => i.value);
+function $$q(sel, root){ return Array.from(root.querySelectorAll(sel)); }
+
+
+// ---------- Geschiedenis per merk (zoekwoorden, uitsluitingen, opties) ----------
+const histKey = (merk) => slug(merk || '');
+function histVoor(merk){
+  const g = S.geschiedenis[histKey(merk)] || {};
+  return {uitv: g.uitv || [], niet: g.niet || [], opties: g.opties || []};
+}
+function histBewaar(p){
+  const k = histKey(p.merk); if (!k) return;
+  const g = S.geschiedenis[k] || {uitv:[], niet:[], opties:[]};
+  const voeg = (lijst, waarden) => {
+    waarden.filter(Boolean).forEach(w => {
+      const i = lijst.findIndex(x => x.toLowerCase() === String(w).toLowerCase());
+      if (i >= 0) lijst.splice(i, 1);
+      lijst.unshift(w);
+    });
+    return lijst.slice(0, 20);
+  };
+  g.uitv = voeg(g.uitv, splitList(p.uitv).concat(splitList(p.uitvDe)));
+  g.niet = voeg(g.niet, splitList(p.uitvNiet));
+  g.opties = voeg(g.opties, p.opties || []);
+  S.geschiedenis[k] = g; bewaar();
+}
+function toggleTerm(inputId, term){
+  const el = $('#' + inputId);
+  const lijst = splitList(el.value);
+  const i = lijst.findIndex(x => x.toLowerCase() === term.toLowerCase());
+  if (i >= 0) lijst.splice(i, 1); else lijst.push(term);
+  el.value = lijst.join(', ');
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+  renderHist();
+}
+function renderHist(){
+  const merk = cap($('#p_merk').value);
+  const g = histVoor(merk);
+  const gekozenU = splitList($('#p_uitv').value).map(x=>x.toLowerCase());
+  const gekozenN = splitList($('#p_uitv_niet').value).map(x=>x.toLowerCase());
+  const gekozenO = chipValues($('#p_opties'));
+  const bouw = (el, titel, termen, actief, klik, leegtekst) => {
+    el.innerHTML = '';
+    if (!merk){ el.innerHTML = `<span class="help">${leegtekst}</span>`; return; }
+    if (!termen.length){ el.innerHTML = `<span class="help">Nog niets bewaard voor ${esc(merk)}; wat je hier invult onthoudt de app bij het bewaren.</span>`; return; }
+    const b = document.createElement('b'); b.textContent = titel; el.appendChild(b);
+    termen.forEach(t => {
+      const s = document.createElement('span');
+      s.className = 'h' + (actief(t) ? ' on' : '');
+      s.textContent = typeof t === 'string' ? t : t;
+      s.title = 'Klik om toe te voegen of te verwijderen';
+      s.addEventListener('click', () => klik(t));
+      el.appendChild(s);
+    });
+    const x = document.createElement('button'); x.className = 'x'; x.type = 'button'; x.textContent = 'wissen';
+    x.addEventListener('click', () => { const k = histKey(merk); if (S.geschiedenis[k]) { if (el.id === 'hist_uitv') S.geschiedenis[k].uitv = []; if (el.id === 'hist_niet') S.geschiedenis[k].niet = []; if (el.id === 'hist_opties') S.geschiedenis[k].opties = []; bewaar(); renderHist(); } });
+    el.appendChild(x);
+  };
+  bouw($('#hist_uitv'), `Eerder bij ${merk || ''}:`, g.uitv, t => gekozenU.includes(t.toLowerCase()), t => toggleTerm('p_uitv', t), 'Vul een merk in; de app onthoudt per merk welke uitvoeringen je gebruikt.');
+  bouw($('#hist_niet'), `Eerder uitgesloten:`, g.niet, t => gekozenN.includes(t.toLowerCase()), t => toggleTerm('p_uitv_niet', t), 'Vul een merk in.');
+  const optLabel = (k) => (OPTIES.find(o => o.k === k) || {l:k}).l;
+  bouw($('#hist_opties'), `Eerder gebruikt:`, g.opties.map(optLabel), l => gekozenO.includes((OPTIES.find(o=>o.l===l)||{}).k), l => {
+    const k = (OPTIES.find(o => o.l === l) || {}).k; if (!k) return;
+    const inp = $(`#p_opties input[value="${k}"]`); if (!inp) return;
+    inp.checked = !inp.checked; inp.dispatchEvent(new Event('change', {bubbles:true}));
+  }, 'Vul een merk in.');
+  $('#uitvlijst').innerHTML = g.uitv.map(t => `<option value="${esc(t)}">`).join('');
+  $('#nietlijst').innerHTML = g.niet.map(t => `<option value="${esc(t)}">`).join('');
+}
+
+// ---------- Profielen ----------
+let profielId = null;
+function leesProfielForm(){
+  const sites = {}; chipValues($('#p_sites')).forEach(k => sites[k] = true);
+  for (const k in SITES) if (!sites[k]) sites[k] = false;
+  return {
+    id: profielId, naam: cap($('#p_naam').value), merk: cap($('#p_merk').value), model: cap($('#p_model').value),
+    bjvan: +$('#p_bjvan').value || null, bjtot: +$('#p_bjtot').value || null, km: +$('#p_km').value || null, kw: +$('#p_kw').value || null,
+    pmin: +$('#p_pmin').value || null, pmax: +$('#p_pmax').value || null,
+    carr: chipValues($('#p_carr')), brandstof: chipValues($('#p_brandstof')), opties: chipValues($('#p_opties')),
+    uitv: cap($('#p_uitv').value), uitvDe: cap($('#p_uitv_de').value), modelDe: cap($('#p_model_de').value), uitvNiet: cap($('#p_uitv_niet').value), sites,
+  };
+}
+function vulProfielForm(p){
+  profielId = p ? p.id : null;
+  const std = {}; for (const k in SITES) std[k] = S.instellingen.sites[k];
+  p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
+  $('#profTitle').textContent = p.id ? 'Zoekprofiel bewerken' : 'Nieuw zoekprofiel';
+  $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
+  $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_km').value = p.km||''; $('#p_kw').value = p.kw||'';
+  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||'';
+  $('#p_uitv').value = p.uitv||''; $('#p_uitv_de').value = p.uitvDe||''; $('#p_uitv_niet').value = p.uitvNiet||''; $('#p_model_de').value = p.modelDe||'';
+  renderChips($('#p_carr'), CARROSSERIE, p.carr||[]);
+  renderChips($('#p_brandstof'), BRANDSTOF, p.brandstof||[]);
+  renderChips($('#p_opties'), OPTIES, p.opties||[]);
+  renderChips($('#p_sites'), Object.keys(SITES).map(k=>({k, l:SITES[k].naam})), Object.keys(p.sites||{}).filter(k=>p.sites[k]));
+  renderLinks(); renderProfielLijst(); renderResultaten(); renderHist();
+}
+function autoNaam(p){ return [p.merk, p.model, p.uitv, p.bjvan ? p.bjvan + '+' : ''].filter(Boolean).join(' ').trim() || 'Zoekprofiel'; }
+function renderProfielLijst(){
+  const el = $('#profLijst'); el.innerHTML = '';
+  if (!S.profielen.length){ el.innerHTML = '<div class="empty">Nog geen profielen. Vul het formulier in en bewaar.</div>'; return; }
+  S.profielen.forEach(p => {
+    const d = document.createElement('div'); d.className = 'prof' + (p.id === profielId ? ' on' : '');
+    const n = bouwLinks(p).length;
+    d.innerHTML = `<div><b>${esc(p.naam || autoNaam(p))}</b><small>${esc([p.merk,p.model].join(' '))}${p.bjvan? ' · vanaf '+p.bjvan:''}${p.km? ' · max '+num(p.km)+' km':''}${p.pmax? ' · tot '+eur(p.pmax):''} · ${n} link${n===1?'':'s'}</small></div><button class="btn sec sm">Openen</button>`;
+    d.addEventListener('click', () => { vulProfielForm(p); window.scrollTo({top:0,behavior:'smooth'}); });
+    el.appendChild(d);
+  });
+}
+function renderLinks(){
+  const p = leesProfielForm();
+  const el = $('#linkLijst'); el.innerHTML = '';
+  if (!p.merk){ el.innerHTML = '<div class="empty">Vul minimaal een merk in.</div>'; $('#btnOpenAlle').disabled = true; return; }
+  const links = bouwLinks(p);
+  if (!links.length){ el.innerHTML = '<div class="empty">Geen sites aangevinkt.</div>'; $('#btnOpenAlle').disabled = true; return; }
+  $('#btnOpenAlle').disabled = false;
+  $('#btnOpenAlle').textContent = `Open alle (${links.filter(l=>l.url).length})`;
+  links.forEach(l => {
+    const d = document.createElement('div'); d.className = 'lnk ' + l.status;
+    d.innerHTML = `<div class="site">${esc(l.naam)}<small>${esc(SITES[l.site].land)}${l.variant ? ' · ' + esc(l.variant) : ''}</small></div>
+      <div class="note">${esc(l.note || SITES[l.site].info)}</div>
+      <div class="row">${l.url ? `<a class="btn sm" href="${l.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(l.url)}">Kopieer</button>` : ''}</div>`;
+    el.appendChild(d);
+  });
+  $$('button[data-copy]', el).forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(decodeURIComponent(b.dataset.copy)); toast('Link gekopieerd'); }));
+  window._links = links;
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- Kandidaten ----------
+let kandId = null;
+function leesKandForm(){
+  return {
+    id: kandId, oms: cap($('#k_oms').value), url: cap($('#k_url').value), land: $('#k_land').value, profiel: $('#k_profiel').value,
+    prijs: +$('#k_prijs').value || null, btw: $('#k_btw').value, km: +$('#k_km').value || null, det: $('#k_det').value || '',
+    brandstof: $('#k_brandstof').value, phev: $('#k_phev').value === '1', co2w: $('#k_co2w').value === '' ? null : +$('#k_co2w').value,
+    co2n: $('#k_co2n').value === '' ? null : +$('#k_co2n').value, keuring: $('#k_keuring').value || '', status: $('#k_status').value, notitie: cap($('#k_notitie').value),
+  };
+}
+function vulKandForm(k){
+  kandId = k ? k.id : null;
+  k = k || {oms:'',url:'',land:'DE',profiel:'',prijs:null,btw:'btw',km:null,det:'',brandstof:'benzine',phev:false,co2w:null,co2n:null,keuring:'',status:'nieuw',notitie:''};
+  $('#kandTitle').textContent = k.id ? 'Kandidaat bewerken' : 'Kandidaat / BPM-indicatie';
+  $('#k_oms').value = k.oms||''; $('#k_url').value = k.url||''; $('#k_land').value = k.land||'DE';
+  vulProfielSelect(); $('#k_profiel').value = k.profiel||'';
+  $('#k_prijs').value = k.prijs||''; $('#k_btw').value = k.btw||'btw'; $('#k_km').value = k.km||''; $('#k_det').value = k.det||'';
+  $('#k_brandstof').value = k.brandstof||'benzine'; $('#k_phev').value = k.phev ? '1':'0';
+  $('#k_co2w').value = k.co2w==null?'':k.co2w; $('#k_co2n').value = k.co2n==null?'':k.co2n;
+  $('#k_keuring').value = k.keuring || isoPlus(new Date(), +S.instellingen.keuringDagen||14);
+  $('#k_status').value = k.status||'nieuw'; $('#k_notitie').value = k.notitie||'';
+  renderBpm(); renderKandTabel();
+}
+function vulProfielSelect(){
+  const sel = $('#k_profiel'); const cur = sel.value; sel.innerHTML = '<option value="">(geen)</option>';
+  S.profielen.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.naam || autoNaam(p); sel.appendChild(o); });
+  sel.value = cur;
+}
+function bpmVoor(k){
+  return berekenBpm({brandstof:k.brandstof, phev:k.phev, co2w:k.co2w, co2n:k.co2n, det:k.det ? new Date(k.det) : null, keuring:k.keuring ? new Date(k.keuring) : new Date()});
+}
+function renderBpm(){
+  const k = leesKandForm();
+  const el = $('#bpmOut');
+  if (k.land === 'NL' && !k.det){ }
+  const r = bpmVoor(k);
+  const kp = kostprijs(k, r);
+  let h = '';
+  if (r.fout){
+    h += `<div class="muted">${esc(r.fout)}</div>`;
+  } else {
+    const t = r.keuze.tabel;
+    const per = `${t.van.slice(0,7).split('-').reverse().join('-')} t/m ${t.tot.slice(0,7).split('-').reverse().join('-')}`;
+    const korting = r.bruto - r.netto;
+    const pctBet = r.bruto ? Math.round(r.netto / r.bruto * 100) : 0;
+    h += `<div class="row between"><div><div class="muted" style="font-size:13px">Te betalen BPM (indicatie${k.land==='NL' ? ', niet van toepassing bij NL-kenteken' : ''})</div><div class="big">${eur(r.netto)}</div></div>
+      <div style="text-align:right;font-size:13px" class="muted">tarief ${per}<br>${esc(t.methode)} · ${esc(r.keuze.label)} · CO2 ${r.keuze.co2} g/km</div></div>
+      <div class="bar"><div class="b3" style="width:${pctBet}%" title="te betalen"></div><div class="b1" style="width:${100-pctBet}%;background:#D9D2C8" title="afschrijving"></div></div>
+      <div class="legend"><span><i style="background:var(--ink)"></i>te betalen ${pctBet}%</span><span><i style="background:#D9D2C8"></i>afschrijving ${r.afs.pct}% (${r.afs.months} mnd${r.afs.restDays? ' + ' + r.afs.restDays + ' dg':''})</span></div>
+      <dl><dt>Bruto BPM (CO2-tabel)</dt><dd>${eur(r.basis)}</dd>
+      ${r.toeslag ? `<dt>Dieseltoeslag (${r.keuze.co2} − ${t.diesel.grens} g × ${eur2(t.diesel.tarief)})</dt><dd>${eur(r.toeslag)}</dd>` : ''}
+      <dt>Bruto totaal</dt><dd>${eur(r.bruto)}</dd>
+      <dt>Afschrijvingskorting forfaitair</dt><dd>− ${eur(korting)}</dd>
+      <dt><b>Te betalen</b></dt><dd><b>${eur(r.netto)}</b></dd></dl>`;
+    if (r.alle.length > 1){
+      h += `<details style="margin-top:8px;font-size:13px"><summary>Vergeleken tarieven (${r.alle.length})</summary><div class="muted" style="margin-top:6px">${r.alle.map(o=>`${o.tabel.van.slice(0,4)}${o.tabel.van.endsWith('07-01')?'-H2':''}${o.tabel.tot.endsWith('06-30')?'-H1':''} ${o.tabel.methode}: bruto ${eur(Math.round(o.bruto))}`).join(' · ')}</div></details>`;
+    }
+  }
+  // kostprijs
+  const btwp = Math.round((BTW_PCT[k.land]||0.21)*100);
+  h += `<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+    <dl style="margin-top:0"><dt>Vraagprijs (${esc(k.land)}${k.btw==='btw' ? ', BTW-auto' : ', marge'})</dt><dd>${eur(k.prijs)}</dd>
+    <dt>Inkoop excl. BTW${k.btw==='btw' ? ' (÷ 1,' + String(btwp).padStart(2,'0') + ')' : ' (marge: geen aftrek)'}</dt><dd>${eur(k.prijs ? kp.netto : null)}</dd>
+    <dt>Transport ${esc(k.land)}</dt><dd>${eur(kp.transport)}</dd>
+    <dt>Import, RDW, kenteken</dt><dd>${eur(kp.imp)}</dd>
+    <dt>BPM</dt><dd>${kp.bpm==null ? '–' : eur(kp.bpm)}</dd>
+    <dt><b>Kostprijs excl. BTW</b></dt><dd><b>${(k.prijs && kp.totaal!=null) ? eur(kp.totaal) : '–'}</b></dd></dl>`;
+  if (k.btw === 'btw' && k.land !== 'NL') h += `<div class="help" style="margin-top:8px">Koop je netto (intracommunautaire levering, 0% buitenlandse BTW), vul dan de netto prijs in en zet BTW-status op marge: dan wordt niets afgetrokken.</div>`;
+  el.innerHTML = h;
+}
+function renderKandTabel(){
+  const tb = $('#kandTabel tbody'); tb.innerHTML = '';
+  const f = $('#filtStatus').value;
+  const rows = S.kandidaten.filter(k => !f || k.status === f).slice().sort((a,b)=> (b.created||0)-(a.created||0));
+  $('#kandLeeg').style.display = rows.length ? 'none' : '';
+  rows.forEach(k => {
+    const r = bpmVoor(k); const kp = kostprijs(k, r);
+    const tr = document.createElement('tr'); tr.className = 'clk' + (k.id===kandId ? ' on':'');
+    tr.innerHTML = `<td><b>${esc(k.oms||'(zonder omschrijving)')}</b><br><small class="muted">${k.km? num(k.km)+' km · ':''}${k.det? 'DET '+k.det.split('-').reverse().join('-')+' · ':''}${k.co2w? k.co2w+' g ·':''} <span class="tag ${k.btw}">${k.btw==='btw'?'BTW':'marge'}</span>${k.url? ` · <a href="${esc(k.url)}" target="_blank" rel="noopener">advertentie</a>`:''}</small></td>
+      <td>${esc(k.land)}</td><td class="r">${eur(k.prijs)}</td><td class="r">${k.land==='NL' ? '0' : (r.fout ? '–' : eur(r.netto))}</td><td class="r">${(k.prijs && kp.totaal!=null) ? eur(kp.totaal) : '–'}</td><td><span class="tag ${esc(k.status)}">${esc(k.status)}</span></td>`;
+    tr.addEventListener('click', (e) => { if (e.target.tagName === 'A') return; vulKandForm(k); window.scrollTo({top:0,behavior:'smooth'}); });
+    tb.appendChild(tr);
+  });
+}
+
+// ---------- Instellingen ----------
+function renderInstellingen(){
+  const i = S.instellingen;
+  ['DE','BE','DK','NL'].forEach(l => $('#s_tr_'+l).value = i.transport[l] ?? '');
+  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen;
+  renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:SITES[k].naam})), Object.keys(i.sites).filter(k=>i.sites[k]));
+  // make ids
+  const tb = $('#makeIdTabel tbody'); tb.innerHTML = '';
+  Object.keys(i.makeIds).sort((a,b)=>a.localeCompare(b)).forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${esc(m)}</td><td>${esc(i.makeIds[m])}</td><td class="r"><button class="btn sec sm" data-del="${esc(m)}">Verwijder</button></td>`;
+    tb.appendChild(tr);
+  });
+  $$('button[data-del]', tb).forEach(b => b.addEventListener('click', () => { delete i.makeIds[b.dataset.del]; bewaar(); renderInstellingen(); vulMerkenlijst(); }));
+  // koppelingen
+  const kl = $('#koppelLijst'); kl.innerHTML = '';
+  const keys = Object.keys(i.koppelingen);
+  if (!keys.length) kl.innerHTML = '<div class="empty">Nog geen koppelingen. Plak een model-URL bij een zoekprofiel.</div>';
+  keys.forEach(k => {
+    const [site, merk, model] = k.split('|');
+    const d = document.createElement('div'); d.className = 'lnk ok';
+    d.innerHTML = `<div class="site">${esc(SITES[site] ? SITES[site].naam : site)}<small>${esc(merk)} ${esc(model)}</small></div><div class="note"><code>${esc(i.koppelingen[k])}</code></div><div><button class="btn sec sm" data-kdel="${esc(k)}">Verwijder</button></div>`;
+    kl.appendChild(d);
+  });
+  $$('button[data-kdel]', kl).forEach(b => b.addEventListener('click', () => { delete i.koppelingen[b.dataset.kdel]; bewaar(); renderInstellingen(); renderLinks(); }));
+  // tabellen
+  $('#tabellen').innerHTML = BPM_TABELLEN.map(t => `<div style="margin-bottom:8px"><b>${t.van} t/m ${t.tot} (${t.methode})</b><br>${t.rows.map(r=>`vanaf ${r[0]} g: ${eur(r[1])} + ${eur(r[2])}/g`).join(' · ')}<br>diesel: ${eur2(t.diesel.tarief)}/g boven ${t.diesel.grens} g${t.phev? ' · PHEV-tabel: ' + t.phev.map(r=>`vanaf ${r[0]} g: ${eur(r[1])} + ${eur(r[2])}/g`).join(', ') : ''}${t.evVrij?' · EV vrijgesteld':' · EV: vaste voet'}</div>`).join('')
+    + `<div class="muted">Afschrijving forfaitair: ${AFSCHRIJVING.map(a=>`${a[0]} mnd: ${a[1]}% (+${a[2]}%/mnd)`).join(' · ')}</div>`;
+  // bookmarklet
+  const app = location.href.split('#')[0].split('?')[0];
+  const code = `(function(){var b=document.body.innerText,t=document.title;function m(r,i){var x=b.match(r);return x?x[i]:''}var pr=m(/€\\s?([0-9][0-9\\.\\s]{3,8})(?:,|\\b)/,1).replace(/[^0-9]/g,'');var co=m(/(\\d{1,3})\\s?g\\/km/i,1);var ez=m(/\\b(0[1-9]|1[0-2])\\/(20\\d\\d)\\b/,0);var km=m(/([0-9]{1,3}[\\.\\s]?[0-9]{3})\\s?km\\b/i,1).replace(/[^0-9]/g,'');var fu=/diesel/i.test(t)?'diesel':/hybrid/i.test(t)?'hybride':/benzin|petrol|essence/i.test(t)?'benzine':'';var u='${app}?add=1&title='+encodeURIComponent(t.slice(0,120))+'&price='+pr+'&co2='+co+'&ez='+encodeURIComponent(ez)+'&km='+km+'&fuel='+fu+'&src='+encodeURIComponent(location.href);window.open(u,'_blank');})();`;
+  $('#bookmarklet').setAttribute('href', 'javascript:' + code);
+}
+function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.keys(S.instellingen.makeIds).sort().map(m=>`<option value="${esc(m)}">`).join(''); }
+
+
+// ---------- Resultaten (results.json van de ophaler) ----------
+let RES = null;
+function download(naam, tekst){ const blob = new Blob([tekst], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = naam; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000); }
+function exportProfiles(){
+  const out = {generated:new Date().toISOString(), app:APP_VERSIE, profiles: S.profielen.map(p => ({
+    id:p.id, naam:p.naam||autoNaam(p), exclude: splitList(p.uitvNiet),
+    links: bouwLinks(p).filter(l=>l.url).map(l => ({site:l.site, naam:SITES[l.site].naam, land:SITES[l.site].land, poll:!!SITES[l.site].poll, variant:l.variant, url:l.url, apiUrl:l.apiUrl||null, resolve:l.resolve||null, merk:p.merk, model:p.model,
+      criteria:{bjvan:p.bjvan, bjtot:p.bjtot, km:p.km, pmin:p.pmin, pmax:p.pmax}}))
+  }))};
+  download('profiles.json', JSON.stringify(out, null, 2));
+  toast(`profiles.json met ${out.profiles.length} profiel${out.profiles.length===1?'':'en'} gedownload`);
+}
+async function laadResultaten(stil){
+  const eigen = (S.instellingen.resultsUrl || '').trim();
+  // De app kan in de hoofdmap staan of in een submap; probeer de gangbare plekken.
+  const kandidaten = eigen ? [eigen] : ['results.json', 'inkoop/results.json', '../results.json'];
+  if (!stil) $('#resMeta').textContent = 'Laden\u2026';
+  const mislukt = [];
+  for (const url of kandidaten){
+    try {
+      const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {cache:'no-store'});
+      if (!r.ok){ mislukt.push(`${url} (HTTP ${r.status})`); continue; }
+      RES = await r.json();
+      if (!eigen && url !== 'results.json'){ S.instellingen.resultsUrl = url; bewaar(); $('#s_resurl').value = url; }
+      renderResultaten();
+      $('#s_lastrun').textContent = RES && RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend';
+      return;
+    } catch(e){ mislukt.push(`${url} (${(e.message||e).toString().slice(0,40)})`); }
+  }
+  RES = {leeg: true, paden: mislukt};
+  renderResultaten();
+}
+function parseEz(ez){ if (!ez) return null; const m = String(ez).match(/^(\d{4})(?:-(\d{1,2}))?/); if (!m) return null; return new Date(+m[1], m[2] ? +m[2]-1 : 6, 1); }
+function bpmVoorItem(it, land){
+  if (land === 'NL' || !it.co2 || !it.ez || !it.fuel || it.fuel === 'elektrisch' && false) return null;
+  const det = parseEz(it.ez); if (!det) return null;
+  const phev = (it.fuel === 'hybride' || it.fuel === 'hybride_diesel') && it.co2 <= 60;
+  const keuring = new Date(); keuring.setDate(keuring.getDate() + (+S.instellingen.keuringDagen||14));
+  const r = berekenBpm({brandstof:it.fuel, phev, co2w:+it.co2, co2n:null, det, keuring});
+  return r.fout ? null : r;
+}
+function renderResultaten(){
+  const el = $('#resLijst'); el.innerHTML = '';
+  const meta = $('#resMeta');
+  if (!RES){ meta.textContent = 'Nog niet geladen.'; return; }
+  if (RES.leeg){
+    const lokaal = location.protocol === 'file:';
+    meta.innerHTML = lokaal
+      ? 'Deze app draait vanaf je schijf; browsers mogen dan geen results.json inlezen. Open de app via GitHub Pages, of gebruik de knop "Laad results.json van schijf".'
+      : 'Nog geen resultatenbestand gevonden. Dat is normaal zolang de ophaler niet heeft gedraaid: exporteer eerst profiles.json, zet dat in de repo en start <b>Actions &gt; Inkoop-radar &gt; Run workflow</b>. Daarna verschijnen de resultaten hier vanzelf.';
+    el.innerHTML = `<div class="help" style="margin-top:8px">Gezocht op: ${esc((RES.paden||[]).join(', ') || 'results.json')}. Staat het bestand ergens anders, vul dan de volledige URL in bij Instellingen.</div>`;
+    return;
+  }
+  if (!profielId){ meta.textContent = 'Bewaar eerst een profiel en exporteer profiles.json; resultaten verschijnen per opgeslagen profiel.'; return; }
+  const pr = RES.profiles && RES.profiles[profielId];
+  if (!pr){ meta.textContent = 'Geen resultaten voor dit profiel. Exporteer profiles.json opnieuw en laat de ophaler draaien.'; return; }
+  const gezien = S.gezien[profielId] ? new Date(S.gezien[profielId]) : null;
+  const prof = S.profielen.find(x => x.id === profielId) || {};
+  const excl = splitList(prof.uitvNiet).map(x => x.toLowerCase());
+  const uitgesloten = (it) => excl.some(t => (it.title||'').toLowerCase().includes(t));
+  let totaal = 0, nieuw = 0, verborgen = 0;
+  const sites = Object.keys(pr.sites || {});
+  sites.forEach(sk => {
+    const s = pr.sites[sk]; const land = s.land || (SITES[sk] ? SITES[sk].land : '');
+    const alle = (s.items || []);
+    const items = alle.filter(it => !uitgesloten(it)).sort((a,b) => (b.first_seen||'').localeCompare(a.first_seen||''));
+    verborgen += alle.length - items.length;
+    totaal += items.length;
+    const box = document.createElement('div'); box.className = 'mt';
+    const nNew = items.filter(it => gezien ? new Date(it.first_seen) > gezien : true).length; nieuw += nNew;
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
+      (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
+      (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
+    const tb = document.createElement('table'); tb.className = 't'; tb.style.marginTop = '6px';
+    tb.innerHTML = '<tbody></tbody>';
+    items.slice(0, 40).forEach(it => {
+      const isNew = gezien ? new Date(it.first_seen) > gezien : true;
+      const bpm = bpmVoorItem(it, land);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a><br><small class="muted">${[it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : ''].filter(Boolean).join(' · ')}</small></td>
+        <td class="r">${it.price ? eur(it.price) : '–'}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</td>`;
+      tb.querySelector('tbody').appendChild(tr);
+    });
+    if (!items.length && !s.error) tb.innerHTML = '<tbody><tr><td class="muted">Geen resultaten.</td></tr></tbody>';
+    box.appendChild(tb); el.appendChild(box);
+  });
+  meta.textContent = `${sites.length} site${sites.length===1?'':'s'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
+}
+
+// ---------- Inkomende kandidaat via bladwijzer ----------
+function verwerkInkomend(){
+  const q = new URLSearchParams(location.search);
+  if (q.get('add') !== '1') return;
+  vulKandForm(null);
+  $('#k_oms').value = (q.get('title')||'').replace(/\s*[|·-]\s*(mobile\.de|AutoScout24|Marktplaats).*$/i,'').trim();
+  $('#k_url').value = q.get('src')||'';
+  if (q.get('price')) $('#k_prijs').value = q.get('price');
+  if (q.get('km')) $('#k_km').value = q.get('km');
+  if (q.get('co2')) $('#k_co2w').value = q.get('co2');
+  const ez = q.get('ez'); if (ez && /^\d{2}\/\d{4}$/.test(ez)) $('#k_det').value = ez.split('/')[1] + '-' + ez.split('/')[0] + '-01';
+  if (q.get('fuel')) $('#k_brandstof').value = q.get('fuel');
+  const src = q.get('src')||''; $('#k_land').value = /autoscout24\.nl|marktplaats|gaspedaal/i.test(src) ? 'NL' : /autoscout24\.be/i.test(src) ? 'BE' : /bilbasen/i.test(src) ? 'DK' : 'DE';
+  toonTab('kandidaten'); renderBpm();
+  history.replaceState(null, '', location.pathname);
+  toast('Gegevens uit advertentie overgenomen; controleer en bewaar.');
+}
+
+// ---------- Tabs & events ----------
+function toonTab(n){ $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === n)); $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-'+n)); }
+$$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.dataset.tab)));
+
+// profiel events
+['p_naam','p_merk','p_model','p_bjvan','p_bjtot','p_km','p_kw','p_pmin','p_pmax','p_uitv','p_uitv_de','p_uitv_niet','p_model_de'].forEach(id => $('#'+id).addEventListener('input', renderLinks));
+['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
+['p_merk','p_uitv','p_uitv_niet'].forEach(id => $('#'+id).addEventListener('input', renderHist));
+$('#p_opties').addEventListener('chipchange', renderHist);
+$('#btnNieuwProfiel').addEventListener('click', () => vulProfielForm(null));
+$('#btnBewaarProfiel').addEventListener('click', () => {
+  const p = leesProfielForm();
+  if (!p.merk){ toast('Vul minimaal een merk in.'); return; }
+  if (!p.naam) p.naam = autoNaam(p);
+  if (p.id){ const i = S.profielen.findIndex(x=>x.id===p.id); S.profielen[i] = Object.assign(S.profielen[i], p); }
+  else { p.id = uid(); p.created = Date.now(); S.profielen.push(p); profielId = p.id; }
+  histBewaar(p);
+  bewaar(); $('#p_naam').value = p.naam; $('#profTitle').textContent = 'Zoekprofiel bewerken'; renderProfielLijst(); vulProfielSelect(); renderHist(); toast('Profiel bewaard');
+});
+$('#btnDupliceer').addEventListener('click', () => { const p = leesProfielForm(); profielId = null; $('#p_naam').value = (p.naam || autoNaam(p)) + ' (kopie)'; $('#profTitle').textContent = 'Nieuw zoekprofiel'; renderProfielLijst(); toast('Gekopieerd, nog niet bewaard'); });
+$('#btnVerwijderProfiel').addEventListener('click', () => { if (!profielId) { vulProfielForm(null); return; } if (!confirm('Dit profiel verwijderen?')) return; S.profielen = S.profielen.filter(x=>x.id!==profielId); bewaar(); vulProfielForm(null); vulProfielSelect(); toast('Profiel verwijderd'); });
+$('#btnOpenAlle').addEventListener('click', () => {
+  const ls = (window._links||[]).filter(l=>l.url); let n = 0;
+  ls.forEach((l,i) => { const w = window.open(l.url, '_blank'); if (w) n++; });
+  if (n < ls.length) toast(`${n} van ${ls.length} geopend; sta pop-ups toe voor deze site om alles te openen.`);
+});
+(function(){ const sel = $('#leerSite'); Object.keys(SITES).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = SITES[k].naam; sel.appendChild(o); }); })();
+$('#btnLeer').addEventListener('click', () => {
+  const r = leerKoppeling($('#leerSite').value, $('#leerUrl').value, $('#p_merk').value, $('#p_model').value);
+  $('#leerMsg').textContent = r.msg; $('#leerMsg').style.color = r.ok ? 'var(--ok)' : 'var(--bad)';
+  if (r.ok){ $('#leerUrl').value = ''; renderLinks(); renderInstellingen(); vulMerkenlijst(); }
+});
+
+// kandidaat events
+['k_oms','k_url','k_prijs','k_km','k_det','k_co2w','k_co2n','k_keuring','k_notitie'].forEach(id => $('#'+id).addEventListener('input', renderBpm));
+['k_land','k_btw','k_brandstof','k_phev','k_status','k_profiel'].forEach(id => $('#'+id).addEventListener('change', renderBpm));
+$('#btnNieuwKand').addEventListener('click', () => vulKandForm(null));
+$('#btnBewaarKand').addEventListener('click', () => {
+  const k = leesKandForm();
+  if (!k.oms){ toast('Vul een omschrijving in.'); return; }
+  if (k.id){ const i = S.kandidaten.findIndex(x=>x.id===k.id); S.kandidaten[i] = Object.assign(S.kandidaten[i], k); }
+  else { k.id = uid(); k.created = Date.now(); S.kandidaten.push(k); kandId = k.id; }
+  bewaar(); $('#kandTitle').textContent = 'Kandidaat bewerken'; renderKandTabel(); toast('Kandidaat bewaard');
+});
+$('#btnVerwijderKand').addEventListener('click', () => { if (!kandId){ vulKandForm(null); return; } if (!confirm('Deze kandidaat verwijderen?')) return; S.kandidaten = S.kandidaten.filter(x=>x.id!==kandId); bewaar(); vulKandForm(null); toast('Kandidaat verwijderd'); });
+$('#filtStatus').addEventListener('change', renderKandTabel);
+
+// instellingen events
+$('#btnBewaarInst').addEventListener('click', () => {
+  const i = S.instellingen;
+  ['DE','BE','DK','NL'].forEach(l => i.transport[l] = +$('#s_tr_'+l).value || 0);
+  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14;
+  bewaar(); renderBpm(); renderKandTabel(); toast('Instellingen bewaard');
+});
+$('#btnMakeIdAdd').addEventListener('click', () => { const n = cap($('#mk_naam').value), id = +$('#mk_id').value; if (!n || !id){ toast('Merk en ID invullen'); return; } S.instellingen.makeIds[n] = id; bewaar(); $('#mk_naam').value=''; $('#mk_id').value=''; renderInstellingen(); vulMerkenlijst(); renderLinks(); });
+$('#btnExport').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'KAAP_inkoop.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+});
+$('#fileImport').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { try { const d = JSON.parse(rd.result); if (!d || !Array.isArray(d.profielen)) throw new Error('x'); localStorage.setItem(STORE_KEY, JSON.stringify(d)); S = laad(); init(); toast('Geïmporteerd'); } catch(err){ toast('Ongeldig bestand'); } };
+  rd.readAsText(f); e.target.value = '';
+});
+$('#btnReset').addEventListener('click', () => { if (!confirm('Alle profielen, kandidaten en instellingen wissen?')) return; localStorage.removeItem(STORE_KEY); S = laad(); init(); toast('Gewist'); });
+
+
+// resultaten events
+$('#btnResLaad').addEventListener('click', () => laadResultaten());
+$('#btnGezien').addEventListener('click', () => { if (!profielId){ toast('Bewaar eerst het profiel.'); return; } S.gezien[profielId] = new Date().toISOString(); bewaar(); renderResultaten(); toast('Gemarkeerd als gezien'); });
+$('#btnExportProfiles').addEventListener('click', exportProfiles);
+$('#fileRes').addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { RES = JSON.parse(rd.result); renderResultaten(); $('#s_lastrun').textContent = RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'; toast('results.json geladen'); } catch(err){ toast('Ongeldig bestand'); } }; rd.readAsText(f); e.target.value = ''; });
+$('#btnBewaarResUrl').addEventListener('click', () => { S.instellingen.resultsUrl = cap($('#s_resurl').value); bewaar(); laadResultaten(); toast('URL bewaard'); });
+
+$('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s_sites')); for (const k in SITES) S.instellingen.sites[k] = on.includes(k); bewaar(); });
+function init(){
+  vulMerkenlijst(); vulProfielForm(null); vulKandForm(null); renderInstellingen(); vulProfielSelect();
+  $('#s_resurl').value = S.instellingen.resultsUrl || '';
+}
+init();
+laadResultaten(true);
+verwerkInkomend();
+</script>
+</body>
+</html>
