@@ -5,5 +5,5 @@ Factuur & Register
 Factuurgenerator met register, statistieken en automatische back-up.
 
 Inkoop & BPM-indicatie
-[→ App openen](https://kelliank98.github.io/KAAP_Portal/)
+[→ App openen](kelliank98.github.io/KAAP_Portal/inkoop.html)
 
