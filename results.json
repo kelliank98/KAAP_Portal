@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-13T14:20:56.055Z",
+ "generated": "2026-09-13T14:48:17.223Z",
  "tool": "inkoop-fetch 1.06",
  "profiles": {
   "rmohrms3a0v9": {
@@ -10,7 +10,7 @@
      "land": "DE",
      "variant": "m sport",
      "url": "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T14:20:56.055Z",
+     "checked": "2026-09-13T14:48:17.224Z",
      "count": 3,
      "items": [
       {
@@ -64,7 +64,7 @@
      "land": "DE",
      "variant": "m sport",
      "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::34000/x3-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2021,2023+autos.km_i:,75000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-09-13T14:20:58.801Z",
+     "checked": "2026-09-13T14:48:19.676Z",
      "count": null,
      "items": [],
      "error": null,
@@ -75,18 +75,18 @@
      "land": "NL",
      "variant": "m sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x3?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T14:21:04.340Z",
+     "checked": "2026-09-13T14:48:25.182Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (1749 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (1748 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "marktplaats:m sport": {
      "naam": "Marktplaats",
      "land": "NL",
      "variant": "m sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-09-13T14:21:08.592Z",
+     "checked": "2026-09-13T14:48:27.910Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -97,18 +97,18 @@
      "land": "BE",
      "variant": "m sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x3?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T14:21:10.990Z",
+     "checked": "2026-09-13T14:48:30.279Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (752 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (753 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "twodehands:m sport": {
      "naam": "2dehands",
      "land": "BE",
      "variant": "m sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-09-13T14:21:15.060Z",
+     "checked": "2026-09-13T14:48:33.016Z",
      "count": 0,
      "items": [],
      "error": null,
