@@ -42,6 +42,8 @@ section.tab.on{display:block}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
 .card + .card{margin-top:18px}
+.card.licht{animation:licht 1.4s ease-out}
+@keyframes licht{0%{box-shadow:0 0 0 3px var(--bronze)}100%{box-shadow:0 0 0 0 rgba(167,116,70,0)}}
 
 .frm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
 .frm .full{grid-column:1 / -1}
@@ -99,6 +101,19 @@ table.t tr.clk:hover td{background:var(--sand)}
 .tag.btw{background:#E8EEF6;color:#2B4A78}
 .tag.marge{background:var(--bronze-pale);color:var(--bronze)}
 
+.res{display:flex;gap:12px;align-items:flex-start;border-bottom:1px solid var(--line);padding:10px 0}
+.res .tekst{flex:1 1 auto;min-width:0}
+.res:last-child{border-bottom:0}
+.res .foto{flex:0 0 112px;width:112px;height:84px;border-radius:var(--r);overflow:hidden;background:var(--sand);display:block}
+.res .foto img{width:100%;height:100%;object-fit:cover;display:block}
+.res .foto.leeg{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
+.res h4{margin:0 0 3px;font-size:14.5px;font-weight:600;line-height:1.3}
+.res h4 a{color:var(--text);text-decoration:none}
+.res h4 a:hover{color:var(--bronze);text-decoration:underline}
+.res .meta{font-size:12.5px;color:var(--muted)}
+.res .geld{flex:0 0 auto;text-align:right;white-space:nowrap;padding-left:8px}
+.res .geld b{font-size:15px}
+@media (max-width:560px){.res{gap:10px;flex-wrap:wrap}.res .foto{flex:0 0 84px;width:84px;height:64px}.res .geld{text-align:left;padding-left:0}}
 .bpm{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--sand)}
 .bpm .big{font-size:26px;font-weight:700;letter-spacing:-0.02em}
 .bpm dl{display:grid;grid-template-columns:auto auto;gap:4px 16px;margin:10px 0 0;font-size:14px}
@@ -127,9 +142,9 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.03 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.07 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
-      <button class="on" data-tab="profielen">Zoekprofielen</button>
+      <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
       <button data-tab="instellingen">Instellingen</button>
     </nav>
@@ -142,7 +157,8 @@ details summary{cursor:pointer;font-weight:500}
   <div class="grid">
     <div>
       <div class="card">
-        <div class="row between"><h2 id="profTitle">Nieuw zoekprofiel</h2><button class="btn sec sm" id="btnNieuwProfiel">Nieuw</button></div>
+        <div class="row between"><h2 id="profTitle">Zoekopdracht</h2><button class="btn sec sm" id="btnNieuwProfiel">Leegmaken</button></div>
+        <p class="help" style="margin-top:-8px;margin-bottom:12px">Vul in wat je zoekt en klik op <b>Zoeken</b>: de links hiernaast werken direct. Bewaren hoeft alleen als je hier resultaten en mail bij nieuw aanbod wilt.</p>
         <div class="frm">
           <label class="f full"><span>Naam van het profiel (bijv. X5 M Sport 2020+)</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
           <label class="f"><span>Merk</span><input type="text" id="p_merk" list="merkenlijst" placeholder="BMW"><datalist id="merkenlijst"></datalist></label>
@@ -167,10 +183,12 @@ details summary{cursor:pointer;font-weight:500}
           <div class="f full"><span>Sites voor dit profiel</span><div class="chips" id="p_sites"></div></div>
         </div>
         <div class="row mt">
-          <button class="btn" id="btnBewaarProfiel">Profiel bewaren</button>
+          <button class="btn bronze" id="btnZoekNu">Zoeken</button>
+          <button class="btn sec" id="btnBewaarProfiel">Bewaren voor meldingen</button>
           <button class="btn sec" id="btnDupliceer">Dupliceren</button>
           <button class="btn danger" id="btnVerwijderProfiel">Verwijderen</button>
         </div>
+        <p class="help">Zoeken opent de links van de aangevinkte sites in aparte tabbladen. Er wordt niets bewaard.</p>
       </div>
 
       <div class="card">
@@ -180,9 +198,10 @@ details summary{cursor:pointer;font-weight:500}
     </div>
 
     <div>
-      <div class="card">
-        <div class="row between"><h2>Zoeklinks</h2><button class="btn bronze sm" id="btnOpenAlle">Open alle</button></div>
-        <p class="muted" style="font-size:13.5px">Automaat staat overal vast. Open een link, controleer het resultaat, en sla de zoekopdracht daar op als alert. De site mailt je; deze app niet.</p>
+      <div class="card" id="linkKaart">
+        <div class="row between"><h2>Zoekopdrachten per site</h2><button class="btn sec sm" id="btnOpenAlle">Open alle in tabbladen</button></div>
+        <p class="muted" style="font-size:13.5px">Deze links werken zonder iets te bewaren; ze veranderen mee terwijl je typt. Automaat staat overal vast. Wil je ook zonder deze app gewaarschuwd worden, sla de zoekopdracht dan op de site zelf op als alert.</p>
+        <div class="note warn" id="popupWaarschuwing" style="display:none;margin-bottom:10px"></div>
         <div id="linkLijst" class="links"></div>
         <details class="mt"><summary>Model-koppeling per site (URL plakken)</summary>
           <p class="help" style="margin-top:8px">Klopt een link niet (verkeerd model, 404)? Zoek het model één keer op de site zelf, kopieer de adresbalk en plak hieronder. De app onthoudt de koppeling voor dit merk en model.</p>
@@ -289,10 +308,12 @@ details summary{cursor:pointer;font-weight:500}
         <p class="help">De app zelf kan geen resultaten ophalen (browsers blokkeren dat). De meegeleverde ophaler draait in je GitHub-repo, leest <code>profiles.json</code>, haalt AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen op en schrijft <code>results.json</code>. mobile.de en Gaspedaal blokkeren dit; daar blijf je op de eigen alert van de site aangewezen.</p>
         <div class="frm">
           <label class="f full"><span>URL van results.json (leeg = zelfde map als deze app)</span><input type="url" id="s_resurl" placeholder="results.json"></label>
+          <label class="f full"><span>Eigen proxy (optioneel) — hiermee toont <b>Zoeken</b> de resultaten direct in de app</span><input type="url" id="s_proxy" placeholder="https://kaap-proxy.jouwnaam.workers.dev/"></label>
         </div>
         <div class="row mt">
           <button class="btn" id="btnExportProfiles">Exporteer profiles.json</button>
           <button class="btn sec" id="btnBewaarResUrl">URL bewaren</button>
+          <button class="btn sec" id="btnTestProxy">Proxy testen</button>
         </div>
         <p class="help mt">Na elke wijziging in je profielen: opnieuw exporteren en <code>profiles.json</code> in de repo vervangen. Laatste run: <span id="s_lastrun">onbekend</span>.</p>
       </div>
@@ -325,12 +346,12 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.03
+   KAAP Inkoop-radar  v1.07
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.03';
+const APP_VERSIE = '1.07';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -432,8 +453,10 @@ function laad(){
   s.profielen = s.profielen || [];
   s.kandidaten = s.kandidaten || [];
   s.gezien = s.gezien || {};
-  s.geschiedenis = s.geschiedenis || {};   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
+  s.geschiedenis = s.geschiedenis || {};
+  s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
+  if (s.instellingen.proxy === undefined) s.instellingen.proxy = '';
   return s;
 }
 function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
@@ -816,7 +839,7 @@ function vulProfielForm(p){
   profielId = p ? p.id : null;
   const std = {}; for (const k in SITES) std[k] = S.instellingen.sites[k];
   p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
-  $('#profTitle').textContent = p.id ? 'Zoekprofiel bewerken' : 'Nieuw zoekprofiel';
+  $('#profTitle').textContent = p.id ? 'Bewaarde zoekopdracht' : 'Zoekopdracht';
   $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
   $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_km').value = p.km||''; $('#p_kw').value = p.kw||'';
   $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||'';
@@ -841,6 +864,7 @@ function renderProfielLijst(){
 }
 function renderLinks(){
   const p = leesProfielForm();
+  if (!profielId && p.merk){ S.concept = p; bewaar(); }
   const el = $('#linkLijst'); el.innerHTML = '';
   if (!p.merk){ el.innerHTML = '<div class="empty">Vul minimaal een merk in.</div>'; $('#btnOpenAlle').disabled = true; return; }
   const links = bouwLinks(p);
@@ -980,8 +1004,147 @@ function renderInstellingen(){
 function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.keys(S.instellingen.makeIds).sort().map(m=>`<option value="${esc(m)}">`).join(''); }
 
 
+
+
+function resKaart(it, land, isNew, prevPrijs){
+  const bpm = bpmVoorItem(it, land);
+  const r = document.createElement('div'); r.className = 'res';
+  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : ''].filter(Boolean).join(' · ');
+  r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
+    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</div>`;
+  return r;
+}
+
+// ---------- Live zoeken via je eigen proxy ----------
+const unent = (s) => String(s ?? '').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#(\d+);/g,(m,c)=>String.fromCharCode(c));
+const getal = (s) => { const n = parseInt(String(s ?? '').replace(/[^0-9]/g,''),10); return isNaN(n) ? null : n; };
+function normBrandstof(s){
+  const t = (s||'').toLowerCase(); if (!t) return null;
+  if (/elektro\s*\/\s*diesel|hybrid.*diesel|diesel.*hybrid/.test(t)) return 'hybride_diesel';
+  if (/elektro\s*\/\s*benzin|hybrid|hybride/.test(t)) return 'hybride';
+  if (/diesel/.test(t)) return 'diesel';
+  if (/benzin|benzine|petrol|essence|super/.test(t)) return 'benzine';
+  if (/elektr|electric/.test(t)) return 'elektrisch';
+  return null;
+}
+function brandstofUitTitel(t){
+  const x = (t||'').toLowerCase();
+  if (/(\d{2}e\b|\bphev\b|hybrid|e-hybrid|\bhybride\b)/.test(x)) return /\d{2,3}\s?de\b|diesel/.test(x) ? 'hybride_diesel' : 'hybride';
+  if (/(\d{2}d\b|\btdi\b|\bcdi\b|diesel|bluetec)/.test(x)) return 'diesel';
+  if (/(\d{2}i\b|\btfsi\b|\btsi\b|benzin)/.test(x)) return 'benzine';
+  if (/(\bix\d|\beqs\b|\beqe\b|e-tron|taycan|elektro|electric)/.test(x)) return 'elektrisch';
+  return null;
+}
+const ezUit = (s) => { const m = String(s||'').match(/(\d{1,2})[\/\-](\d{4})/); if (m) return `${m[2]}-${m[1].padStart(2,'0')}`; const y = String(s||'').match(/(20\d\d|19\d\d)/); return y ? y[1] : null; };
+
+function parseerAs24(tekst, host){
+  const m = tekst.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!m) throw new Error('pagina-opbouw gewijzigd of geblokkeerd');
+  const d = JSON.parse(m[1]); const pp = d?.props?.pageProps || {};
+  const items = (pp.listings || []).map(it => {
+    const v = it.vehicle || {}, tr = it.tracking || {};
+    const co2 = (it.wltpValues || []).join(' ').match(/(\d{1,3})\s*g\/km/);
+    return {id: it.id, title: [v.make, v.model, v.modelVersionInput].filter(Boolean).join(' ').slice(0,120),
+      price: it.price?.priceRaw ?? getal(it.price?.priceFormatted), km: getal(tr.mileage) ?? getal(v.mileageInKm),
+      ez: ezUit(tr.firstRegistration), fuel: normBrandstof(v.fuel) || brandstofUitTitel(v.modelVersionInput),
+      co2: co2 ? +co2[1] : null, img: (it.images || [])[0] || null, seller: it.seller?.companyName || null,
+      city: it.location?.city || null, url: it.url ? host + it.url : null};
+  });
+  return {count: pp.numberOfResults ?? null, items};
+}
+function parseerLrp(tekst, host){
+  const d = JSON.parse(tekst);
+  const items = (d.listings || []).filter(x => !x.reserved).map(x => {
+    const attr = (k) => (x.attributes || []).concat(x.extendedAttributes || []).find(a => a.key === k)?.value ?? null;
+    return {id: x.itemId, title: (x.title||'').slice(0,120), price: x.priceInfo?.priceCents ? Math.round(x.priceInfo.priceCents/100) : null,
+      km: getal(attr('mileage')), ez: ezUit(attr('constructionYear')), fuel: normBrandstof(attr('fuel')) || brandstofUitTitel(x.title),
+      co2: null, img: (x.imageUrls||[])[0] ? 'https:' + String(x.imageUrls[0]).replace(/^https?:/,'') : null,
+      transmission: attr('transmission'), seller: x.sellerInformation?.sellerName || null, city: x.location?.cityName || null,
+      url: x.vipUrl ? host + x.vipUrl : null};
+  });
+  return {count: d.totalResultCount ?? null, items};
+}
+function parseerKleinanzeigen(tekst){
+  const items = [];
+  const re = /<(?:li|article)\b([^>]*\bdata-adid="\d+"[^>]*)>/g; const tags = []; let mm;
+  while ((mm = re.exec(tekst))) tags.push({idx: mm.index, attrs: mm[1]});
+  tags.forEach((t, i) => {
+    const blk = tekst.slice(t.idx, tags[i+1] ? tags[i+1].idx : t.idx + 20000);
+    const id = (t.attrs.match(/data-adid="(\d+)"/) || [])[1]; if (!id) return;
+    const href = (t.attrs.match(/data-href="([^"]+)"/) || [])[1] || (blk.match(/href="(\/s-anzeige\/[^"]+)"/) || [])[1];
+    let title = (blk.match(/"name":"((?:[^"\\]|\\.)*)"/) || blk.match(/"title":"((?:[^"\\]|\\.)*)"/) || [])[1];
+    if (title) { try { title = JSON.parse('"' + title + '"'); } catch(e){} }
+    if (!title) { const t2 = blk.match(/class="ellipsis"[^>]*>([\s\S]*?)<\/a>/); if (t2) title = t2[1].replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
+    const txt = blk.replace(/<script[\s\S]*?<\/script>/g,' ').replace(/<[^>]+>/g,'|').replace(/\s+/g,' ');
+    const ez = txt.match(/EZ\s*(\d{2})\/(\d{4})/) || [];
+    const img = (blk.match(/"contentUrl":"([^"]+)"/) || blk.match(/<img[^>]+src="(https:\/\/img\.kleinanzeigen\.de[^"]+)"/) || [])[1];
+    items.push({id, title: unent(title||'').slice(0,120), price: getal((txt.match(/([\d\.]{4,9})\s*€/)||[])[1]),
+      km: getal((txt.match(/([\d\.]{4,9})\s*km\b/)||[])[1]), ez: ez[2] ? `${ez[2]}-${ez[1]}` : null,
+      fuel: brandstofUitTitel(title), co2: null, img: img ? unent(img) : null, seller: null,
+      city: (blk.match(/info--location"[^>]*>\s*([^<]+?)\s*</) || [])[1] || null,
+      url: href ? 'https://www.kleinanzeigen.de' + href : null});
+  });
+  const c = tekst.match(/([\d\.]+)\s*Ergebnisse/) || tekst.match(/von\s+([\d\.]+)\s/);
+  return {count: c ? getal(c[1]) : null, items};
+}
+async function haalViaProxy(url){
+  const p = (S.instellingen.proxy || '').trim();
+  const scheiding = p.includes('?') ? '&' : '?';
+  const r = await fetch(p + scheiding + 'url=' + encodeURIComponent(url));
+  if (!r.ok) throw new Error('proxy gaf HTTP ' + r.status);
+  return r.text();
+}
+async function zoekLive(){
+  const p = leesProfielForm();
+  if (!p.merk){ toast('Vul minimaal een merk in.'); return; }
+  const links = bouwLinks(p).filter(l => l.url && SITES[l.site].poll);
+  LIVE = {bezig:true, naam: p.naam || autoNaam(p), sites: links.map(l => ({site:l.site, naam:l.naam, land:SITES[l.site].land, variant:l.variant, url:l.url, status:'wacht', items:[], count:null, error:null}))};
+  renderLive();
+  await Promise.all(LIVE.sites.map(async (s, i) => {
+    const l = links[i];
+    try {
+      let res;
+      if (l.site.startsWith('as24')) res = parseerAs24(await haalViaProxy(l.url), new URL(l.url).origin);
+      else if (l.apiUrl) {
+        const q = [p.merk, p.model, l.variant].filter(Boolean).join(' ');
+        let api = l.apiUrl.replace(/([?&])query=[^&]*/, '$1query=' + encodeURIComponent(q));
+        if (!/[?&]query=/.test(api) && q) api += '&query=' + encodeURIComponent(q);
+        res = parseerLrp(await haalViaProxy(api), new URL(api).origin);
+      }
+      else if (l.site === 'kleinanzeigen') res = parseerKleinanzeigen(await haalViaProxy(l.url));
+      else throw new Error('deze site kan niet live worden opgehaald');
+      const excl = splitList(p.uitvNiet).map(x => x.toLowerCase());
+      s.items = res.items.filter(it => !excl.some(t => (it.title||'').toLowerCase().includes(t)));
+      s.count = res.count; s.status = 'klaar';
+    } catch(e){ s.status = 'fout'; s.error = (e.message || e).toString().slice(0,120); }
+    renderLive();
+  }));
+  LIVE.bezig = false; renderLive();
+}
+function renderLive(){
+  const el = $('#resLijst'), meta = $('#resMeta');
+  if (!LIVE) return;
+  const totaal = LIVE.sites.reduce((n,s) => n + s.items.length, 0);
+  const klaar = LIVE.sites.filter(s => s.status !== 'wacht').length;
+  meta.innerHTML = `Live gezocht op ${LIVE.sites.length} site${LIVE.sites.length===1?'':'s'} voor <b>${esc(LIVE.naam)}</b> — ${klaar}/${LIVE.sites.length} klaar, ${totaal} resultaten. Niets bewaard.`;
+  el.innerHTML = '';
+  LIVE.sites.forEach(s => {
+    const box = document.createElement('div'); box.className = 'mt';
+    const kop = s.status === 'wacht' ? '<small class="muted">bezig…</small>'
+      : s.status === 'fout' ? `<small class="muted">mislukt</small>`
+      : `<small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${s.items.length} getoond</small>`;
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
+      + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '');
+    const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
+    s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false)));
+    if (s.status === 'klaar' && !s.items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    box.appendChild(lijst); el.appendChild(box);
+  });
+}
+
 // ---------- Resultaten (results.json van de ophaler) ----------
-let RES = null;
+let RES = null, LIVE = null;
 function download(naam, tekst){ const blob = new Blob([tekst], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = naam; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000); }
 function exportProfiles(){
   const out = {generated:new Date().toISOString(), app:APP_VERSIE, profiles: S.profielen.map(p => ({
@@ -1025,6 +1188,7 @@ function renderResultaten(){
   const el = $('#resLijst'); el.innerHTML = '';
   const meta = $('#resMeta');
   if (!RES){ meta.textContent = 'Nog niet geladen.'; return; }
+  if (!profielId){ meta.innerHTML = 'Dit blok hoort bij <b>bewaarde</b> zoekopdrachten: de ophaler draait op die lijst en zet de gevonden advertenties hier neer. Voor een eenmalige zoekactie heb je dit niet nodig, gebruik de links hierboven.'; el.innerHTML = ''; return; }
   if (RES.leeg){
     const lokaal = location.protocol === 'file:';
     meta.innerHTML = lokaal
@@ -1033,7 +1197,6 @@ function renderResultaten(){
     el.innerHTML = `<div class="help" style="margin-top:8px">Gezocht op: ${esc((RES.paden||[]).join(', ') || 'results.json')}. Staat het bestand ergens anders, vul dan de volledige URL in bij Instellingen.</div>`;
     return;
   }
-  if (!profielId){ meta.textContent = 'Bewaar eerst een profiel en exporteer profiles.json; resultaten verschijnen per opgeslagen profiel.'; return; }
   const pr = RES.profiles && RES.profiles[profielId];
   if (!pr){ meta.textContent = 'Geen resultaten voor dit profiel. Exporteer profiles.json opnieuw en laat de ophaler draaien.'; return; }
   const gezien = S.gezien[profielId] ? new Date(S.gezien[profielId]) : null;
@@ -1053,18 +1216,10 @@ function renderResultaten(){
     box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
       (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
       (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
-    const tb = document.createElement('table'); tb.className = 't'; tb.style.marginTop = '6px';
-    tb.innerHTML = '<tbody></tbody>';
-    items.slice(0, 40).forEach(it => {
-      const isNew = gezien ? new Date(it.first_seen) > gezien : true;
-      const bpm = bpmVoorItem(it, land);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a><br><small class="muted">${[it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : ''].filter(Boolean).join(' · ')}</small></td>
-        <td class="r">${it.price ? eur(it.price) : '–'}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</td>`;
-      tb.querySelector('tbody').appendChild(tr);
-    });
-    if (!items.length && !s.error) tb.innerHTML = '<tbody><tr><td class="muted">Geen resultaten.</td></tr></tbody>';
-    box.appendChild(tb); el.appendChild(box);
+    const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
+    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, land, gezien ? new Date(it.first_seen) > gezien : true)));
+    if (!items.length && !s.error) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    box.appendChild(lijst); el.appendChild(box);
   });
   meta.textContent = `${sites.length} site${sites.length===1?'':'s'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
 }
@@ -1096,7 +1251,7 @@ $$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.datase
 ['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
 ['p_merk','p_uitv','p_uitv_niet'].forEach(id => $('#'+id).addEventListener('input', renderHist));
 $('#p_opties').addEventListener('chipchange', renderHist);
-$('#btnNieuwProfiel').addEventListener('click', () => vulProfielForm(null));
+$('#btnNieuwProfiel').addEventListener('click', () => { S.concept = null; bewaar(); vulProfielForm(null); });
 $('#btnBewaarProfiel').addEventListener('click', () => {
   const p = leesProfielForm();
   if (!p.merk){ toast('Vul minimaal een merk in.'); return; }
@@ -1104,14 +1259,21 @@ $('#btnBewaarProfiel').addEventListener('click', () => {
   if (p.id){ const i = S.profielen.findIndex(x=>x.id===p.id); S.profielen[i] = Object.assign(S.profielen[i], p); }
   else { p.id = uid(); p.created = Date.now(); S.profielen.push(p); profielId = p.id; }
   histBewaar(p);
-  bewaar(); $('#p_naam').value = p.naam; $('#profTitle').textContent = 'Zoekprofiel bewerken'; renderProfielLijst(); vulProfielSelect(); renderHist(); toast('Profiel bewaard');
+  bewaar(); $('#p_naam').value = p.naam; $('#profTitle').textContent = 'Bewaarde zoekopdracht'; renderProfielLijst(); vulProfielSelect(); renderHist(); toast('Profiel bewaard');
 });
-$('#btnDupliceer').addEventListener('click', () => { const p = leesProfielForm(); profielId = null; $('#p_naam').value = (p.naam || autoNaam(p)) + ' (kopie)'; $('#profTitle').textContent = 'Nieuw zoekprofiel'; renderProfielLijst(); toast('Gekopieerd, nog niet bewaard'); });
+$('#btnDupliceer').addEventListener('click', () => { const p = leesProfielForm(); profielId = null; $('#p_naam').value = (p.naam || autoNaam(p)) + ' (kopie)'; $('#profTitle').textContent = 'Zoekopdracht'; renderProfielLijst(); toast('Gekopieerd, nog niet bewaard'); });
 $('#btnVerwijderProfiel').addEventListener('click', () => { if (!profielId) { vulProfielForm(null); return; } if (!confirm('Dit profiel verwijderen?')) return; S.profielen = S.profielen.filter(x=>x.id!==profielId); bewaar(); vulProfielForm(null); vulProfielSelect(); toast('Profiel verwijderd'); });
+$('#btnZoekNu').addEventListener('click', async () => {
+  const p = leesProfielForm();
+  if (!p.merk){ toast('Vul minimaal een merk in.'); return; }
+  histBewaar(p); renderHist();
+  if ((S.instellingen.proxy || '').trim()){ document.getElementById('resCard').scrollIntoView({behavior:'smooth', block:'start'}); await zoekLive(); }
+  else { document.getElementById('linkLijst').scrollIntoView({behavior:'smooth', block:'center'}); toast('Klik per site op Open. Wil je de resultaten hier zien: stel je proxy in bij Instellingen.'); }
+});
 $('#btnOpenAlle').addEventListener('click', () => {
   const ls = (window._links||[]).filter(l=>l.url); let n = 0;
   ls.forEach((l,i) => { const w = window.open(l.url, '_blank'); if (w) n++; });
-  if (n < ls.length) toast(`${n} van ${ls.length} geopend; sta pop-ups toe voor deze site om alles te openen.`);
+  if (n < ls.length) toast(`${n} van ${ls.length} tabbladen geopend — je browser blokkeert de rest. Sta pop-ups toe voor deze pagina, of open ze per site.`);
 });
 (function(){ const sel = $('#leerSite'); Object.keys(SITES).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = SITES[k].naam; sel.appendChild(o); }); })();
 $('#btnLeer').addEventListener('click', () => {
@@ -1160,12 +1322,24 @@ $('#btnResLaad').addEventListener('click', () => laadResultaten());
 $('#btnGezien').addEventListener('click', () => { if (!profielId){ toast('Bewaar eerst het profiel.'); return; } S.gezien[profielId] = new Date().toISOString(); bewaar(); renderResultaten(); toast('Gemarkeerd als gezien'); });
 $('#btnExportProfiles').addEventListener('click', exportProfiles);
 $('#fileRes').addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { RES = JSON.parse(rd.result); renderResultaten(); $('#s_lastrun').textContent = RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'; toast('results.json geladen'); } catch(err){ toast('Ongeldig bestand'); } }; rd.readAsText(f); e.target.value = ''; });
-$('#btnBewaarResUrl').addEventListener('click', () => { S.instellingen.resultsUrl = cap($('#s_resurl').value); bewaar(); laadResultaten(); toast('URL bewaard'); });
+$('#btnBewaarResUrl').addEventListener('click', () => { S.instellingen.resultsUrl = cap($('#s_resurl').value); S.instellingen.proxy = cap($('#s_proxy').value); bewaar(); laadResultaten(); toast('Bewaard'); });
+$('#btnTestProxy').addEventListener('click', async () => {
+  S.instellingen.proxy = cap($('#s_proxy').value); bewaar();
+  if (!S.instellingen.proxy){ toast('Vul eerst een proxy-URL in.'); return; }
+  toast('Proxy testen…');
+  try {
+    const t = await haalViaProxy('https://www.marktplaats.nl/lrp/api/search?l1CategoryId=91&limit=1');
+    const d = JSON.parse(t);
+    toast(d.totalResultCount != null ? `Proxy werkt (${num(d.totalResultCount)} auto's gezien)` : 'Proxy antwoordt, maar de inhoud klopt niet');
+  } catch(e){ toast('Proxy werkt niet: ' + (e.message || e)); }
+});
 
 $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s_sites')); for (const k in SITES) S.instellingen.sites[k] = on.includes(k); bewaar(); });
 function init(){
-  vulMerkenlijst(); vulProfielForm(null); vulKandForm(null); renderInstellingen(); vulProfielSelect();
+  vulMerkenlijst(); vulProfielForm(S.concept && !S.profielen.length ? S.concept : null); vulKandForm(null); renderInstellingen(); vulProfielSelect();
+  if (S.concept && S.profielen.length) vulProfielForm(S.concept);
   $('#s_resurl').value = S.instellingen.resultsUrl || '';
+  $('#s_proxy').value = S.instellingen.proxy || '';
 }
 init();
 laadResultaten(true);
