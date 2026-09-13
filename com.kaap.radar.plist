@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plaats dit bestand in ~/Library/LaunchAgents en activeer met:
+     launchctl load ~/Library/LaunchAgents/com.kaap.radar.plist
+     Pas het pad hieronder aan naar de map waar inkoop staat. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.kaap.radar</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/JOUWNAAM/inkoop/radar-lokaal.command</string>
+  </array>
+  <key>StartInterval</key><integer>7200</integer>
+  <key>StandardOutPath</key><string>/tmp/kaap-radar.log</string>
+  <key>StandardErrorPath</key><string>/tmp/kaap-radar-fout.log</string>
+</dict>
+</plist>
