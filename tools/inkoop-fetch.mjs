@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.06
+  KAAP Inkoop-radar – ophaler  v1.08
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
@@ -247,7 +247,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.06', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.08', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
@@ -257,10 +257,10 @@ for (const p of (src.profiles || [])) {
   const uitgesloten = (it) => excl.some(t => (it.title || '').toLowerCase().includes(t));
   for (const l of (p.links || [])) {
     if (!l.poll || !HANDLERS[l.site]) continue;
-    const key = l.site + (l.variant ? ':' + l.variant : '');
+    const key = l.site + ':' + [l.model, l.variant].filter(Boolean).join('|');
     const prevSite = prev.profiles?.[p.id]?.sites?.[key];
     const prevMap = new Map((prevSite?.items || []).map(i => [i.id, i]));
-    const site = { naam: l.naam, land: l.land, variant: l.variant || '', url: l.url, checked: new Date().toISOString(), count: null, items: [], error: null, warn: null };
+    const site = { naam: l.naam, land: l.land, model: l.model || '', variant: l.variant || '', url: l.url, checked: new Date().toISOString(), count: null, items: [], error: null, warn: null };
     try {
       const res = await HANDLERS[l.site](l);
       site.count = res.count; site.warn = res.warn || null;
@@ -269,13 +269,18 @@ for (const p of (src.profiles || [])) {
         const o = { ...it, first_seen: old?.first_seen || site.checked };
         if (old && old.price && it.price && it.price < old.price) o.price_prev = old.price_prev && old.price_prev > old.price ? old.price_prev : old.price;
         else if (old && old.price_prev && it.price === old.price) o.price_prev = old.price_prev;
+        // prijsverloop: alleen een punt toevoegen als de prijs wijzigt
+        const vorige = old?.prijsverloop || (old?.price ? [{ d: (old.first_seen || site.checked).slice(0, 10), p: old.price }] : []);
+        o.prijsverloop = (it.price && vorige.at(-1)?.p !== it.price)
+          ? [...vorige, { d: site.checked.slice(0, 10), p: it.price }].slice(-6)
+          : vorige;
         return o;
       });
       if (prevSite) {
-        site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ profiel: p.naam, site: l.naam, soort: 'nieuw', ...it }));
-        site.items.filter(it => prevMap.has(it.id) && it.price_prev && prevMap.get(it.id).price !== it.price).forEach(it => newItems.push({ profiel: p.naam, site: l.naam, soort: 'prijs', ...it }));
+        site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), soort: 'nieuw', ...it }));
+        site.items.filter(it => prevMap.has(it.id) && it.price_prev && prevMap.get(it.id).price !== it.price).forEach(it => newItems.push({ profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), soort: 'prijs', ...it }));
       }
-      console.log(`✓ ${p.naam} · ${l.naam}${l.variant ? ' · ' + l.variant : ''}: ${site.items.length} opgehaald${res.count != null ? ' van ' + res.count : ''}${site.warn ? '  [!] ' + site.warn : ''}`);
+      console.log(`✓ ${p.naam} · ${l.naam}${l.model ? ' · ' + l.model : ''}${l.variant ? ' · ' + l.variant : ''}: ${site.items.length} opgehaald${res.count != null ? ' van ' + res.count : ''}${site.warn ? '  [!] ' + site.warn : ''}`);
     } catch (e) {
       fouten++;
       site.error = String(e.message || e).slice(0, 200);
