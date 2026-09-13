@@ -1,16 +1,17 @@
 {
- "generated": "2026-09-13T17:54:58.728Z",
- "tool": "inkoop-fetch 1.06",
+ "generated": "2026-09-13T21:15:30.010Z",
+ "tool": "inkoop-fetch 1.09",
  "profiles": {
   "rmohrms3a0v9": {
    "naam": "BMW X3 M Sport 2021-2023",
    "sites": {
-    "as24de:m sport": {
+    "as24de:x3|m sport": {
      "naam": "AutoScout24 DE",
      "land": "DE",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T17:54:58.729Z",
+     "checked": "2026-09-13T21:15:30.010Z",
      "count": 3,
      "items": [
       {
@@ -20,12 +21,19 @@
        "km": 34101,
        "ez": "2021-07",
        "fuel": "hybride",
-       "co2": null,
+       "co2": 48,
        "img": "https://prod.pictures.autoscout24.net/listing-images/efaac2cd-1d81-4cb8-956c-373100803ef5_5b5538fd-2f63-4d28-bcc3-5b65a558934c.jpg/250x188.webp",
        "seller": "Dick Automobile e.K.",
        "city": "Bebra",
        "url": "https://www.autoscout24.de/angebote/bmw-x3-xd-30e-advan-sport-leder+virtu+prof+led+hk+m-elektro-benzin-weiss-cat_ma13gr18387ge63va3241mt340tr5341-efaac2cd-1d81-4cb8-956c-373100803ef5",
-       "first_seen": "2026-09-13T14:20:56.055Z"
+       "co2_geschat": "mediaan van 112 NL-auto's (45-51 g/km)",
+       "first_seen": "2026-09-13T21:15:30.010Z",
+       "prijsverloop": [
+        {
+         "d": "2026-09-13",
+         "p": 30750
+        }
+       ]
       },
       {
        "id": "d0c892c0-d20f-4a91-97f5-dbd04d837453",
@@ -34,12 +42,19 @@
        "km": 23397,
        "ez": "2021-03",
        "fuel": "hybride",
-       "co2": null,
+       "co2": 48,
        "img": "https://prod.pictures.autoscout24.net/listing-images/d0c892c0-d20f-4a91-97f5-dbd04d837453_5dbed067-2cd1-45ff-86e8-dc91abbaaeef.jpg/250x188.webp",
        "seller": "AutoExpo Deutsche Automarkt GmbH",
        "city": "Fernwald-Steinbach",
        "url": "https://www.autoscout24.de/angebote/bmw-x3-x3-xdrive30e-aut-m-sport-navi-ahk-pano-shz-elektro-benzin-weiss-cat_ma13gr18387ge63va3241mt340tr5341-d0c892c0-d20f-4a91-97f5-dbd04d837453",
-       "first_seen": "2026-09-13T14:20:56.055Z"
+       "co2_geschat": "mediaan van 112 NL-auto's (45-51 g/km)",
+       "first_seen": "2026-09-13T21:15:30.010Z",
+       "prijsverloop": [
+        {
+         "d": "2026-09-13",
+         "p": 33490
+        }
+       ]
       },
       {
        "id": "6d9713a5-90ac-4f21-8331-a7697e3359e7",
@@ -48,67 +63,79 @@
        "km": 68245,
        "ez": "2021-08",
        "fuel": "hybride",
-       "co2": null,
+       "co2": 48,
        "img": "https://prod.pictures.autoscout24.net/listing-images/6d9713a5-90ac-4f21-8331-a7697e3359e7_5ffd01d9-73ce-4177-a10b-7c0d12fb9471.jpg/250x188.webp",
        "seller": "Stephan Bruns Automobile e.K.",
        "city": "Lübeck",
        "url": "https://www.autoscout24.de/angebote/bmw-x3-xdrive-30-e-m-sport-leder-dab-hud-ahk-elektro-benzin-grau-cat_ma13gr18387ge63va3241mt340tr5341-6d9713a5-90ac-4f21-8331-a7697e3359e7",
-       "first_seen": "2026-09-13T14:20:56.055Z"
+       "co2_geschat": "mediaan van 112 NL-auto's (45-51 g/km)",
+       "first_seen": "2026-09-13T21:15:30.010Z",
+       "prijsverloop": [
+        {
+         "d": "2026-09-13",
+         "p": 33990
+        }
+       ]
       }
      ],
      "error": null,
-     "warn": null
+     "warn": "CO2 geschat via RDW voor 3 advertentie(s)"
     },
-    "kleinanzeigen:m sport": {
+    "kleinanzeigen:x3|m sport": {
      "naam": "Kleinanzeigen",
      "land": "DE",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::34000/x3-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2021,2023+autos.km_i:,75000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-09-13T17:55:01.186Z",
+     "checked": "2026-09-13T21:15:35.362Z",
      "count": null,
      "items": [],
      "error": null,
      "warn": null
     },
-    "as24nl:m sport": {
+    "as24nl:x3|m sport": {
      "naam": "AutoScout24 NL",
      "land": "NL",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x3?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T17:55:10.782Z",
+     "checked": "2026-09-13T21:15:40.855Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (1748 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (1749 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
-    "marktplaats:m sport": {
+    "marktplaats:x3|m sport": {
      "naam": "Marktplaats",
      "land": "NL",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-09-13T17:55:13.293Z",
+     "checked": "2026-09-13T21:15:44.964Z",
      "count": 0,
      "items": [],
      "error": null,
      "warn": null
     },
-    "as24be:m sport": {
+    "as24be:x3|m sport": {
      "naam": "AutoScout24 BE",
      "land": "BE",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x3?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
-     "checked": "2026-09-13T17:55:15.573Z",
+     "checked": "2026-09-13T21:15:49.320Z",
      "count": 0,
      "items": [],
      "error": null,
      "warn": "model klopt (754 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
-    "twodehands:m sport": {
+    "twodehands:x3|m sport": {
      "naam": "2dehands",
      "land": "BE",
+     "model": "x3",
      "variant": "m sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-09-13T17:55:18.306Z",
+     "checked": "2026-09-13T21:15:52.927Z",
      "count": 0,
      "items": [],
      "error": null,
