@@ -142,7 +142,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.08 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.09 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -238,6 +238,8 @@ details summary{cursor:pointer;font-weight:500}
         <div class="row between"><h2 id="kandTitle">Kandidaat / BPM-indicatie</h2><button class="btn sec sm" id="btnNieuwKand">Nieuw</button></div>
         <div class="frm">
           <label class="f full"><span>Omschrijving (merk, model, uitvoering)</span><input type="text" id="k_oms" placeholder="BMW X5 xDrive45e M Sport"></label>
+          <label class="f"><span>Kenteken (alleen NL) — vult de rest automatisch</span><input type="text" id="k_kenteken" placeholder="XX-123-X"></label>
+          <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnKenteken" style="width:100%">Kenteken opzoeken bij RDW</button></div>
           <label class="f full"><span>Link naar advertentie</span><input type="url" id="k_url" placeholder="https://..."></label>
           <label class="f"><span>Land van aankoop</span><select id="k_land"><option value="DE">Duitsland</option><option value="NL">Nederland</option><option value="BE">België</option><option value="DK">Denemarken</option></select></label>
           <label class="f"><span>Zoekprofiel</span><select id="k_profiel"><option value="">(geen)</option></select></label>
@@ -248,6 +250,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
           <label class="f"><span>Plug-in hybride</span><select id="k_phev"><option value="0">Nee</option><option value="1">Ja</option></select></label>
           <label class="f"><span>CO2 WLTP (g/km)</span><input type="number" id="k_co2w" placeholder="bijv. 187"></label>
+          <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnSchatCo2" style="width:100%">CO2 schatten (RDW)</button></div>
           <label class="f"><span>CO2 NEDC (g/km, alleen bij DET vóór 1-7-2020)</span><input type="number" id="k_co2n" placeholder="alleen indien bekend"></label>
           <label class="f"><span>Verwachte RDW-keuringsdatum</span><input type="date" id="k_keuring"></label>
           <label class="f"><span>Status</span><select id="k_status"><option value="nieuw">Nieuw</option><option value="bekeken">Bekeken</option><option value="bod">Bod gedaan</option><option value="gekocht">Gekocht</option><option value="afgewezen">Afgewezen</option></select></label>
@@ -346,12 +349,12 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.08
+   KAAP Inkoop-radar  v1.09
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.08';
+const APP_VERSIE = '1.09';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -470,6 +473,75 @@ const slug = (s) => (s||'').toString().trim().toLowerCase().normalize('NFD').rep
 const cap = (s) => (s||'').trim();
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
 function isoPlus(d, days){ const x=new Date(d); x.setDate(x.getDate()+days); return x.toISOString().slice(0,10); }
+
+
+// ---------- RDW open data: kenteken opzoeken en CO2 schatten ----------
+const RDW_V = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json';
+const RDW_B = 'https://opendata.rdw.nl/resource/8ys7-d773.json';
+const rdwCache = {};
+function rdwCacheLees(){ try { return JSON.parse(localStorage.getItem('kaap_rdw') || '{}'); } catch(e){ return {}; } }
+function rdwCacheSchrijf(o){ try { localStorage.setItem('kaap_rdw', JSON.stringify(o)); } catch(e){} }
+const rdwBrandstof = (s) => { const t=(s||'').toLowerCase(); if (/diesel/.test(t)) return 'diesel'; if (/benzine/.test(t)) return 'benzine'; if (/elektr/.test(t)) return 'elektrisch'; if (/lpg|cng/.test(t)) return 'benzine'; return null; };
+
+async function rdwKenteken(kent){
+  const k = (kent||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if (k.length < 6) throw new Error('kenteken onvolledig');
+  const [v, b] = await Promise.all([
+    fetch(`${RDW_V}?kenteken=${k}`).then(r => r.json()),
+    fetch(`${RDW_B}?kenteken=${k}`).then(r => r.json()),
+  ]);
+  if (!v.length) throw new Error('kenteken niet gevonden bij de RDW');
+  const a = v[0];
+  const soorten = b.map(x => (x.brandstof_omschrijving||'').toLowerCase());
+  const co2 = b.map(x => +(x.co2_uitstoot_gewogen || x.co2_uitstoot_gecombineerd || 0)).filter(Boolean)[0] || null;
+  let brandstof = rdwBrandstof(b[0] && b[0].brandstof_omschrijving);
+  if (soorten.some(s => /elektr/.test(s)) && soorten.length > 1) brandstof = soorten.some(s => /diesel/.test(s)) ? 'hybride_diesel' : 'hybride';
+  const d = a.datum_eerste_toelating || '';
+  return {merk: a.merk, model: a.handelsbenaming, det: d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : '',
+          brandstof, co2, phev: brandstof === 'hybride' && co2 != null && co2 <= 60, massa: +a.massa_ledig_voertuig || null, catalogusprijs: +a.catalogusprijs || null};
+}
+
+// Schat de CO2 van een auto zonder opgave: mediaan van dezelfde uitvoering die in Nederland rijdt.
+async function rdwSchatCo2(merk, model, jaar, brandstof){
+  if (!merk || !model || !jaar) return null;
+  const sleutel = [merk, model, jaar, brandstof||''].join('|').toLowerCase();
+  const opslag = rdwCacheLees();
+  if (opslag[sleutel]) return opslag[sleutel];
+  if (rdwCache[sleutel]) return rdwCache[sleutel];
+  const mdl = String(model).toUpperCase().replace(/'/g,'').trim();
+  const q = new URLSearchParams({
+    '$select': 'kenteken,handelsbenaming',
+    // hoofdletterongevoelig, en een jaar speling: de RDW schrijft dezelfde uitvoering op meerdere manieren
+    '$where': `upper(merk)='${String(merk).toUpperCase().replace(/'/g,'')}' AND starts_with(upper(handelsbenaming),'${mdl}') AND datum_eerste_toelating between '${+jaar-1}0101' and '${+jaar+1}1231'`,
+    '$limit': '300',
+  });
+  const v = await fetch(`${RDW_V}?${q}`).then(r => r.json());
+  if (!v.length) return null;
+  const platen = v.map(x => x.kenteken);
+  const blokken = [platen.slice(0, 150), platen.slice(150, 300)].filter(x => x.length);
+  const b = (await Promise.all(blokken.map(blok =>
+    fetch(`${RDW_B}?${new URLSearchParams({'$select':'kenteken,brandstof_omschrijving,co2_uitstoot_gecombineerd,co2_uitstoot_gewogen','$where':`kenteken in(${blok.map(p => `'${p}'`).join(',')})`,'$limit':'400'})}`).then(r => r.json())
+  ))).flat();
+  const perKenteken = {};
+  b.forEach(r => { (perKenteken[r.kenteken] = perKenteken[r.kenteken] || []).push(r); });
+  const waarden = [];
+  for (const k in perKenteken){
+    const rijen = perKenteken[k];
+    const soorten = rijen.map(x => (x.brandstof_omschrijving||'').toLowerCase());
+    const elek = soorten.some(s => /elektr/.test(s));
+    let soort = elek && soorten.length > 1 ? (soorten.some(s=>/diesel/.test(s)) ? 'hybride_diesel' : 'hybride') : rdwBrandstof(rijen[0].brandstof_omschrijving);
+    if (brandstof && brandstof !== 'phev' && soort !== brandstof) continue;
+    if (brandstof === 'phev' && soort !== 'hybride') continue;
+    const w = rijen.map(x => +(x.co2_uitstoot_gewogen || x.co2_uitstoot_gecombineerd || 0)).filter(Boolean)[0];
+    if (w) waarden.push(w);
+  }
+  if (waarden.length < 3) return null;
+  waarden.sort((a,b) => a-b);
+  const mediaan = waarden[Math.floor(waarden.length/2)];
+  const res = {co2: Math.round(mediaan), n: waarden.length, min: waarden[0], max: waarden[waarden.length-1], jaren: `${+jaar-1}-${+jaar+1}`, bron: 'RDW'};
+  rdwCache[sleutel] = res; opslag[sleutel] = res; rdwCacheSchrijf(opslag);
+  return res;
+}
 
 // ---------- BPM ----------
 function brutoUitTabel(rows, co2){
@@ -893,7 +965,7 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&
 let kandId = null;
 function leesKandForm(){
   return {
-    id: kandId, oms: cap($('#k_oms').value), url: cap($('#k_url').value), land: $('#k_land').value, profiel: $('#k_profiel').value,
+    id: kandId, oms: cap($('#k_oms').value), kenteken: cap($('#k_kenteken').value), url: cap($('#k_url').value), land: $('#k_land').value, profiel: $('#k_profiel').value,
     prijs: +$('#k_prijs').value || null, btw: $('#k_btw').value, km: +$('#k_km').value || null, det: $('#k_det').value || '',
     brandstof: $('#k_brandstof').value, phev: $('#k_phev').value === '1', co2w: $('#k_co2w').value === '' ? null : +$('#k_co2w').value,
     co2n: $('#k_co2n').value === '' ? null : +$('#k_co2n').value, keuring: $('#k_keuring').value || '', status: $('#k_status').value, notitie: cap($('#k_notitie').value),
@@ -901,9 +973,9 @@ function leesKandForm(){
 }
 function vulKandForm(k){
   kandId = k ? k.id : null;
-  k = k || {oms:'',url:'',land:'DE',profiel:'',prijs:null,btw:'btw',km:null,det:'',brandstof:'benzine',phev:false,co2w:null,co2n:null,keuring:'',status:'nieuw',notitie:''};
+  k = k || {oms:'',kenteken:'',url:'',land:'DE',profiel:'',prijs:null,btw:'btw',km:null,det:'',brandstof:'benzine',phev:false,co2w:null,co2n:null,keuring:'',status:'nieuw',notitie:''};
   $('#kandTitle').textContent = k.id ? 'Kandidaat bewerken' : 'Kandidaat / BPM-indicatie';
-  $('#k_oms').value = k.oms||''; $('#k_url').value = k.url||''; $('#k_land').value = k.land||'DE';
+  $('#k_oms').value = k.oms||''; $('#k_kenteken').value = k.kenteken||''; $('#k_url').value = k.url||''; $('#k_land').value = k.land||'DE';
   vulProfielSelect(); $('#k_profiel').value = k.profiel||'';
   $('#k_prijs').value = k.prijs||''; $('#k_btw').value = k.btw||'btw'; $('#k_km').value = k.km||''; $('#k_det').value = k.det||'';
   $('#k_brandstof').value = k.brandstof||'benzine'; $('#k_phev').value = k.phev ? '1':'0';
@@ -1017,10 +1089,10 @@ function resKaart(it, land, isNew, prevPrijs){
   const r = document.createElement('div'); r.className = 'res';
   let dagen = null;
   if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
-  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''].filter(Boolean).join(' · ');
+  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' + (it.co2_geschat ? ' (geschat)' : '') : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''].filter(Boolean).join(' · ');
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : ''}</div>`;
   return r;
 }
 
@@ -1293,6 +1365,37 @@ $('#btnLeer').addEventListener('click', () => {
 // kandidaat events
 ['k_oms','k_url','k_prijs','k_km','k_det','k_co2w','k_co2n','k_keuring','k_notitie'].forEach(id => $('#'+id).addEventListener('input', renderBpm));
 ['k_land','k_btw','k_brandstof','k_phev','k_status','k_profiel'].forEach(id => $('#'+id).addEventListener('change', renderBpm));
+$('#btnKenteken').addEventListener('click', async () => {
+  const k = cap($('#k_kenteken').value);
+  if (!k){ toast('Vul eerst een kenteken in.'); return; }
+  toast('Opzoeken bij de RDW\u2026');
+  try {
+    const d = await rdwKenteken(k);
+    if (!$('#k_oms').value) $('#k_oms').value = [d.merk, d.model].filter(Boolean).join(' ');
+    if (d.det) $('#k_det').value = d.det;
+    if (d.brandstof) $('#k_brandstof').value = d.brandstof;
+    if (d.co2) $('#k_co2w').value = d.co2;
+    $('#k_phev').value = d.phev ? '1' : '0';
+    $('#k_land').value = 'NL';
+    renderBpm();
+    toast(`RDW: ${d.merk} ${d.model}${d.co2 ? ', ' + d.co2 + ' g/km' : ''}`);
+  } catch(e){ toast('RDW: ' + (e.message || e)); }
+});
+$('#btnSchatCo2').addEventListener('click', async () => {
+  const oms = cap($('#k_oms').value).split(/\s+/);
+  const merk = oms[0], model = oms.slice(1, 3).join(' ');
+  const jaar = ($('#k_det').value || '').slice(0, 4);
+  if (!merk || !model || !jaar){ toast('Vul eerst omschrijving en datum eerste toelating in.'); return; }
+  toast('CO2 schatten via de RDW\u2026');
+  const brandstof = $('#k_phev').value === '1' ? 'phev' : $('#k_brandstof').value;
+  let r = await rdwSchatCo2(merk, model, jaar, brandstof).catch(() => null);
+  if (!r) r = await rdwSchatCo2(merk, oms[1] || '', jaar, brandstof).catch(() => null);
+  if (!r){ toast('Geen vergelijkbare auto\'s in het RDW-register gevonden.'); return; }
+  $('#k_co2w').value = r.co2;
+  $('#k_notitie').value = (cap($('#k_notitie').value) + ` [CO2 geschat: mediaan ${r.co2} g/km van ${r.n} NL-auto's, spreiding ${r.min}-${r.max}]`).trim();
+  renderBpm();
+  toast(`Geschat: ${r.co2} g/km (${r.n} auto's, ${r.min}-${r.max})`);
+});
 $('#btnNieuwKand').addEventListener('click', () => vulKandForm(null));
 $('#btnBewaarKand').addEventListener('click', () => {
   const k = leesKandForm();
