@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.02
+  KAAP Inkoop-radar – ophaler  v1.06
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
@@ -81,6 +81,7 @@ async function fetchAs24(l) {
         ez: ezFromMonthYear(tr.firstRegistration),
         fuel: normFuel(v.fuel) || fuelFromTitle(v.modelVersionInput),
         co2: co2m ? +co2m[1] : null,
+        img: (it.images || [])[0] || null,
         seller: it.seller?.companyName || null,
         city: it.location?.city || null,
         url: it.url ? host + it.url : null,
@@ -90,18 +91,25 @@ async function fetchAs24(l) {
     await sleep(1200);
   }
   if (!items.length && l.model) {
-    // Model-slug klopt waarschijnlijk niet: zoek de juiste schrijfwijze op in het merkoverzicht.
+    // Nul resultaten: ligt het aan de modelnaam of aan de filters? Eerst het model kaal proberen.
     try {
-      const b = l.url.replace(/\/lst\/([^\/?]+)\/[^\/?]+/, '/lst/$1');
-      const bh = await get(b);
-      const bd = JSON.parse((bh.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s) || [, '{}'])[1]);
-      const groups = [...new Set((bd?.props?.pageProps?.listings || []).map(x => x?.vehicle?.modelGroup).filter(Boolean))];
-      const norm = (x) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const hit = groups.find(g => norm(g) === norm(l.model)) || groups.find(g => norm(g).startsWith(norm(l.model)));
-      warn = hit
-        ? `0 resultaten; AutoScout24 noemt dit model "${hit}" - plak de model-URL in de app (Model-koppeling) of schrijf het model zo.`
-        : `0 resultaten; controleer de model-schrijfwijze op AutoScout24 (gezien in dit merk: ${groups.slice(0, 6).join(', ') || 'geen'}).`;
-    } catch (e) { warn = '0 resultaten; controleer de model-schrijfwijze op AutoScout24.'; }
+      const kaal = l.url.split('?')[0] + '?atype=C&cy=' + (new URL(l.url).searchParams.get('cy') || 'D');
+      const kh = await get(kaal);
+      const kd = JSON.parse((kh.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s) || [, '{}'])[1]);
+      const kaalAantal = kd?.props?.pageProps?.numberOfResults ?? 0;
+      if (kaalAantal > 0) {
+        warn = `model klopt (${kaalAantal} van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering.`;
+      } else {
+        const bh = await get(l.url.replace(/\/lst\/([^\/?]+)\/[^\/?]+/, '/lst/$1').split('?')[0] + '?atype=C');
+        const bd = JSON.parse((bh.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s) || [, '{}'])[1]);
+        const groups = [...new Set((bd?.props?.pageProps?.listings || []).map(x => x?.vehicle?.modelGroup).filter(Boolean))];
+        const norm = (x) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const hit = groups.find(g => norm(g) === norm(l.model)) || groups.find(g => norm(g).startsWith(norm(l.model)));
+        warn = hit
+          ? `AutoScout24 noemt dit model "${hit}" - schrijf het model zo, of plak de model-URL in de app.`
+          : `model "${l.model}" levert hier niets op; controleer de schrijfwijze op AutoScout24.`;
+      }
+    } catch (e) { warn = '0 resultaten; controleer de filters en de model-schrijfwijze op AutoScout24.'; }
   }
   return { count, items: dedupe(items).slice(0, MAX_ITEMS), warn };
 }
@@ -148,6 +156,7 @@ async function fetchLrp(l) {
       ez: ezFromMonthYear(attr('constructionYear')),
       fuel: normFuel(attr('fuel')) || fuelFromTitle(x.title),
       co2: null,
+      img: (x.imageUrls || [])[0] ? ('https:' + String(x.imageUrls[0]).replace(/^https?:/, '')) : null,
       transmission: attr('transmission'),
       seller: x.sellerInformation?.sellerName || null,
       city: x.location?.cityName || null,
@@ -215,10 +224,12 @@ async function fetchKleinanzeigen(l) {
       const price = (txt.match(/([\d\.]{4,9})\s*€/) || [])[1];
       const km = (txt.match(/([\d\.]{4,9})\s*km\b/) || [])[1];
       const ez = (txt.match(/EZ\s*(\d{2})\/(\d{4})/) || []);
+      const img = (blk.match(/"contentUrl":"([^"]+)"/) || blk.match(/<img[^>]+src="(https:\/\/img\.kleinanzeigen\.de[^"]+)"/) || [])[1];
       const city = (blk.match(/info--location"[^>]*>\s*([^<]+?)\s*</) || blk.match(/aditem-main--top--left"[^>]*>\s*([^<]+?)\s*</) || [])[1];
       title = unent(title);
       items.push({ id, title: (title || '').slice(0, 120), price: num(price), km: num(km), ez: ez[2] ? `${ez[2]}-${ez[1]}` : null,
         fuel: fuelFromTitle(title), co2: null, seller: null, city: city ? city.replace(/\s+/g, ' ').trim() : null,
+        img: img ? unent(img).replace(/&#61;/g, '=') : null,
         url: href ? 'https://www.kleinanzeigen.de' + href : null });
       n++;
     }
@@ -236,7 +247,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.02', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.06', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
