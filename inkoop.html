@@ -142,7 +142,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.07 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.08 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -162,7 +162,7 @@ details summary{cursor:pointer;font-weight:500}
         <div class="frm">
           <label class="f full"><span>Naam van het profiel (bijv. X5 M Sport 2020+)</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
           <label class="f"><span>Merk</span><input type="text" id="p_merk" list="merkenlijst" placeholder="BMW"><datalist id="merkenlijst"></datalist></label>
-          <label class="f"><span>Model (leeg = hele merk)</span><input type="text" id="p_model" placeholder="X5"></label>
+          <label class="f"><span>Model (leeg = hele merk, meerdere met komma)</span><input type="text" id="p_model" placeholder="X5, X6"></label>
           <label class="f"><span>Bouwjaar vanaf</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
           <label class="f"><span>Bouwjaar tot (optioneel)</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
           <label class="f"><span>Kilometerstand max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
@@ -346,12 +346,12 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.07
+   KAAP Inkoop-radar  v1.08
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.07';
+const APP_VERSIE = '1.08';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -561,6 +561,12 @@ function makeIdVoor(merk){
   return null;
 }
 function bouwLinks(p){
+  // Meerdere modellen: elk model krijgt zijn eigen set links.
+  const modellen = splitList(p.model);
+  if (modellen.length > 1) return modellen.flatMap(m => bouwLinksEnkel(Object.assign({}, p, {model: m})));
+  return bouwLinksEnkel(p);
+}
+function bouwLinksEnkel(p){
   const out = [];
   const ctx = {
     merkS: slug(p.merk), modelS: slug(p.model), modelAs24: as24Slug(p.model),
@@ -578,7 +584,7 @@ function bouwLinks(p){
   return out;
 }
 function bouwLink(s, p, v, c){
-  const L = {site:s, naam:SITES[s].naam, variant:v, status:'ok', note:'', url:''};
+  const L = {site:s, naam:SITES[s].naam, variant:v, model:p.model, status:'ok', note:'', url:''};
   const yr = (a,b) => (a?a:'') + ':' + (b?b:'');
   if (s === 'mobile'){
     let kop = koppeling('mobile', p.merk, p.model);
@@ -652,7 +658,7 @@ function bouwLink(s, p, v, c){
     if (p.km) a.append('attributeRanges[]', `mileage::${p.km}`);
     if (p.pmin || p.pmax) a.append('attributeRanges[]', `PriceCents:${p.pmin?p.pmin*100:''}:${p.pmax?p.pmax*100:''}`);
     if (qtxt) a.set('query', qtxt);
-    a.set('limit','30'); a.set('sortBy','SORT_INDEX'); a.set('sortOrder','DECREASING');
+    a.set('limit','50'); a.set('sortBy','SORT_INDEX'); a.set('sortOrder','DECREASING');
     L.apiUrl = l2 ? `${host}/lrp/api/search?` + a.toString() : null;
     // Geen model-id? De ophaler zoekt het zelf op in de merkpagina van de site.
     if (l2 && !kop && p.model) L.resolve = {host, pad, merkSlug: c.merkS, model: cap(p.model)};
@@ -1009,10 +1015,12 @@ function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.k
 function resKaart(it, land, isNew, prevPrijs){
   const bpm = bpmVoorItem(it, land);
   const r = document.createElement('div'); r.className = 'res';
-  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : ''].filter(Boolean).join(' · ');
+  let dagen = null;
+  if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
+  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''].filter(Boolean).join(' · ');
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}</small>` : ''}</div>`;
   return r;
 }
 
@@ -1099,7 +1107,7 @@ async function zoekLive(){
   const p = leesProfielForm();
   if (!p.merk){ toast('Vul minimaal een merk in.'); return; }
   const links = bouwLinks(p).filter(l => l.url && SITES[l.site].poll);
-  LIVE = {bezig:true, naam: p.naam || autoNaam(p), sites: links.map(l => ({site:l.site, naam:l.naam, land:SITES[l.site].land, variant:l.variant, url:l.url, status:'wacht', items:[], count:null, error:null}))};
+  LIVE = {bezig:true, naam: p.naam || autoNaam(p), sites: links.map(l => ({site:l.site, naam:l.naam, land:SITES[l.site].land, variant:l.variant, model:l.model, url:l.url, status:'wacht', items:[], count:null, error:null}))};
   renderLive();
   await Promise.all(LIVE.sites.map(async (s, i) => {
     const l = links[i];
@@ -1107,7 +1115,7 @@ async function zoekLive(){
       let res;
       if (l.site.startsWith('as24')) res = parseerAs24(await haalViaProxy(l.url), new URL(l.url).origin);
       else if (l.apiUrl) {
-        const q = [p.merk, p.model, l.variant].filter(Boolean).join(' ');
+        const q = [p.merk, l.model || p.model, l.variant].filter(Boolean).join(' ');
         let api = l.apiUrl.replace(/([?&])query=[^&]*/, '$1query=' + encodeURIComponent(q));
         if (!/[?&]query=/.test(api) && q) api += '&query=' + encodeURIComponent(q);
         res = parseerLrp(await haalViaProxy(api), new URL(api).origin);
@@ -1134,7 +1142,7 @@ function renderLive(){
     const kop = s.status === 'wacht' ? '<small class="muted">bezig…</small>'
       : s.status === 'fout' ? `<small class="muted">mislukt</small>`
       : `<small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${s.items.length} getoond</small>`;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
       + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false)));
@@ -1149,7 +1157,7 @@ function download(naam, tekst){ const blob = new Blob([tekst], {type:'applicatio
 function exportProfiles(){
   const out = {generated:new Date().toISOString(), app:APP_VERSIE, profiles: S.profielen.map(p => ({
     id:p.id, naam:p.naam||autoNaam(p), exclude: splitList(p.uitvNiet),
-    links: bouwLinks(p).filter(l=>l.url).map(l => ({site:l.site, naam:SITES[l.site].naam, land:SITES[l.site].land, poll:!!SITES[l.site].poll, variant:l.variant, url:l.url, apiUrl:l.apiUrl||null, resolve:l.resolve||null, merk:p.merk, model:p.model,
+    links: bouwLinks(p).filter(l=>l.url).map(l => ({site:l.site, naam:SITES[l.site].naam, land:SITES[l.site].land, poll:!!SITES[l.site].poll, variant:l.variant, url:l.url, apiUrl:l.apiUrl||null, resolve:l.resolve||null, merk:p.merk, model:l.model || p.model,
       criteria:{bjvan:p.bjvan, bjtot:p.bjtot, km:p.km, pmin:p.pmin, pmax:p.pmax}}))
   }))};
   download('profiles.json', JSON.stringify(out, null, 2));
@@ -1213,7 +1221,7 @@ function renderResultaten(){
     totaal += items.length;
     const box = document.createElement('div'); box.className = 'mt';
     const nNew = items.filter(it => gezien ? new Date(it.first_seen) > gezien : true).length; nieuw += nNew;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
       (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
       (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
