@@ -142,7 +142,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.09 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.10 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -349,12 +349,12 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.09
+   KAAP Inkoop-radar  v1.10
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.09';
+const APP_VERSIE = '1.10';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -1084,8 +1084,41 @@ function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.k
 
 
 
-function resKaart(it, land, isNew, prevPrijs){
+
+// CO2-bandbreedte uit vergelijkbare advertenties in dezelfde zoekopdracht.
+// Geen puntschatting: de spreiding binnen een model is te groot (gemeten 12-28%).
+function co2Index(items){
+  const idx = {};
+  for (const it of items){
+    if (!it.co2 || !it.fuel) continue;
+    const jaar = it.ez ? String(it.ez).slice(0, 4) : '';
+    for (const k of [it.fuel + '|' + jaar, it.fuel]){
+      (idx[k] = idx[k] || []).push(+it.co2);
+    }
+  }
+  return idx;
+}
+function bpmBereik(it, land, idx){
+  if (land === 'NL' || it.co2 || !it.fuel || !it.ez || !idx) return null;
+  const jaar = String(it.ez).slice(0, 4);
+  const v = (idx[it.fuel + '|' + jaar] || []).length >= 3 ? idx[it.fuel + '|' + jaar] : idx[it.fuel];
+  if (!v || v.length < 3) return null;
+  const g = [...v].sort((a, b) => a - b);
+  const laag = g[0], hoog = g[g.length - 1];
+  const det = parseEz(it.ez); if (!det) return null;
+  const keuring = new Date(); keuring.setDate(keuring.getDate() + (+S.instellingen.keuringDagen || 14));
+  const reken = (co2) => {
+    const r = berekenBpm({brandstof: it.fuel, phev: (it.fuel === 'hybride' && co2 <= 60), co2w: co2, co2n: null, det, keuring});
+    return r.fout ? null : r.netto;
+  };
+  const min = reken(laag), max = reken(hoog);
+  if (min == null || max == null) return null;
+  return {min, max, laag, hoog, n: g.length};
+}
+
+function resKaart(it, land, isNew, prevPrijs, idx){
   const bpm = bpmVoorItem(it, land);
+  const band = bpm ? null : bpmBereik(it, land, idx);
   const r = document.createElement('div'); r.className = 'res';
   let dagen = null;
   if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
@@ -1093,7 +1126,7 @@ function resKaart(it, land, isNew, prevPrijs){
   r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, land});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (land && land !== 'NL' ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">BPM uitrekenen</button>' : '')}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
   return r;
 }
 
@@ -1243,7 +1276,8 @@ function renderLive(){
     box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
       + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false)));
+    const idx = co2Index(LIVE.sites.flatMap(x => x.items));
+    s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false, null, idx)));
     if (s.status === 'klaar' && !s.items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
@@ -1323,7 +1357,8 @@ function renderResultaten(){
       (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
       (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, land, gezien ? new Date(it.first_seen) > gezien : true)));
+    const idx = co2Index(alle);
+    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
     if (!items.length && !s.error) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
