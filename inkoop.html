@@ -1090,11 +1090,37 @@ function resKaart(it, land, isNew, prevPrijs){
   let dagen = null;
   if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
   const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' + (it.co2_geschat ? ' (geschat)' : '') : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''].filter(Boolean).join(' · ');
+  r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, land});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : ''}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (land && land !== 'NL' ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">BPM uitrekenen</button>' : '')}</div>`;
   return r;
 }
+
+
+// Vanuit een resultaat naar het BPM-formulier, alles ingevuld behalve de CO2.
+function kandidaatUit(d){
+  vulKandForm(null);
+  $('#k_oms').value = d.oms || '';
+  $('#k_url').value = d.url || '';
+  $('#k_land').value = d.land || 'DE';
+  if (d.prijs) $('#k_prijs').value = d.prijs;
+  if (d.km) $('#k_km').value = d.km;
+  if (d.ez){ const m = String(d.ez).match(/^(\d{4})(?:-(\d{1,2}))?/); if (m) $('#k_det').value = `${m[1]}-${(m[2]||'06').padStart(2,'0')}-01`; }
+  if (d.fuel) $('#k_brandstof').value = d.fuel === 'hybride_diesel' ? 'hybride_diesel' : d.fuel;
+  $('#k_phev').value = (d.fuel === 'hybride' && (!d.co2 || d.co2 <= 60)) ? '1' : '0';
+  if (d.co2) $('#k_co2w').value = d.co2;
+  renderBpm();
+  toonTab('kandidaten');
+  const veld = d.co2 ? $('#k_prijs') : $('#k_co2w');
+  veld.focus(); veld.scrollIntoView({behavior:'smooth', block:'center'});
+  toast(d.co2 ? 'Overgenomen uit de advertentie.' : 'Overgenomen. Vul de CO2 in, die staat niet in het overzicht.');
+}
+document.addEventListener('click', (e) => {
+  const knop = e.target.closest('.naarkand'); if (!knop) return;
+  const kaart = knop.closest('.res'); if (!kaart || !kaart.dataset.it) return;
+  try { kandidaatUit(JSON.parse(kaart.dataset.it)); } catch(err){ toast('Overnemen mislukt'); }
+});
 
 // ---------- Live zoeken via je eigen proxy ----------
 const unent = (s) => String(s ?? '').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#(\d+);/g,(m,c)=>String.fromCharCode(c));
