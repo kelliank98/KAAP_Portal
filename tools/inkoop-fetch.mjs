@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.08
+  KAAP Inkoop-radar – ophaler  v1.09
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
@@ -53,6 +53,67 @@ function fuelFromTitle(t) {
 function ezFromMonthYear(s) { // "10-2023" | "10/2023" | "2023" -> "2023-10" | "2023"
   const m = String(s || '').match(/(\d{1,2})[\/\-](\d{4})/); if (m) return `${m[2]}-${m[1].padStart(2, '0')}`;
   const y = String(s || '').match(/(20\d\d|19\d\d)/); return y ? y[1] : null;
+}
+
+
+// ---------- CO2 schatten via het RDW-register ----------
+// Duitse advertenties vermelden de CO2 vaak niet. De mediaan van dezelfde uitvoering
+// die in Nederland rijdt is een bruikbare benadering voor de BPM-indicatie.
+const RDW_V = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json';
+const RDW_B = 'https://opendata.rdw.nl/resource/8ys7-d773.json';
+const co2Cache = new Map();
+const rdwBrandstof = (s) => { const t = (s || '').toLowerCase(); if (/diesel/.test(t)) return 'diesel'; if (/benzine/.test(t)) return 'benzine'; if (/elektr/.test(t)) return 'elektrisch'; return null; };
+
+async function schatCo2(merk, model, jaar, brandstof) {
+  if (!merk || !model || !jaar) return null;
+  const sleutel = [merk, model, jaar, brandstof || ''].join('|').toLowerCase();
+  if (co2Cache.has(sleutel)) return co2Cache.get(sleutel);
+  try {
+    const mdl = String(model).toUpperCase().replace(/'/g, '');
+    const q = new URLSearchParams({
+      '$select': 'kenteken',
+      '$where': `upper(merk)='${String(merk).toUpperCase().replace(/'/g, '')}' AND starts_with(upper(handelsbenaming),'${mdl}') AND datum_eerste_toelating between '${+jaar - 1}0101' and '${+jaar + 1}1231'`,
+      '$limit': '300',
+    });
+    const v = await get(`${RDW_V}?${q}`, 'application/json');
+    if (!v.length) { co2Cache.set(sleutel, null); return null; }
+    const platen = v.map(x => x.kenteken);
+    const blokken = [platen.slice(0, 150), platen.slice(150, 300)].filter(b => b.length);
+    const rijen = (await Promise.all(blokken.map(blok => get(
+      `${RDW_B}?${new URLSearchParams({ '$select': 'kenteken,brandstof_omschrijving,co2_uitstoot_gecombineerd,co2_uitstoot_gewogen', '$where': `kenteken in(${blok.map(p => `'${p}'`).join(',')})`, '$limit': '400' })}`,
+      'application/json')))).flat();
+    const perAuto = {};
+    rijen.forEach(r => { (perAuto[r.kenteken] = perAuto[r.kenteken] || []).push(r); });
+    const waarden = [];
+    for (const k in perAuto) {
+      const rs = perAuto[k];
+      const soorten = rs.map(x => (x.brandstof_omschrijving || '').toLowerCase());
+      const elek = soorten.some(s => /elektr/.test(s));
+      const soort = elek && soorten.length > 1 ? (soorten.some(s => /diesel/.test(s)) ? 'hybride_diesel' : 'hybride') : rdwBrandstof(rs[0].brandstof_omschrijving);
+      if (brandstof && soort !== brandstof) continue;
+      const w = rs.map(x => +(x.co2_uitstoot_gewogen || x.co2_uitstoot_gecombineerd || 0)).filter(Boolean)[0];
+      if (w) waarden.push(w);
+    }
+    if (waarden.length < 3) { co2Cache.set(sleutel, null); return null; }
+    waarden.sort((a, b) => a - b);
+    const res = { co2: Math.round(waarden[Math.floor(waarden.length / 2)]), n: waarden.length, min: waarden[0], max: waarden[waarden.length - 1] };
+    co2Cache.set(sleutel, res);
+    return res;
+  } catch (e) { co2Cache.set(sleutel, null); return null; }
+}
+
+// Vul ontbrekende CO2 aan bij buitenlandse advertenties (bij NL-kenteken is er geen BPM).
+async function vulCo2Aan(items, l) {
+  if (l.land === 'NL' || !l.model) return 0;
+  let aangevuld = 0;
+  for (const it of items) {
+    if (it.co2 || !it.ez || !it.fuel) continue;
+    const jaar = String(it.ez).slice(0, 4);
+    const r = await schatCo2(l.merk, l.model, jaar, it.fuel);
+    if (r) { it.co2 = r.co2; it.co2_geschat = `mediaan van ${r.n} NL-auto's (${r.min}-${r.max} g/km)`; aangevuld++; }
+    await sleep(150);
+  }
+  return aangevuld;
 }
 
 // ---------- AutoScout24 ----------
@@ -247,7 +308,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.08', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.09', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
@@ -264,6 +325,8 @@ for (const p of (src.profiles || [])) {
     try {
       const res = await HANDLERS[l.site](l);
       site.count = res.count; site.warn = res.warn || null;
+      const geschat = await vulCo2Aan(res.items, l);
+      if (geschat) site.warn = [site.warn, `CO2 geschat via RDW voor ${geschat} advertentie(s)`].filter(Boolean).join(' | ');
       site.items = res.items.filter(it => !uitgesloten(it)).map(it => {
         const old = prevMap.get(it.id);
         const o = { ...it, first_seen: old?.first_seen || site.checked };
