@@ -109,6 +109,7 @@ table.t tr.clk:hover td{background:var(--sand)}
 .tag.bod{background:var(--warn-bg);color:var(--warn)}
 .tag.gekocht{background:var(--ok-bg);color:var(--ok)}
 .tag.afgewezen{background:var(--bad-bg);color:var(--bad)}
+.tag.land{background:var(--ink);color:#fff;letter-spacing:.04em;font-size:11px;vertical-align:middle}
 .tag.btw{background:#E8EEF6;color:#2B4A78}
 .tag.marge{background:var(--bronze-pale);color:var(--bronze)}
 
@@ -153,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.15 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.16 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -366,12 +367,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.15
+   KAAP Inkoop-radar  v1.16
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.15';
+const APP_VERSIE = '1.16';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -483,6 +484,8 @@ function laad(){
   return s;
 }
 function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+// Naam met landcode, tenzij die er al in staat (AutoScout24 DE, Bilbasen (DK)).
+const siteLabel = (k) => SITES[k].naam.includes(SITES[k].land) ? SITES[k].naam : `${SITES[k].naam} (${SITES[k].land})`;
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
 const $ = (q) => document.querySelector(q);
 const $$ = (q, root) => Array.from((root || document).querySelectorAll(q));
@@ -953,7 +956,7 @@ function vulProfielForm(p){
   renderChips($('#p_carr'), CARROSSERIE, p.carr||[]);
   renderChips($('#p_brandstof'), BRANDSTOF, p.brandstof||[]);
   renderChips($('#p_opties'), OPTIES, p.opties||[]);
-  renderChips($('#p_sites'), Object.keys(SITES).map(k=>({k, l:SITES[k].naam})), Object.keys(p.sites||{}).filter(k=>p.sites[k]));
+  renderChips($('#p_sites'), Object.keys(SITES).map(k=>({k, l:siteLabel(k)})), Object.keys(p.sites||{}).filter(k=>p.sites[k]));
   renderLinks(); renderProfielLijst(); renderResultaten(); renderHist();
 }
 function autoNaam(p){ return [p.merk, p.model, p.uitv, p.bjvan ? p.bjvan + '+' : ''].filter(Boolean).join(' ').trim() || 'Zoekprofiel'; }
@@ -1079,7 +1082,7 @@ function renderInstellingen(){
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => $('#s_tr_'+l).value = i.transport[l] ?? '');
   $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen;
-  renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:SITES[k].naam})), Object.keys(i.sites).filter(k=>i.sites[k]));
+  renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:siteLabel(k)})), Object.keys(i.sites).filter(k=>i.sites[k]));
   // make ids
   const tb = $('#makeIdTabel tbody'); tb.innerHTML = '';
   Object.keys(i.makeIds).sort((a,b)=>a.localeCompare(b)).forEach(m => {
@@ -1336,7 +1339,7 @@ function renderLive(){
     const kop = s.status === 'wacht' ? '<small class="muted">bezig…</small>'
       : s.status === 'fout' ? `<small class="muted">mislukt</small>`
       : `<small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${s.items.length} getoond</small>`;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)} <span class="tag land">${esc(s.land || '')}</span>${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
       + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '')
       + (s.weggefilterd ? `<div class="help" style="margin-top:4px">${s.weggefilterd} resulta${s.weggefilterd === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
       + (s.modelOngecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(s.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd. Controleer zelf of dit het juiste model is.</div>` : '');
@@ -1418,7 +1421,7 @@ function renderResultaten(){
     totaal += items.length;
     const box = document.createElement('div'); box.className = 'mt';
     const nNew = items.filter(it => gezien ? new Date(it.first_seen) > gezien : true).length; nieuw += nNew;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))} <span class="tag land">${esc(land || '')}</span>${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
       (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
       (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
@@ -1576,6 +1579,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.16', 'Bij elke site staat nu het land: in de keuzelijst, bij de zoeklinks en boven de resultaten.'],
   ['1.15', 'Filter op aanbieder: alleen handel, alleen particulier, of beide. Laat je het leeg, dan worden beide gezocht. Voorheen stond handel overal vast aan.'],
   ['1.14', 'De proxy staat standaard ingevuld, zodat de app meteen werkt zonder instellen.'],
   ['1.13', 'Live zoeken controleert nu zelf of een gevonden auto het juiste model is en binnen je bouwjaar, kilometerstand en prijs valt. Marktplaats gaf soms een X3 terug op een zoekopdracht naar een X5.'],
