@@ -142,7 +142,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.10 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.11 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -349,12 +349,12 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.10
+   KAAP Inkoop-radar  v1.11
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.10';
+const APP_VERSIE = '1.11';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -1230,9 +1230,17 @@ function parseerKleinanzeigen(tekst){
 async function haalViaProxy(url){
   const p = (S.instellingen.proxy || '').trim();
   const scheiding = p.includes('?') ? '&' : '?';
-  const r = await fetch(p + scheiding + 'url=' + encodeURIComponent(url));
-  if (!r.ok) throw new Error('proxy gaf HTTP ' + r.status);
-  return r.text();
+  let laatste = 0;
+  for (let poging = 1; poging <= 2; poging++){
+    const r = await fetch(p + scheiding + 'url=' + encodeURIComponent(url));
+    if (r.ok) return r.text();
+    laatste = r.status;
+    if (![403, 429, 502, 503].includes(r.status)) break;
+    if (poging === 1) await new Promise(k => setTimeout(k, 2500));
+  }
+  const host = (() => { try { return new URL(url).hostname.replace('www.', ''); } catch(e){ return 'deze site'; } })();
+  if (laatste === 403 || laatste === 429) throw new Error(`${host} weigert dit verzoek (${laatste}). Meestal een tijdelijke blokkade van de proxy-servers, niet van jou. Gebruik zolang de knop "Op de site".`);
+  throw new Error(`${host} gaf HTTP ${laatste}.`);
 }
 async function zoekLive(){
   const p = leesProfielForm();
