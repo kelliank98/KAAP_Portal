@@ -28,7 +28,18 @@ header{background:var(--ink);color:#fff;border-bottom:3px solid var(--bronze)}
 .hwrap{max-width:1160px;margin:0 auto;padding:18px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
 .brand{display:flex;align-items:baseline;gap:12px;padding-bottom:14px}
 .brand h1{font-size:22px;font-weight:700;letter-spacing:-0.02em}
-.brand span{color:var(--bronze-soft);font-size:13px;margin-left:4px}
+.brand span{color:var(--bronze-soft);font-size:13px;margin-left:4px;cursor:pointer;border-bottom:1px dotted rgba(217,195,168,.5)}
+.brand span:hover{color:#fff;border-bottom-color:#fff}
+.overlay{position:fixed;inset:0;background:rgba(16,16,16,.55);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:50;overflow:auto}
+.overlay.on{display:flex}
+.hist-venster{background:var(--paper);border-radius:var(--r);max-width:620px;width:100%;padding:22px 24px;border:1px solid var(--line)}
+.hist-venster h2{margin-bottom:4px}
+.hist-venster .rel{border-top:1px solid var(--line);padding:12px 0}
+.hist-venster .rel:first-of-type{border-top:0}
+.hist-venster .rel b{font-size:14px}
+.hist-venster .rel small{color:var(--muted);margin-left:8px}
+.hist-venster ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--text)}
+.hist-venster li{margin-bottom:3px}
 nav{display:flex;gap:2px}
 nav button{background:transparent;border:0;color:#CFC8BF;padding:12px 16px;border-bottom:3px solid transparent;margin-bottom:-3px;cursor:pointer;font-weight:500}
 nav button.on{color:#fff;border-bottom-color:#fff}
@@ -142,7 +153,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.11 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.12 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -347,14 +358,19 @@ details summary{cursor:pointer;font-weight:500}
 </section>
 </main>
 <div class="toast" id="toast"></div>
+<div class="overlay" id="histVenster"><div class="hist-venster">
+  <div class="row between"><h2>Wat er is veranderd</h2><button class="btn sec sm" id="histSluit">Sluiten</button></div>
+  <p class="help" style="margin-top:0">Elke wijziging krijgt een eigen versienummer. De nieuwste staat bovenaan.</p>
+  <div id="histLijst"></div>
+</div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.11
+   KAAP Inkoop-radar  v1.12
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.11';
+const APP_VERSIE = '1.12';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -1515,6 +1531,32 @@ $('#btnTestProxy').addEventListener('click', async () => {
 });
 
 $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s_sites')); for (const k in SITES) S.instellingen.sites[k] = on.includes(k); bewaar(); });
+
+// ---------- Versiegeschiedenis ----------
+const VERSIES = [
+  ['1.12', 'Versienummer in de kop is aanklikbaar: dit overzicht.'],
+  ['1.11', 'Bij een geweigerd verzoek probeert de app het nog een keer en legt daarna in gewone taal uit wat er aan de hand is.'],
+  ['1.10', 'Geschatte BPM-bandbreedte bij advertenties zonder CO2, berekend uit vergelijkbare auto\u2019s in dezelfde zoekopdracht.'],
+  ['1.09', 'Knop "Zelf uitrekenen" neemt een advertentie over in het BPM-formulier; alleen de CO2 vul je zelf in.'],
+  ['1.08', 'Meerdere modellen per zoekopdracht (X3, X5). Prijsverloop en "dagen in beeld" per advertentie. 50 in plaats van 30 resultaten bij Marktplaats en 2dehands. Ophaler voor macOS.'],
+  ['1.07', 'Zoeken toont de resultaten direct in de app via je eigen proxy, in plaats van tabbladen te openen.'],
+  ['1.06', 'Elke advertentie krijgt een voorbeeldfoto.'],
+  ['1.05', 'Zoeken zonder bewaren werd de hoofdweg; bewaren is er alleen nog voor meldingen.'],
+  ['1.04', 'Bij nul resultaten zegt de app of het aan de modelnaam ligt of aan te strakke filters.'],
+  ['1.03', 'Zoekwoorden, uitsluitingen en opties worden per merk onthouden.'],
+  ['1.02', 'Werkt voor elk merk en model: Engelse modelnamen op AutoScout24, model-id\u2019s worden zelf opgezocht, Kleinanzeigen zoekt op titel.'],
+  ['1.01', '2ememain toegevoegd. Filterfout verholpen waardoor plug-in hybrides grotendeels wegvielen.'],
+  ['1.00', 'Eerste versie: zoeklinks voor elf sites, ophaler, BPM-indicatie en kandidatenlijst.'],
+];
+function toonGeschiedenis(){
+  $('#histLijst').innerHTML = VERSIES.map(([v, tekst], i) => `<div class="rel"><b>v${v}</b>${i === 0 ? '<small>huidige versie</small>' : ''}<ul><li>${esc(tekst)}</li></ul></div>`).join('');
+  $('#histVenster').classList.add('on');
+}
+document.querySelector('.brand span').addEventListener('click', toonGeschiedenis);
+$('#histSluit').addEventListener('click', () => $('#histVenster').classList.remove('on'));
+$('#histVenster').addEventListener('click', (e) => { if (e.target.id === 'histVenster') $('#histVenster').classList.remove('on'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#histVenster').classList.remove('on'); });
+
 function init(){
   vulMerkenlijst(); vulProfielForm(S.concept && !S.profielen.length ? S.concept : null); vulKandForm(null); renderInstellingen(); vulProfielSelect();
   if (S.concept && S.profielen.length) vulProfielForm(S.concept);
