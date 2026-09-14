@@ -1,4 +1,4 @@
-# KAAP Inkoop-radar v1.10
+# KAAP Inkoop-radar v1.12
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op 11 sites, resultaten toont die de ophaler heeft gevonden, en per auto een BPM- en kostprijsindicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -11,7 +11,7 @@ Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op 11 si
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
 | `tools/inkoop-fetch.mjs` | de ophaler (Node 20, geen pakketten) | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.10.html` | archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.12.html` | archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Wat het wel en niet doet
 
@@ -59,6 +59,14 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - 2ememain is dezelfde database als 2dehands (getest: identieke aantallen en dezelfde advertentie-nummers), alleen met een Franse interface. Staat standaard uit.
 - Auctiekanalen (OPENLANE, BCA, Autorola) zitten er niet in: die vereisen een handelaarslogin en verbieden geautomatiseerd uitlezen in hun voorwaarden.
 
+## Wijzigingen v1.12
+
+- Het versienummer in de kop is aanklikbaar en opent de volledige wijzigingsgeschiedenis.
+
+## Wijzigingen v1.11
+
+- Weigert een site het verzoek (403 of 429), dan probeert de app het na 2,5 seconde nog een keer en legt daarna in gewone taal uit wat er speelt. Kleinanzeigen blokkeert hele IP-reeksen tijdelijk; dat treft de proxy-servers, niet jouw eigen verbinding. Gebruik zolang de knop *Op de site*.
+
 ## Wijzigingen v1.09 en v1.10
 
 - Knop **Zelf uitrekenen** op elk buitenlands resultaat zonder CO2: neemt titel, link, land, prijs, kilometerstand, datum eerste toelating en brandstof over naar het BPM-formulier; alleen de CO2 vul je zelf in.
@@ -81,6 +89,14 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Zoeken** opent geen tabbladen meer. Browsers blokkeerden alles na het eerste tabblad, waardoor je alleen op mobile.de belandde.
 - Met een eigen proxy toont **Zoeken** de resultaten direct in de app, met foto, per site gegroepeerd.
 - Nieuw bestand `tools/kaap-proxy.js` plus uitleg hierboven.
+
+## Wijzigingen v1.12
+
+- Het versienummer in de kop is aanklikbaar en opent de volledige wijzigingsgeschiedenis.
+
+## Wijzigingen v1.11
+
+- Weigert een site het verzoek (403 of 429), dan probeert de app het na 2,5 seconde nog een keer en legt daarna in gewone taal uit wat er speelt. Kleinanzeigen blokkeert hele IP-reeksen tijdelijk; dat treft de proxy-servers, niet jouw eigen verbinding. Gebruik zolang de knop *Op de site*.
 
 ## Wijzigingen v1.09 en v1.10
 
