@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.16 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.17 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -338,6 +338,9 @@ details summary{cursor:pointer;font-weight:500}
         <p class="help">Sleep de knop hieronder naar je bladwijzerbalk. Sta je op een advertentie (mobile.de, AutoScout24, Marktplaats), klik erop: titel, prijs, kilometerstand, eerste toelating en CO2 worden uit de pagina gelezen en hier ingevuld. Controleer altijd; het is tekstherkenning.</p>
         <a id="bookmarklet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP kandidaat</a>
         <p class="help mt">Werkt alleen als deze app via https (GitHub Pages) draait; vanaf een lokaal bestand blokkeren browsers het openen.</p>
+        <h3 style="margin-top:18px">Bladwijzer-knop: aantal treffers terugmelden</h3>
+        <p class="help">Voor mobile.de en Gaspedaal, die we niet mogen uitlezen. Sleep deze knop ook naar je bladwijzerbalk. Klik je hem aan op een resultatenpagina van die sites, dan leest hij het aantal treffers en zet dat bij de betreffende zoeklink in de app.</p>
+        <a id="tellerlet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP teller</a>
       </div>
       <div class="card">
         <h2>Geleerde model-koppelingen</h2>
@@ -367,12 +370,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.16
+   KAAP Inkoop-radar  v1.17
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.16';
+const APP_VERSIE = '1.17';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -478,7 +481,8 @@ function laad(){
   s.kandidaten = s.kandidaten || [];
   s.gezien = s.gezien || {};
   s.geschiedenis = s.geschiedenis || {};
-  s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
+  s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht
+  s.tellers = s.tellers || {};     // handmatig teruggemelde aantallen per zoeklink   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
   if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   return s;
@@ -983,7 +987,7 @@ function renderLinks(){
   links.forEach(l => {
     const d = document.createElement('div'); d.className = 'lnk ' + l.status;
     d.innerHTML = `<div class="site">${esc(l.naam)}<small>${esc(SITES[l.site].land)}${l.variant ? ' · ' + esc(l.variant) : ''}</small></div>
-      <div class="note">${esc(l.note || SITES[l.site].info)}</div>
+      <div class="note">${esc(l.note || SITES[l.site].info)}${tellerTekst(l.url) ? '<br>' + tellerTekst(l.url) : ''}</div>
       <div class="row">${l.url ? `<a class="btn sm" href="${l.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(l.url)}">Kopieer</button>` : ''}</div>`;
     el.appendChild(d);
   });
@@ -1109,6 +1113,8 @@ function renderInstellingen(){
   const app = location.href.split('#')[0].split('?')[0];
   const code = `(function(){var b=document.body.innerText,t=document.title;function m(r,i){var x=b.match(r);return x?x[i]:''}var pr=m(/€\\s?([0-9][0-9\\.\\s]{3,8})(?:,|\\b)/,1).replace(/[^0-9]/g,'');var co=m(/(\\d{1,3})\\s?g\\/km/i,1);var ez=m(/\\b(0[1-9]|1[0-2])\\/(20\\d\\d)\\b/,0);var km=m(/([0-9]{1,3}[\\.\\s]?[0-9]{3})\\s?km\\b/i,1).replace(/[^0-9]/g,'');var fu=/diesel/i.test(t)?'diesel':/hybrid/i.test(t)?'hybride':/benzin|petrol|essence/i.test(t)?'benzine':'';var u='${app}?add=1&title='+encodeURIComponent(t.slice(0,120))+'&price='+pr+'&co2='+co+'&ez='+encodeURIComponent(ez)+'&km='+km+'&fuel='+fu+'&src='+encodeURIComponent(location.href);window.open(u,'_blank');})();`;
   $('#bookmarklet').setAttribute('href', 'javascript:' + code);
+  const tellerCode = `(function(){var t=document.body.innerText;var m=t.match(/([0-9][0-9.\\s]{0,9})\\s*(Angebote|Treffer|Fahrzeuge|resultaten|resultaat|auto's|occasions|advertenties|Ergebnisse)/i);if(!m){var p=prompt('Aantal treffers niet gevonden. Typ het zelf over:');if(!p)return;m=[0,p];}var n=m[1].replace(/[^0-9]/g,'');window.open('${app}?teller='+n+'&bron='+encodeURIComponent(location.href),'_blank');})();`;
+  $('#tellerlet').setAttribute('href', 'javascript:' + tellerCode);
 }
 function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.keys(S.instellingen.makeIds).sort().map(m=>`<option value="${esc(m)}">`).join(''); }
 
@@ -1433,6 +1439,27 @@ function renderResultaten(){
   meta.textContent = `${sites.length} site${sites.length===1?'':'s'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
 }
 
+
+// ---------- Teller: aantal treffers terugmelden vanaf sites die we niet mogen uitlezen ----------
+const linkSleutel = (url) => { let n = 0; for (let i = 0; i < url.length; i++) n = (n * 31 + url.charCodeAt(i)) >>> 0; return 's' + n.toString(36); };
+function tellerTekst(url){
+  const t = S.tellers[linkSleutel(url)];
+  if (!t) return '';
+  const dagen = Math.floor((Date.now() - t.d) / 86400000);
+  const wanneer = dagen === 0 ? 'vandaag' : dagen === 1 ? 'gisteren' : dagen + ' dagen geleden';
+  return `<b>${num(t.n)} treffer${t.n === 1 ? '' : 's'}</b> gemeten ${wanneer}`;
+}
+function verwerkTeller(){
+  const q = new URLSearchParams(location.search);
+  const n = q.get('teller'), bron = q.get('bron');
+  if (n === null || !bron) return;
+  S.tellers[linkSleutel(bron)] = {n: +n, d: Date.now()};   // URLSearchParams ontcijfert al
+  bewaar();
+  history.replaceState(null, '', location.pathname);
+  renderLinks();
+  toast(`${num(+n)} treffers genoteerd voor deze zoekopdracht.`);
+}
+
 // ---------- Inkomende kandidaat via bladwijzer ----------
 function verwerkInkomend(){
   const q = new URLSearchParams(location.search);
@@ -1579,6 +1606,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.17', 'Bladwijzer "KAAP teller": klik hem aan op mobile.de of Gaspedaal en het aantal treffers komt bij de zoeklink in de app te staan, met de datum erbij.'],
   ['1.16', 'Bij elke site staat nu het land: in de keuzelijst, bij de zoeklinks en boven de resultaten.'],
   ['1.15', 'Filter op aanbieder: alleen handel, alleen particulier, of beide. Laat je het leeg, dan worden beide gezocht. Voorheen stond handel overal vast aan.'],
   ['1.14', 'De proxy staat standaard ingevuld, zodat de app meteen werkt zonder instellen.'],
@@ -1613,6 +1641,7 @@ function init(){
   $('#s_proxy').value = S.instellingen.proxy || '';
 }
 init();
+verwerkTeller();
 laadResultaten(true);
 verwerkInkomend();
 </script>
