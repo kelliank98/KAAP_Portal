@@ -153,7 +153,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.12 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.13 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -365,12 +365,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.12
+   KAAP Inkoop-radar  v1.13
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.12';
+const APP_VERSIE = '1.13';
 const STORE_KEY = 'kaap_inkoop_v1';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
@@ -1171,6 +1171,25 @@ document.addEventListener('click', (e) => {
   try { kandidaatUit(JSON.parse(kaart.dataset.it)); } catch(err){ toast('Overnemen mislukt'); }
 });
 
+
+// Sites geven soms een ander model terug (Marktplaats zoekt los op woorden).
+// Daarom hier narekenen wat de site aanlevert.
+const normTekst = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+function modelInTitel(titel, model){
+  const m = normTekst(model);
+  return m ? normTekst(titel).includes(m) : true;
+}
+function pastCriteria(it, p){
+  const jaar = it.ez ? +String(it.ez).slice(0, 4) : null;
+  if (p.bjvan && jaar && jaar < p.bjvan) return false;
+  if (p.bjtot && jaar && jaar > p.bjtot) return false;
+  if (p.km && it.km && it.km > p.km) return false;
+  if (p.pmin && it.price && it.price < p.pmin) return false;
+  if (p.pmax && it.price && it.price > p.pmax) return false;
+  if (it.transmission && !/automa/i.test(it.transmission)) return false;
+  return true;
+}
+
 // ---------- Live zoeken via je eigen proxy ----------
 const unent = (s) => String(s ?? '').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#(\d+);/g,(m,c)=>String.fromCharCode(c));
 const getal = (s) => { const n = parseInt(String(s ?? '').replace(/[^0-9]/g,''),10); return isNaN(n) ? null : n; };
@@ -1278,7 +1297,15 @@ async function zoekLive(){
       else if (l.site === 'kleinanzeigen') res = parseerKleinanzeigen(await haalViaProxy(l.url));
       else throw new Error('deze site kan niet live worden opgehaald');
       const excl = splitList(p.uitvNiet).map(x => x.toLowerCase());
-      s.items = res.items.filter(it => !excl.some(t => (it.title||'').toLowerCase().includes(t)));
+      const model = l.model || p.model;
+      const binnen = res.items.filter(it => !excl.some(t => (it.title||'').toLowerCase().includes(t)) && pastCriteria(it, p));
+      const opModel = model ? binnen.filter(it => modelInTitel(it.title, model)) : binnen;
+      if (model && !opModel.length && binnen.length) {
+        // Het model komt kennelijk niet in de titels voor (bijv. "5 Serie" bij een 520d).
+        s.items = binnen; s.modelOngecontroleerd = true;
+      } else {
+        s.items = opModel; s.weggefilterd = res.items.length - opModel.length;
+      }
       s.count = res.count; s.status = 'klaar';
     } catch(e){ s.status = 'fout'; s.error = (e.message || e).toString().slice(0,120); }
     renderLive();
@@ -1298,7 +1325,9 @@ function renderLive(){
       : s.status === 'fout' ? `<small class="muted">mislukt</small>`
       : `<small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${s.items.length} getoond</small>`;
     box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)}${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
-      + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '');
+      + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '')
+      + (s.weggefilterd ? `<div class="help" style="margin-top:4px">${s.weggefilterd} resultaat${s.weggefilterd === 1 ? '' : 'en'} van deze site voldeed niet aan je zoekopdracht (ander model of buiten je grenzen) en is weggelaten.</div>` : '')
+      + (s.modelOngecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(s.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd. Controleer zelf of dit het juiste model is.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const idx = co2Index(LIVE.sites.flatMap(x => x.items));
     s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false, null, idx)));
@@ -1534,6 +1563,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.13', 'Live zoeken controleert nu zelf of een gevonden auto het juiste model is en binnen je bouwjaar, kilometerstand en prijs valt. Marktplaats gaf soms een X3 terug op een zoekopdracht naar een X5.'],
   ['1.12', 'Versienummer in de kop is aanklikbaar: dit overzicht.'],
   ['1.11', 'Bij een geweigerd verzoek probeert de app het nog een keer en legt daarna in gewone taal uit wat er aan de hand is.'],
   ['1.10', 'Geschatte BPM-bandbreedte bij advertenties zonder CO2, berekend uit vergelijkbare auto\u2019s in dezelfde zoekopdracht.'],
