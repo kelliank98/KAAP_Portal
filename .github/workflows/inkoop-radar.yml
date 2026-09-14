@@ -4,8 +4,13 @@
 name: Inkoop-radar
 
 on:
-  schedule:
-    - cron: "0 5-20/2 * * *"      # UTC; = 07:00–22:00 (zomertijd) / 06:00–21:00 (wintertijd)
+  # Automatisch draaien staat UIT. Je start de radar zelf via
+  # Actions > Inkoop-radar > Run workflow.
+  #
+  # Wil je mail bij nieuw aanbod? Haal dan het hekje weg voor de twee regels hieronder
+  # (elke 2 uur tussen 07:00 en 22:00 Nederlandse tijd) en zet de mailsecrets.
+  # schedule:
+  #   - cron: "0 5-20/2 * * *"
   workflow_dispatch:               # handmatig starten via Actions > Inkoop-radar > Run workflow
 
 permissions:
