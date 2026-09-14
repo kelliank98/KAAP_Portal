@@ -16,6 +16,8 @@ on:
   #
   # De eerste drie ritmes draaien rond de klok. Dealers plaatsen vrijwel alleen
   # overdag, dus nachtrondes leveren zelden iets op - maar ze kosten niets.
+  # De eerste drie ritmes draaien rond de klok. Dealers plaatsen vrijwel alleen
+  # overdag, dus nachtrondes leveren zelden iets op - maar ze kosten niets.
   # Tijden zijn UTC. Nederland is in de zomer 2 uur later, in de winter 1 uur.
   # GitHub start geplande taken vaak een paar minuten later dan de klok aangeeft,
   # en slaat er bij drukte soms een over. Voor inkoop maakt dat niets uit.
