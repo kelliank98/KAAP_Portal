@@ -153,7 +153,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.13 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.14 · zoekprofielen, resultaten en BPM-indicatie</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -322,7 +322,7 @@ details summary{cursor:pointer;font-weight:500}
         <p class="help">De app zelf kan geen resultaten ophalen (browsers blokkeren dat). De meegeleverde ophaler draait in je GitHub-repo, leest <code>profiles.json</code>, haalt AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen op en schrijft <code>results.json</code>. mobile.de en Gaspedaal blokkeren dit; daar blijf je op de eigen alert van de site aangewezen.</p>
         <div class="frm">
           <label class="f full"><span>URL van results.json (leeg = zelfde map als deze app)</span><input type="url" id="s_resurl" placeholder="results.json"></label>
-          <label class="f full"><span>Eigen proxy (optioneel) — hiermee toont <b>Zoeken</b> de resultaten direct in de app</span><input type="url" id="s_proxy" placeholder="https://kaap-proxy.jouwnaam.workers.dev/"></label>
+          <label class="f full"><span>Proxy — hiermee toont <b>Zoeken</b> de resultaten direct in de app. Staat standaard ingevuld; vervang hem alleen door je eigen als je die hebt.</span><input type="url" id="s_proxy" placeholder="https://kaap-proxy.jouwnaam.workers.dev/"></label>
         </div>
         <div class="row mt">
           <button class="btn" id="btnExportProfiles">Exporteer profiles.json</button>
@@ -365,13 +365,16 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.13
+   KAAP Inkoop-radar  v1.14
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.13';
+const APP_VERSIE = '1.14';
 const STORE_KEY = 'kaap_inkoop_v1';
+// Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
+// Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
+const STANDAARD_PROXY = 'https://kaap-proxy.kelliankaap.workers.dev/';
 
 // Personenauto-tabellen: rows = [CO2 vanaf, kolom III (€), kolom IV (€/gram)]
 // diesel = toeslag per gram boven de grens. phev = eigen tabel (t/m 2024).
@@ -475,7 +478,7 @@ function laad(){
   s.geschiedenis = s.geschiedenis || {};
   s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
-  if (s.instellingen.proxy === undefined) s.instellingen.proxy = '';
+  if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   return s;
 }
 function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
@@ -1563,6 +1566,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.14', 'De proxy staat standaard ingevuld, zodat de app meteen werkt zonder instellen.'],
   ['1.13', 'Live zoeken controleert nu zelf of een gevonden auto het juiste model is en binnen je bouwjaar, kilometerstand en prijs valt. Marktplaats gaf soms een X3 terug op een zoekopdracht naar een X5.'],
   ['1.12', 'Versienummer in de kop is aanklikbaar: dit overzicht.'],
   ['1.11', 'Bij een geweigerd verzoek probeert de app het nog een keer en legt daarna in gewone taal uit wat er aan de hand is.'],
