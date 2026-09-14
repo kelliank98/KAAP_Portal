@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- KAAP Factuur - App v1.19 -->
+<!-- KAAP Factuur - App v1.24 -->
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KAAP Auto House — Facturen &amp; Register</title>
+<title>KAAP Factuur Generator</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
   :root{
@@ -19,7 +19,9 @@
   .nav .brand{color:#fff;font-size:14px;font-weight:500;margin-right:auto;letter-spacing:.4px;}
   .nav .brand span{display:block;font-size:11px;font-weight:300;color:var(--gold-soft);letter-spacing:0;}
   .nav .versie{align-self:flex-start;background:#2C3A52;color:var(--gold-soft);font-size:10px;font-weight:500;
-    letter-spacing:.5px;padding:3px 9px;border-radius:20px;border:.7px solid #46536e;white-space:nowrap;}
+    letter-spacing:.5px;padding:3px 9px;border-radius:20px;border:.7px solid #46536e;white-space:nowrap;
+    cursor:pointer;font-family:inherit;transition:all .15s;}
+  .nav .versie:hover{background:var(--gold);color:var(--navy);border-color:var(--gold);}
   .tab{border:0;background:#2C3A52;color:#C3CADB;font-family:inherit;font-size:12px;font-weight:500;padding:9px 16px;border-radius:7px;cursor:pointer;transition:all .15s;}
   .tab.active{background:var(--gold);color:var(--navy);}
   .view{display:none;} .view.active{display:block;}
@@ -29,34 +31,34 @@
   .btn.ghost{background:transparent;color:var(--gold-soft);} .btn.ghost:hover{background:#2C3A52;color:#fff;}
   .sheet{max-width:900px;margin:0 auto;background:var(--ivory);border-top:3px solid var(--gold);box-shadow:0 8px 40px rgba(0,0,0,.14);padding:34px 40px 0;}
   .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;}
-  .logo{width:200px;height:auto;} .slogan{color:var(--gold);font-style:italic;font-size:11px;font-weight:300;margin-top:4px;}
-  .company{text-align:right;color:var(--grey);font-size:10.5px;font-weight:300;line-height:1.55;} .company b{color:var(--ink);font-weight:500;}
+  .logo{width:200px;height:auto;} .slogan{color:var(--gold);font-style:italic;font-size:12.5px;font-weight:300;margin-top:4px;}
+  .company{text-align:right;color:var(--grey);font-size:12px;font-weight:300;line-height:1.55;} .company b{color:var(--ink);font-weight:500;}
   .titleband{background:var(--navy);color:#fff;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);padding:11px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
-  .titleband .t{font-size:16px;font-weight:500;letter-spacing:5px;}
-  .titleband .meta{font-size:11px;font-weight:300;display:flex;gap:16px;}
+  .titleband .t{font-size:18px;font-weight:500;letter-spacing:5px;}
+  .titleband .meta{font-size:12.5px;font-weight:300;display:flex;gap:16px;}
   .titleband .meta label{color:#AEB6C6;margin-right:5px;}
   .titleband input{background:transparent;border:0;border-bottom:1px solid #46536e;color:#fff;font-family:inherit;font-size:11px;width:82px;padding:2px 0;}
   .titleband input:focus{outline:none;border-bottom-color:var(--gold);}
   .panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
   .panel{background:#fff;border:.7px solid var(--rule);border-radius:4px;padding:12px 14px;position:relative;}
-  .panel .cap{font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:var(--navy);}
+  .panel .cap{font-size:10px;font-weight:500;letter-spacing:1.2px;color:var(--navy);}
   .panel .cap::after{content:"";display:block;width:26px;height:1px;background:var(--gold);margin-top:3px;margin-bottom:9px;}
   .frow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;}
   .frow:nth-of-type(even){background:var(--row-alt);}
-  .frow label{font-size:9px;color:var(--grey);font-weight:300;width:80px;flex-shrink:0;}
-  .frow input{flex:1;border:0;background:transparent;font-family:inherit;font-size:9.5px;color:var(--ink);padding:3px 4px;border-radius:3px;transition:background .12s;}
+  .frow label{font-size:10.5px;color:var(--grey);font-weight:300;width:80px;flex-shrink:0;}
+  .frow input{flex:1;border:0;background:transparent;font-family:inherit;font-size:11.5px;color:var(--ink);padding:3px 4px;border-radius:3px;transition:background .12s;}
   .frow input:hover,.frow input:focus{background:var(--field);outline:none;}
   .autocomplete{position:absolute;z-index:20;background:#fff;border:1px solid var(--rule);border-radius:5px;box-shadow:0 8px 24px rgba(0,0,0,.12);left:14px;right:14px;top:52px;max-height:180px;overflow:auto;display:none;}
   .autocomplete div{padding:7px 10px;font-size:10px;cursor:pointer;border-bottom:.5px solid var(--rule);}
   .autocomplete div:hover{background:var(--field);} .autocomplete div small{color:var(--grey);display:block;font-size:8.5px;}
-  .section-h{display:flex;align-items:center;gap:12px;margin:0 0 8px;font-size:10px;font-weight:500;letter-spacing:3px;color:var(--navy);white-space:nowrap;}
+  .section-h{display:flex;align-items:center;gap:12px;margin:0 0 8px;font-size:11.5px;font-weight:500;letter-spacing:3px;color:var(--navy);white-space:nowrap;}
   .section-h::after{content:"";flex:1;height:1px;background:var(--gold);}
   .add-btn{border:1px solid var(--gold);background:transparent;color:var(--navy);font-family:inherit;font-size:10px;font-weight:500;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;}
   .add-btn:hover{background:var(--gold);color:#fff;} .add-btn:disabled{opacity:.35;cursor:not-allowed;}
   .vcard{border:.7px solid var(--rule);border-left:2px solid var(--gold);border-radius:4px;padding:10px 12px;margin-bottom:12px;background:#fff;}
   .vcard.sale{border-left-color:var(--navy);}
   .vc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
-  .vc-title{font-size:8.5px;font-weight:500;letter-spacing:1px;color:var(--navy);}
+  .vc-title{font-size:10px;font-weight:500;letter-spacing:1px;color:var(--navy);}
   .vc-tools{margin-left:auto;display:flex;gap:8px;align-items:center;}
   .seg{display:flex;background:var(--field);border-radius:6px;padding:2px;}
   .seg button{border:0;background:transparent;color:var(--grey);font-family:inherit;font-size:9px;font-weight:500;padding:4px 9px;border-radius:4px;cursor:pointer;transition:all .12s;white-space:nowrap;}
@@ -66,16 +68,16 @@
   .vc-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;}
   .vrow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;}
   .vrow:nth-child(4n+1),.vrow:nth-child(4n+2){background:var(--row-alt);}
-  .vrow label{font-size:8.5px;color:var(--light);font-weight:300;width:82px;flex-shrink:0;}
-  .vrow input{flex:1;border:0;background:transparent;font-family:inherit;font-weight:500;font-size:9.5px;color:var(--ink);padding:2px 3px;border-radius:3px;}
+  .vrow label{font-size:10px;color:var(--light);font-weight:300;width:82px;flex-shrink:0;}
+  .vrow input{flex:1;border:0;background:transparent;font-family:inherit;font-weight:500;font-size:11.5px;color:var(--ink);padding:2px 3px;border-radius:3px;}
   .vrow input:hover,.vrow input:focus{background:#EDEAE0;outline:none;}
   .vrow input.up{text-transform:uppercase;}
   /* extra kosten per voertuig */
   .vk{margin-top:8px;border-top:.7px dashed var(--rule);padding-top:7px;}
-  .vk-h{font-size:8.5px;color:var(--light);font-weight:300;letter-spacing:.06em;margin-bottom:3px;}
+  .vk-h{font-size:10px;color:var(--light);font-weight:300;letter-spacing:.06em;margin-bottom:3px;}
   .vk-row{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:3px;}
   .vk-row:nth-child(odd){background:var(--row-alt);}
-  .vk-row input{border:0;background:transparent;font-family:inherit;font-weight:500;font-size:9.5px;color:var(--ink);padding:2px 3px;border-radius:3px;}
+  .vk-row input{border:0;background:transparent;font-family:inherit;font-weight:500;font-size:11.5px;color:var(--ink);padding:2px 3px;border-radius:3px;}
   .vk-row input.oms{flex:1;}
   .vk-row input.bed{width:96px;text-align:right;font-variant-numeric:tabular-nums;}
   .vk-row input:hover,.vk-row input:focus{background:#EDEAE0;outline:none;}
@@ -83,31 +85,31 @@
   .vk-del:hover{background:#f7e9e9;}
   .vk-add{border:.7px dashed var(--gold);background:transparent;color:var(--gold);font-family:inherit;font-size:9px;padding:3px 9px;border-radius:4px;cursor:pointer;margin-top:4px;}
   .vk-add:hover{background:#FBF7EE;}
-  .disclaimer{font-size:8px;font-style:italic;color:var(--grey);margin:2px 0 16px;}
+  .disclaimer{font-size:9.5px;font-style:italic;color:var(--grey);margin:2px 0 16px;}
   /* Inkoopverklaring margeregeling — verschijnt alleen bij een MARGE-inruil */
   .iv{border:.7px solid var(--rule);border-left:2px solid var(--gold);border-radius:4px;background:#fff;padding:9px 12px;margin:2px 0 16px;}
-  .iv .iv-cap{font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:var(--navy);margin-bottom:5px;}
-  .iv .iv-txt{font-size:8.2px;font-weight:300;line-height:1.55;color:var(--ink);}
+  .iv .iv-cap{font-size:10px;font-weight:500;letter-spacing:1.2px;color:var(--navy);margin-bottom:5px;}
+  .iv .iv-txt{font-size:10px;font-weight:300;line-height:1.55;color:var(--ink);}
   .iv .iv-sign{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:18px;margin-top:14px;}
-  .iv .iv-lbl{display:block;font-size:7.5px;letter-spacing:.4px;color:var(--grey);margin-bottom:16px;}
+  .iv .iv-lbl{display:block;font-size:9px;letter-spacing:.4px;color:var(--grey);margin-bottom:16px;}
   .iv .iv-line{border-bottom:.7px solid var(--navy);height:0;}
   table.spec{width:100%;border-collapse:collapse;margin-bottom:6px;}
-  table.spec thead th{background:var(--navy);color:#fff;font-size:9px;font-weight:500;text-align:left;padding:7px 10px;}
+  table.spec thead th{background:var(--navy);color:#fff;font-size:10.5px;font-weight:500;text-align:left;padding:7px 10px;}
   table.spec thead th.r{text-align:right;}
-  table.spec tbody td{padding:7px 10px;border-bottom:.5px solid var(--rule);font-size:9.5px;}
+  table.spec tbody td{padding:8px 10px;border-bottom:.5px solid var(--rule);font-size:11.5px;}
   table.spec tbody td.r{text-align:right;font-variant-numeric:tabular-nums;}
   table.spec tr.strong td{font-weight:500;color:var(--navy);}
-  table.spec tr.sub td{color:var(--grey);font-size:8.6px;padding-left:22px;background:#F4F2EC;}
+  table.spec tr.sub td{color:var(--grey);font-size:10px;padding-left:22px;background:#F4F2EC;}
   table.spec tr.hoofd td{background:#E3E7EE;box-shadow:inset 3px 0 0 var(--navy);}
   table.spec tr.inkoop td{background:#EFE6D2;box-shadow:inset 3px 0 0 var(--gold);}
   table.spec tr.sub-in td{background:#F7F1E3;box-shadow:inset 3px 0 0 var(--gold-soft);}
   .totalrow{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);padding:9px 12px;margin-top:2px;}
-  .totalrow .lab{font-size:11px;font-weight:500;letter-spacing:2px;} .totalrow .val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .totalrow .lab{font-size:12.5px;font-weight:500;letter-spacing:2px;} .totalrow .val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
   .pay{background:var(--field);border-left:2px solid var(--gold);padding:12px 14px;margin:18px 0 0;}
-  .pay .top{font-size:9px;font-weight:300;color:var(--ink);margin-bottom:6px;}
-  .pay .bank{display:flex;gap:26px;flex-wrap:wrap;font-size:9.5px;font-weight:500;color:var(--navy);}
-  .foot{background:var(--navy);color:#fff;border-top:1.5px solid var(--gold);margin:22px -40px 0;padding:12px 40px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:7px;}
-  .foot b{font-weight:500;font-size:8px;letter-spacing:.5px;} .foot .muted{color:#C3CADB;font-weight:300;} .foot .right{text-align:right;}
+  .pay .top{font-size:10.5px;font-weight:300;color:var(--ink);margin-bottom:6px;}
+  .pay .bank{display:flex;gap:26px;flex-wrap:wrap;font-size:11px;font-weight:500;color:var(--navy);}
+  .foot{background:var(--navy);color:#fff;border-top:1.5px solid var(--gold);margin:22px -40px 0;padding:12px 40px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:8.5px;}
+  .foot b{font-weight:500;font-size:9.5px;letter-spacing:.5px;} .foot .muted{color:#C3CADB;font-weight:300;} .foot .right{text-align:right;}
   .card{max-width:900px;margin:0 auto 18px;background:#fff;border-radius:10px;padding:22px 26px;box-shadow:0 4px 20px rgba(0,0,0,.07);}
   .card h2{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:4px;letter-spacing:.3px;}
   .card .sub{font-size:11px;color:var(--grey);margin-bottom:18px;}
@@ -138,24 +140,44 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:8px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.25);border-left:3px solid var(--gold);opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;}
   .toast.show{opacity:1;}
   @media print{
-    @page{size:A4;margin:0;}
+    /* Marge op elke pagina, niet alleen de eerste. Zonder dit plakt de tekst
+       op pagina 2 en verder tegen de rand van het papier. */
+    @page{size:A4;margin:14mm 16mm;}
     html,body{background:#fff;padding:0;}
     .nav,.actionbar,.hint,.view:not(.active),.vc-tools .seg,.add-btn,.vc-del,.autocomplete,.vk-add,.vk-del,.vk:not(.has){display:none!important;}
     .vc-tools::after{content:attr(data-print);font-size:8.5px;color:var(--grey);}
-    .sheet{box-shadow:none;max-width:none;margin:0;padding:14mm 16mm 0;border-top:2mm solid var(--gold);
-      transform-origin:top center;}
-    .foot{margin-left:-16mm;margin-right:-16mm;padding-left:16mm;padding-right:16mm;}
+    .sheet{box-shadow:none;max-width:none;margin:0;padding:0;border-top:2mm solid var(--gold);}
+    .foot{margin:18px 0 0;padding:12px 14px;}
+    /* Kop van de specificatietabel op iedere pagina herhalen */
+    table.spec thead{display:table-header-group;}
+    table.spec tfoot{display:table-footer-group;}
     input{background:transparent!important;}
-    /* keep blocks intact across the (single) page */
-    .vcard,.panel,tr,.totalrow,.pay,.section-h,.iv{break-inside:avoid;page-break-inside:avoid;}
-    /* compact spacing so more fits */
-    .head{margin-bottom:14px!important;}
-    .panels{margin-bottom:12px!important;}
-    .vcard{margin-bottom:7px!important;padding:7px 10px!important;}
-    .vrow{padding:2.5px 6px!important;}
-    .section-h{margin-bottom:5px!important;}
-    .pay{margin-top:10px!important;padding:9px 12px!important;}
-    .foot{margin-top:12px!important;}
+    /* Blokken niet midden op een paginagrens laten afbreken */
+    .vcard,.panel,tr,.totalrow,.pay,.section-h,.iv,.foot{break-inside:avoid;page-break-inside:avoid;}
+    /* Totaal en betaalblok niet losgescheurd van de tabel erboven */
+    .totalrow,.pay{break-before:avoid;page-break-before:avoid;}
+    /* ALLEEN OP PAPIER groter. Op het scherm blijft alles zoals het was:
+       daar zit je dichtbij en wil je overzicht, op papier wil je leesbaarheid.
+       13.3px = 10pt, 18px = 13.5pt bij de standaard 96dpi van een browser. */
+    table.spec tbody td{font-size:13.3px!important;padding:9px 10px!important;}
+    table.spec tr.sub td{font-size:11.6px!important;}
+    table.spec thead th{font-size:12px!important;}
+    .totalrow .lab{font-size:14.5px!important;}
+    .totalrow .val{font-size:18px!important;}
+    .vrow input{font-size:13.3px!important;}
+    .vrow label{font-size:11.5px!important;width:92px!important;}
+    .vk-row input{font-size:13.3px!important;}
+    .vk-h{font-size:11.5px!important;}
+    .vc-title{font-size:11.5px!important;}
+
+    /* Rustige, leesbare witruimte. Niet meer opgeperst om alles op een A4 te
+       persen; dat is precies wat de factuur onleesbaar maakte. */
+    .head{margin-bottom:16px!important;}
+    .panels{margin-bottom:14px!important;}
+    .vcard{margin-bottom:9px!important;padding:9px 12px!important;}
+    .vrow{padding:3.5px 6px!important;}
+    .section-h{margin-bottom:7px!important;}
+    .pay{margin-top:12px!important;padding:11px 14px!important;}
   }
   @media(max-width:640px){.panels,.vc-grid{grid-template-columns:1fr;}.nav,.actionbar{flex-direction:column;align-items:stretch;}.sheet{padding:20px;}.foot{margin:22px -20px 0;padding:12px 20px;}}
 </style>
@@ -163,8 +185,8 @@
 <body>
 
 <div class="nav">
-  <div class="brand">KAAP Auto House<span>Facturen &amp; Register</span></div>
-  <span class="versie" id="app-versie">v?</span>
+  <div class="brand">KAAP Factuur Generator</div>
+  <button class="versie" id="app-versie" title="Updategeschiedenis bekijken">v?</button>
   <button class="tab active" data-view="gen">Factuur</button>
   <button class="tab" data-view="reg">Register</button>
   <button class="tab" data-view="voor">Voorraad</button>
@@ -603,6 +625,16 @@ function parseNum(s){if(s==null)return 0;let x=String(s).replace(/[^0-9,.-]/g,''
 function fmt(n){return '€ '+n.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){return String(s==null?'':s).replace(/"/g,'&quot;');}
 
+/* Regelnaam voor de specificatie: kenteken eerst, dan merk/type.
+   Ontbreekt een van beide, dan alleen wat er is; ontbreekt alles, dan het
+   terugvalwoord ("Verkoopvoertuig 1"). */
+function regelNaam(v,terugval){
+  const k=String((v&&v.kenteken)||'').trim();
+  const m=String((v&&v.merk)||'').trim();
+  if(k&&m)return k+'  '+m;
+  return k||m||terugval;
+}
+
 // Telefoonnummer: spatie na elk 2e cijfer -> 06 12 34 56 78
 function fmtTel(v){
   const raw=String(v==null?'':v);
@@ -812,7 +844,8 @@ function recalc(){
     const c=saleCalc(s);btwVerkoop+=c.btw;
     const shown = adminMode ? (c.total - c.restbpm) : c.total;  // admin: bedrag ná aftrek rest-BPM
     grand+=shown;
-    const naam=s.merk||('Verkoopvoertuig '+(i+1));const tag=s.regime==='marge'?' (marge)':' (BTW)';
+    /* Kenteken vooraan in de specificatie, daarna pas merk/type. */
+    const naam=regelNaam(s,'Verkoopvoertuig '+(i+1));const tag=s.regime==='marge'?' (marge)':' (BTW)';
     const suffix = (adminMode && c.restbpm>0) ? ' — na aftrek rest-BPM' : ' — verkoopprijs';
     tb.insertAdjacentHTML('beforeend',`<tr class="hoofd"><td>${naam}${tag}${suffix}</td><td class="r">${fmt(shown)}</td></tr>`);
     if(s.regime==='marge'){tb.insertAdjacentHTML('beforeend',`<tr class="sub"><td>bijzondere regeling gebruikte goederen — margeregeling</td><td class="r"></td></tr>`);}
@@ -842,7 +875,7 @@ function recalc(){
     const c=inruilCalc(it);
     if(!adminMode) grand-=c.credit;   // klantfactuur: inruil gaat er wél af
     else inruilInkoop+=c.credit;      // administratie: aparte inkoopregel, niet aftrekken
-    const naam=it.merk||('Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
+    const naam=regelNaam(it,'Inruilauto '+(i+1));const tag=it.regime==='marge'?' (marge)':' (BTW)';
     if(adminMode){
       // Administratie: inruil is een INKOOP, geen verlaging van de omzet
       tb.insertAdjacentHTML('beforeend',`<tr class="inkoop"><td>Inkoop inruil${tag}: ${naam}</td><td class="r">${fmt(c.credit)}</td></tr>`);
@@ -884,21 +917,11 @@ function toonInkoopverklaring(){
 
 // Klantfactuur: volledige bedragen. Administratiekopie: bedrag ná aftrek rest-BPM.
 // Schaal de factuur zo dat hij altijd op één A4 past.
-function fitSheet(){
-  const sheet=$('sheet');
-  sheet.style.zoom='1';
-  const probe=document.createElement('div');
-  probe.style.cssText='height:100mm;position:absolute;visibility:hidden;';
-  document.body.appendChild(probe);
-  const pxPerMM=probe.getBoundingClientRect().height/100;
-  probe.remove();
-  const usable=286*pxPerMM;          // 297mm A4 minus ruimere veiligheidsmarge
-  const h=sheet.scrollHeight;        // ongeschaalde hoogte
-  if(h>usable){
-    const z=Math.max(0.3, (usable/h)*0.985);
-    sheet.style.zoom=z.toFixed(4);
-  }
-}
+/* Bij printen en PDF wordt er NIET meer geschaald. De lettergrootte is heilig:
+   past de factuur niet op een A4, dan loopt hij door naar een volgende pagina.
+   Deze functie houdt de schaal expliciet op 1, voor het geval een oude
+   opgeslagen zoomwaarde nog in het element hangt. */
+function fitSheet(){ $('sheet').style.zoom='1'; }
 function unfitSheet(){ $('sheet').style.zoom='1'; }
 function veiligeNaam(s){return String(s||'').replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'_').slice(0,40);}
 function stelBestandsnaamIn(){
@@ -906,7 +929,7 @@ function stelBestandsnaamIn(){
   const klant=veiligeNaam($('k_naam').value)||'klant';
   document.title=(adminMode?'Intern':'Factuur')+'_'+nr+'_'+klant;
 }
-function herstelTitel(){document.title='KAAP Auto House \u2014 Facturen & Register (v'+VERSIE+')';}
+function herstelTitel(){document.title='KAAP Factuur Generator (v'+VERSIE+')';}
 window.addEventListener('beforeprint', ()=>{stelBestandsnaamIn();fitSheet();});
 window.addEventListener('afterprint', ()=>{ unfitSheet(); herstelTitel(); });
 /* Weergavestand van de factuur: Verkoop (klant) of Boekhouding (administratie).
@@ -940,10 +963,45 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
    voorraad en de statistieken vervuilen. Bij het openen van de app wordt het
    concept teruggezet, zodat je verder kunt waar je gebleven was.
    Het concept blijft binnen deze browser en gaat niet mee in de Drive-sync. */
+/* Updategeschiedenis. Nieuwste bovenaan. Bij een nieuwe versie hier een regel
+   toevoegen, plus VERSIE hieronder en de comment bovenaan het bestand. */
+const HISTORIE=[
+ ['1.24','Naam in de balk linksboven is nu "KAAP Factuur Generator". De factuur zelf blijft op naam van KAAP Auto House B.V.'],
+ ['1.23','Versielabel is aanklikbaar en toont deze updategeschiedenis.'],
+ ['1.22','Op papier grotere letters: specificatie en voertuiggegevens 10pt, totaalbedrag 13,5pt. Op het scherm ongewijzigd.'],
+ ['1.21','Geen automatische verkleining meer bij printen. Past het niet op een A4, dan volgt een tweede pagina met marges, herhaalde tabelkop en nette paginabreuken.'],
+ ['1.20','Lettertype op de factuur 14 tot 23 procent groter.'],
+ ['1.19','Nog maar een knop "Nieuwe factuur"; het tabblad heet nu "Factuur". RDW-kentekenopvraging ook op de factuur, bij verkoop- en inruilvoertuigen. RDW is leidend, daarna pas jij handmatig aan.'],
+ ['1.18','Voorraad gaat mee in het gekoppelde Drive-bestand en in de back-ups. Nieuw bewaarbeleid: de 15 nieuwste plus de laatste van elke dag, 60 dagen terug.'],
+ ['1.17','Concept krijgt een versiestempel. Repareert dat het afleverpakket verdween na herstel van een ouder concept.'],
+ ['1.16','Automatisch opslaan van het factuurformulier bij elke wijziging. Versielabel in de balk. Zoeken op chassisnummer en RDW-opvraging in de voorraad. Verkocht toont een groene vink.'],
+ ['1.15','Verkoopstatus wordt afgeleid uit het register op chassisnummer. Factuur verwijderen of crediteren zet de auto automatisch terug in voorraad.'],
+ ['1.14','Afleverpakket van 695 euro automatisch als kostenregel bij elk verkoopvoertuig.'],
+ ['1.13','Postcodeveld, betaaltermijn naar 5 dagen, telefoonnummer met spatie per twee cijfers, inkoopverklaring met handtekeningregels bij een marge-inruil.'],
+ ['1.12','Voorraadtab, automatische back-ups naar een Drive-map, extra kostenregels per voertuig volgens het BTW-regime van de auto.']
+];
+function toonHistorie(){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(27,40,65,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;';
+  const regels=HISTORIE.map(([v,t])=>
+    '<div style="display:flex;gap:14px;padding:11px 0;border-bottom:.7px solid var(--rule);">'
+    +'<div style="flex-shrink:0;width:52px;font-size:11px;font-weight:600;color:'+(v===VERSIE?'var(--gold)':'var(--navy)')+';">v'+v+'</div>'
+    +'<div style="font-size:11.5px;line-height:1.55;color:var(--ink);font-weight:300;">'+t+'</div></div>').join('');
+  ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:24px 26px;max-width:620px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
+    +'<div style="font-size:15px;font-weight:600;color:var(--navy);margin-bottom:2px;">Updategeschiedenis</div>'
+    +'<div style="font-size:11px;color:var(--grey);margin-bottom:16px;">Je draait nu versie '+VERSIE+'</div>'
+    +regels
+    +'<div style="text-align:right;margin-top:18px;"><button id="hist-sluit" style="border:1px solid var(--navy);background:var(--navy);color:#fff;font-family:inherit;font-size:11px;font-weight:500;padding:7px 18px;border-radius:5px;cursor:pointer;">Sluiten</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#hist-sluit').onclick=()=>ov.remove();
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  document.addEventListener('keydown',function esc(e){if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc);}});
+}
+
 /* Versienummer op EEN plek. Bij een nieuwe versie alleen deze regel aanpassen
    (en de HTML-comment bovenaan het bestand). Het label staat in de navigatiebalk
    en verdwijnt vanzelf bij het printen, want de nav wordt dan verborgen. */
-const VERSIE='1.19';
+const VERSIE='1.24';
 
 const CKEY='kaap_concept_v1';
 let conceptActief=false, conceptTimer=null;
@@ -1734,8 +1792,8 @@ renderSales();renderInruil();recalc();
 })();
 /* Opmaakregels op de klantvelden + bijhouden of er onopgeslagen wijzigingen zijn */
 (function toonVersie(){
-  const el=$('app-versie'); if(el)el.textContent='v'+VERSIE;
-  document.title='KAAP Auto House \u2014 Facturen & Register (v'+VERSIE+')';
+  const el=$('app-versie'); if(el){el.textContent='v'+VERSIE;el.onclick=toonHistorie;}
+  document.title='KAAP Factuur Generator (v'+VERSIE+')';
 })();
 bindTel($('k_tel'));
 bindUpper($('k_pc'));
