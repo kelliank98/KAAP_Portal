@@ -47,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAIL_TO: ${{ secrets.MAIL_TO }}
+      CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
     steps:
       - uses: actions/checkout@v4
 
@@ -83,3 +84,24 @@ jobs:
           from: KAAP Inkoop-radar
           convert_markdown: true
           html_body: file://new_items.md
+
+      # Optioneel: WhatsApp bij nieuwe advertenties, via de gratis dienst CallMeBot.
+      # Zet de secrets CALLMEBOT_PHONE (jouw nummer met landcode, bijv. +31612345678)
+      # en CALLMEBOT_APIKEY (die je van de bot krijgt). Zonder CALLMEBOT_PHONE
+      # wordt deze stap overgeslagen.
+      - name: WhatsApp bij nieuwe advertenties
+        if: ${{ env.CALLMEBOT_PHONE != '' && steps.fetch.outputs.new == 'true' }}
+        env:
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+        run: |
+          tekst="$(node tools/wa-bericht.mjs new_items.md)"
+          if [ -z "$tekst" ]; then
+            echo "Niets te melden."
+            exit 0
+          fi
+          antwoord=$(curl -s -G "https://api.callmebot.com/whatsapp.php" \
+            --data-urlencode "phone=$CALLMEBOT_PHONE" \
+            --data-urlencode "apikey=$CALLMEBOT_APIKEY" \
+            --data-urlencode "text=$tekst" \
+            -w "\n[status %{http_code}]")
+          echo "$antwoord" | tail -3
