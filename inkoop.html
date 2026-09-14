@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.19</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.20</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -179,6 +179,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Bouwjaar tot (optioneel)</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
           <label class="f"><span>Kilometerstand max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
           <label class="f"><span>Vermogen min. (kW, optioneel)</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
+          <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
           <label class="f"><span>Aangeboden door</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Alleen handel</option><option value="particulier">Alleen particulier</option></select></label>
           <label class="f"><span>Prijs min. (€)</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
           <label class="f"><span>Prijs max. (€)</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
@@ -370,12 +371,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.19
+   KAAP Inkoop Radar  v1.20
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.19';
+const APP_VERSIE = '1.20';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -498,6 +499,8 @@ const eur2 = (n) => new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EU
 const num = (n) => new Intl.NumberFormat('nl-NL').format(n);
 const slug = (s) => (s||'').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const cap = (s) => (s||'').trim();
+// Testers typen "20.000" of "20 000"; JavaScript maakt daar 20 van. Daarom zelf uitlezen.
+const veldGetal = (id) => { const r = ($('#'+id).value || '').replace(/[^0-9]/g, ''); return r ? +r : null; };
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
 function isoPlus(d, days){ const x=new Date(d); x.setDate(x.getDate()+days); return x.toISOString().slice(0,10); }
 
@@ -719,6 +722,9 @@ function bouwLink(s, p, v, c){
     q.set('sort','age'); q.set('desc','1'); q.set('gear','A');
     if (p.aanbieder === 'dealer') q.set('custtype','D');
     else if (p.aanbieder === 'particulier') q.set('custtype','P');
+    if (p.deuren === '23'){ q.set('doorfrom','2'); q.set('doorto','3'); }
+    else if (p.deuren === '45'){ q.set('doorfrom','4'); q.set('doorto','5'); }
+    else if (p.deuren === '6'){ q.set('doorfrom','6'); }
     if (p.bjvan) q.set('fregfrom', p.bjvan); if (p.bjtot) q.set('fregto', p.bjtot);
     if (p.km) q.set('kmto', p.km);
     if (p.pmin) q.set('pricefrom', p.pmin); if (p.pmax) q.set('priceto', p.pmax);
@@ -739,6 +745,9 @@ function bouwLink(s, p, v, c){
     const ids = ['534','10882'];
     if (p.aanbieder === 'dealer') ids.push('10899');
     else if (p.aanbieder === 'particulier') ids.push('10898');
+    if (p.deuren === '23') ids.push('171');          // Marktplaats: 1-3 deuren
+    else if (p.deuren === '45') ids.push('172');     // 4-5 deuren
+    else if (p.deuren === '6') ids.push('173');      // 6 of meer
     let qtxt = v;
     if (kop) ids.unshift(kop.split('/')[1]); else qtxt = (cap(p.model) + ' ' + v).trim();
     c.br.forEach(b => ids.push(...b.mp));
@@ -942,8 +951,8 @@ function leesProfielForm(){
   for (const k in SITES) if (!sites[k]) sites[k] = false;
   return {
     id: profielId, naam: cap($('#p_naam').value), merk: cap($('#p_merk').value), model: cap($('#p_model').value),
-    bjvan: +$('#p_bjvan').value || null, bjtot: +$('#p_bjtot').value || null, km: +$('#p_km').value || null, kw: +$('#p_kw').value || null,
-    pmin: +$('#p_pmin').value || null, pmax: +$('#p_pmax').value || null, aanbieder: $('#p_aanbieder').value,
+    bjvan: veldGetal('p_bjvan'), bjtot: veldGetal('p_bjtot'), km: veldGetal('p_km'), kw: veldGetal('p_kw'),
+    pmin: veldGetal('p_pmin'), pmax: veldGetal('p_pmax'), aanbieder: $('#p_aanbieder').value, deuren: $('#p_deuren').value,
     carr: chipValues($('#p_carr')), brandstof: chipValues($('#p_brandstof')), opties: chipValues($('#p_opties')),
     uitv: cap($('#p_uitv').value), uitvDe: cap($('#p_uitv_de').value), modelDe: cap($('#p_model_de').value), uitvNiet: cap($('#p_uitv_niet').value), sites,
   };
@@ -951,11 +960,11 @@ function leesProfielForm(){
 function vulProfielForm(p){
   profielId = p ? p.id : null;
   const std = {}; for (const k in SITES) std[k] = S.instellingen.sites[k];
-  p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,aanbieder:'',carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
+  p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,aanbieder:'',deuren:'',carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
   $('#profTitle').textContent = p.id ? 'Bewaarde zoekopdracht' : 'Zoekopdracht';
   $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
   $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_km').value = p.km||''; $('#p_kw').value = p.kw||'';
-  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || '';
+  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || '';
   $('#p_uitv').value = p.uitv||''; $('#p_uitv_de').value = p.uitvDe||''; $('#p_uitv_niet').value = p.uitvNiet||''; $('#p_model_de').value = p.modelDe||'';
   renderChips($('#p_carr'), CARROSSERIE, p.carr||[]);
   renderChips($('#p_brandstof'), BRANDSTOF, p.brandstof||[]);
@@ -1485,7 +1494,7 @@ $$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.datase
 // profiel events
 ['p_naam','p_merk','p_model','p_bjvan','p_bjtot','p_km','p_kw','p_pmin','p_pmax','p_uitv','p_uitv_de','p_uitv_niet','p_model_de'].forEach(id => $('#'+id).addEventListener('input', renderLinks));
 ['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
-$('#p_aanbieder').addEventListener('change', renderLinks);
+['p_aanbieder','p_deuren'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
 ['p_merk','p_uitv','p_uitv_niet'].forEach(id => $('#'+id).addEventListener('input', renderHist));
 $('#p_opties').addEventListener('chipchange', renderHist);
 $('#btnNieuwProfiel').addEventListener('click', () => { S.concept = null; bewaar(); vulProfielForm(null); });
@@ -1606,6 +1615,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.20', 'Deurenfilter toegevoegd (AutoScout24, Marktplaats, 2dehands). En opgelost: typte je 20.000 in een prijs- of kilometerveld, dan las de app 20. Nu worden punten en spaties genegeerd.'],
   ['1.19', 'Naam geschreven als KAAP Inkoop Radar, zonder streepje.'],
   ['1.18', 'Ondertitel uit de kop gehaald; alleen het versienummer blijft staan.'],
   ['1.17', 'Bladwijzer "KAAP teller": klik hem aan op mobile.de of Gaspedaal en het aantal treffers komt bij de zoeklink in de app te staan, met de datum erbij.'],
