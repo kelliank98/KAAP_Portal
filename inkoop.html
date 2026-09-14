@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.17 · zoekprofielen, resultaten en BPM-indicatie</span></div>
+    <div class="brand"><h1>KAAP Inkoop-radar</h1><span>v1.18</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -370,12 +370,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop-radar  v1.17
+   KAAP Inkoop-radar  v1.18
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.17';
+const APP_VERSIE = '1.18';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -1606,6 +1606,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.18', 'Ondertitel uit de kop gehaald; alleen het versienummer blijft staan.'],
   ['1.17', 'Bladwijzer "KAAP teller": klik hem aan op mobile.de of Gaspedaal en het aantal treffers komt bij de zoeklink in de app te staan, met de datum erbij.'],
   ['1.16', 'Bij elke site staat nu het land: in de keuzelijst, bij de zoeklinks en boven de resultaten.'],
   ['1.15', 'Filter op aanbieder: alleen handel, alleen particulier, of beide. Laat je het leeg, dan worden beide gezocht. Voorheen stond handel overal vast aan.'],
