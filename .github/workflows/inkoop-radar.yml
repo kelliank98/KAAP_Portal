@@ -4,13 +4,27 @@
 name: Inkoop-radar
 
 on:
-  # Automatisch draaien staat UIT. Je start de radar zelf via
+  # ---------------------------------------------------------------------------
+  # AUTOMATISCH DRAAIEN STAAT UIT. Je start de radar zelf via
   # Actions > Inkoop-radar > Run workflow.
   #
-  # Wil je mail bij nieuw aanbod? Haal dan het hekje weg voor de twee regels hieronder
-  # (elke 2 uur tussen 07:00 en 22:00 Nederlandse tijd) en zet de mailsecrets.
+  # Wil je mail bij nieuw aanbod? Doe dan twee dingen:
+  #   1. Zet de secrets MAIL_TO, MAIL_USERNAME en MAIL_PASSWORD
+  #      (Settings > Secrets and variables > Actions).
+  #   2. Haal hieronder het hekje weg voor "schedule:" en voor EEN van de
+  #      cron-regels. Laat de rest met hekje staan.
+  #
+  # Tijden zijn UTC. Nederland is in de zomer 2 uur later, in de winter 1 uur.
+  # GitHub start geplande taken vaak een paar minuten later dan de klok aangeeft,
+  # en slaat er bij drukte soms een over. Voor inkoop maakt dat niets uit.
+  # ---------------------------------------------------------------------------
   # schedule:
-  #   - cron: "0 5-20/2 * * *"
+  #   - cron: "*/30 5-20 * * *"    # elk half uur, 07:00-22:00 NL-tijd  (meeste kans op blokkades)
+  #   - cron: "0 5-20 * * *"       # elk uur, 07:00-22:00 NL-tijd
+  #   - cron: "0 5-20/2 * * *"     # elke 2 uur, 07:00-22:00 NL-tijd   (aanrader)
+  #   - cron: "0 6,18 * * *"       # twee keer per dag, 08:00 en 20:00 NL-tijd
+  #   - cron: "0 6 * * *"          # een keer per dag om 08:00 NL-tijd (zomertijd)
+  #   - cron: "0 7 * * *"          # een keer per dag om 08:00 NL-tijd (wintertijd)
   workflow_dispatch:               # handmatig starten via Actions > Inkoop-radar > Run workflow
 
 permissions:
