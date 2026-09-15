@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.31</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.32</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -188,14 +188,14 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Model</span><input type="text" id="p_model" placeholder="X5, X6"></label>
           <label class="f"><span>Bouwjaar van</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
           <label class="f"><span>Bouwjaar tot</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
+          <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
+          <label class="f"><span>Prijs tot</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
           <label class="f"><span>Km max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
           <label class="f"><span>kW min.</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
           <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
           <label class="f"><span>BTW of marge</span><select id="p_btw"><option value="">Beide</option><option value="btw">BTW</option><option value="marge">Marge</option></select></label>
           <div class="f full help" id="btwHint" style="margin-top:-4px"></div>
           <label class="f"><span>Aanbieder</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
-          <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
-          <label class="f"><span>Prijs tot</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
           <details class="f full vouw"><summary>Carrosserie<span class="tel" id="tel_carr"></span></summary><div class="chips" id="p_carr"></div></details>
           <details class="f full vouw"><summary>Brandstof<span class="tel" id="tel_brandstof"></span></summary><div class="chips" id="p_brandstof"></div></details>
           <label class="f full"><span>Uitvoering</span><input type="text" id="p_uitv" list="uitvlijst" placeholder="M Sport"><datalist id="uitvlijst"></datalist></label>
@@ -389,12 +389,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.31
+   KAAP Inkoop Radar  v1.32
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.31';
+const APP_VERSIE = '1.32';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -1822,6 +1822,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.32', 'Prijs van en Prijs tot staan naast elkaar, direct onder het bouwjaar.'],
   ['1.31', 'Werkt samen met de KAAP-extensie: knop € historie bij elk AutoScout24-resultaat haalt de prijshistorie automatisch op, zonder bladwijzer.'],
   ['1.30', 'Bladwijzer voor de prijshistorie van AutoScout24: klik hem op een advertentie en je ziet alle prijswijzigingen met datum, het aantal dagen online en het percentage. Opslaan zet hem als knopje bij die auto in de app.'],
   ['1.29', 'BTW-filter werkt nu ook op mobile.de (vat=1 voor BTW, vat=0 voor marge, beide nagemeten). Onder het veld staat op welke sites het echt werkt: AutoScout24 en Kleinanzeigen kennen het niet.'],
