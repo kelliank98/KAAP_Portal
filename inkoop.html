@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.22</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.23</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -170,39 +170,39 @@ details summary{cursor:pointer;font-weight:500}
     <div>
       <div class="card">
         <div class="row between"><h2 id="profTitle">Zoekopdracht</h2><button class="btn sec sm" id="btnNieuwProfiel">Leegmaken</button></div>
-        <p class="help" style="margin-top:-8px;margin-bottom:12px">Vul in wat je zoekt en klik op <b>Zoeken</b>: de links hiernaast werken direct. Bewaren hoeft alleen als je hier resultaten en mail bij nieuw aanbod wilt.</p>
+        <p class="help" style="margin-top:-8px;margin-bottom:12px">Zoeken werkt direct. Bewaren is alleen nodig voor meldingen.</p>
         <div class="frm">
-          <label class="f full"><span>Naam van het profiel (bijv. X5 M Sport 2020+)</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
+          <label class="f full"><span>Naam</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
           <label class="f"><span>Merk</span><input type="text" id="p_merk" list="merkenlijst" placeholder="BMW"><datalist id="merkenlijst"></datalist></label>
-          <label class="f"><span>Model (leeg = hele merk, meerdere met komma)</span><input type="text" id="p_model" placeholder="X5, X6"></label>
-          <label class="f"><span>Bouwjaar vanaf</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
-          <label class="f"><span>Bouwjaar tot (optioneel)</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
-          <label class="f"><span>Kilometerstand max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
-          <label class="f"><span>Vermogen min. (kW, optioneel)</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
+          <label class="f"><span>Model</span><input type="text" id="p_model" placeholder="X5, X6"></label>
+          <label class="f"><span>Bouwjaar van</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
+          <label class="f"><span>Bouwjaar tot</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
+          <label class="f"><span>Km max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
+          <label class="f"><span>kW min.</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
           <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
-          <label class="f"><span>Aangeboden door</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
-          <label class="f"><span>Prijs min. (€)</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
-          <label class="f"><span>Prijs max. (€)</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
+          <label class="f"><span>Aanbieder</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
+          <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
+          <label class="f"><span>Prijs tot</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
           <div class="f full"><span>Carrosserie</span><div class="chips" id="p_carr"></div></div>
           <div class="f full"><span>Brandstof</span><div class="chips" id="p_brandstof"></div></div>
-          <label class="f full"><span>Uitvoering, zoekwoord in de titel (meerdere gescheiden door komma, elk wordt een aparte link)</span><input type="text" id="p_uitv" list="uitvlijst" placeholder="M Sport"><datalist id="uitvlijst"></datalist></label>
+          <label class="f full"><span>Uitvoering</span><input type="text" id="p_uitv" list="uitvlijst" placeholder="M Sport"><datalist id="uitvlijst"></datalist></label>
           <div class="f full hist" id="hist_uitv"></div>
-          <label class="f full"><span>Uitvoering voor mobile.de, Duitse schrijfwijze (leeg = zelfde als hierboven)</span><input type="text" id="p_uitv_de" placeholder="M Sportpaket"></label>
-          <label class="f full"><span>Model op Duitse sites, als dat anders heet (bijv. 5er, V-Klasse)</span><input type="text" id="p_model_de" placeholder="leeg = zelfde als Model"></label>
-          <label class="f full"><span>Uitsluiten: resultaten met deze woorden in de titel worden verborgen en niet gemaild (komma-gescheiden)</span><input type="text" id="p_uitv_niet" list="nietlijst" placeholder="xLine, x-Line, Schaden"><datalist id="nietlijst"></datalist></label>
+          <label class="f full"><span>Uitvoering mobile.de</span><input type="text" id="p_uitv_de" placeholder="M Sportpaket"></label>
+          <label class="f full"><span>Model op Duitse sites</span><input type="text" id="p_model_de" placeholder="leeg = zelfde als Model"></label>
+          <label class="f full"><span>Uitsluiten</span><input type="text" id="p_uitv_niet" list="nietlijst" placeholder="xLine, x-Line, Schaden"><datalist id="nietlijst"></datalist></label>
           <div class="f full hist" id="hist_niet"></div>
-          <div class="f full"><span>Must-have opties (gestructureerd filter waar de site dat kan)</span><div class="chips" id="p_opties"></div>
+          <div class="f full"><span>Opties</span><div class="chips" id="p_opties"></div>
             <div class="hist" id="hist_opties"></div>
-            <div class="help">Max. 2 à 3 aanvinken. Dealers vinken opties niet consequent aan; elk extra vinkje kost je echte auto's.</div></div>
-          <div class="f full"><span>Sites voor dit profiel</span><div class="chips" id="p_sites"></div></div>
+            <div class="help">Max. 2 à 3: elk vinkje kost echte auto's.</div></div>
+          <div class="f full"><span>Sites</span><div class="chips" id="p_sites"></div></div>
         </div>
         <div class="row mt">
           <button class="btn bronze" id="btnZoekNu">Zoeken</button>
-          <button class="btn sec" id="btnBewaarProfiel">Bewaren voor meldingen</button>
+          <button class="btn sec" id="btnBewaarProfiel">Bewaren</button>
           <button class="btn sec" id="btnDupliceer">Dupliceren</button>
           <button class="btn danger" id="btnVerwijderProfiel">Verwijderen</button>
         </div>
-        <p class="help">Zoeken opent de links van de aangevinkte sites in aparte tabbladen. Er wordt niets bewaard.</p>
+        <p class="help">Niets wordt bewaard.</p>
       </div>
 
       <div class="card">
@@ -214,11 +214,11 @@ details summary{cursor:pointer;font-weight:500}
     <div>
       <div class="card" id="linkKaart">
         <div class="row between"><h2>Zoekopdrachten per site</h2><button class="btn sec sm" id="btnOpenAlle">Open alle in tabbladen</button></div>
-        <p class="muted" style="font-size:13.5px">Deze links werken zonder iets te bewaren; ze veranderen mee terwijl je typt. Automaat staat overal vast; aanbieder stel je zelf in (leeg = dealer én particulier). Wil je ook zonder deze app gewaarschuwd worden, sla de zoekopdracht dan op de site zelf op als alert.</p>
+        <p class="muted" style="font-size:13.5px">Links werken zonder bewaren en volgen je invoer. Automaat staat vast.</p>
         <div class="note warn" id="popupWaarschuwing" style="display:none;margin-bottom:10px"></div>
         <div id="linkLijst" class="links"></div>
         <details class="mt"><summary>Model-koppeling per site (URL plakken)</summary>
-          <p class="help" style="margin-top:8px">Klopt een link niet (verkeerd model, 404)? Zoek het model één keer op de site zelf, kopieer de adresbalk en plak hieronder. De app onthoudt de koppeling voor dit merk en model.</p>
+          <p class="help" style="margin-top:8px">Klopt een link niet? Plak hier de zoek-URL van dat model.</p>
           <div class="frm">
             <label class="f"><span>Site</span><select id="leerSite"></select></label>
             <label class="f full"><span>Geplakte URL</span><input type="url" id="leerUrl" placeholder="https://..."></label>
@@ -228,16 +228,16 @@ details summary{cursor:pointer;font-weight:500}
       </div>
       <div class="card" id="resCard">
         <div class="row between"><h2>Gevonden resultaten</h2><div class="row"><button class="btn sec sm" id="btnResLaad">Vernieuwen</button><label class="btn sec sm" style="display:inline-block">Laad results.json van schijf<input type="file" id="fileRes" accept="application/json" style="display:none"></label><button class="btn sec sm" id="btnGezien">Markeer als gezien</button></div></div>
-        <p class="help" id="resMeta">Resultaten komen uit results.json, gevuld door de ophaler (GitHub Actions). Zie Instellingen.</p>
+        <p class="help" id="resMeta">Uit results.json, gevuld door de ophaler.</p>
         <div id="resLijst"></div>
       </div>
       <div class="card">
         <h3>Zo filter je op uitvoering en opties</h3>
         <div class="kv">
-          <span>Zoekwoord</span><span>Werkt op alle sites in de titel. AutoScout24 behandelt "M Sport" en "M-Sport" als hetzelfde; Marktplaats niet: gebruik daar spaties. mobile.de heeft de Duitse schrijfwijze nodig.</span>
-          <span>Sportpakket-vinkje</span><span>Gestructureerd, maar onderbenut: bij BMW X5 op AutoScout24 NL vangt het zoekwoord ruim 2,5× zoveel auto's als het vinkje. Zoekwoord eerst, vinkje als extra.</span>
-          <span>Opties</span><span>2 à 3 markers (panoramadak, head-up, luchtvering) filteren kale auto's er hard uit. Meer vinkjes = meer missers.</span>
-          <span>Prijs min. + kW min.</span><span>De robuustste proxy voor "geen kale auto": zet de ondergrens op wat een goed uitgevoerde auto minimaal kost.</span>
+          <span>Zoekwoord</span><span>Zoekt in de titel. Marktplaats ziet "M Sport" en "M-Sport" als verschillend.</span>
+          <span>Sportpakket-vinkje</span><span>Vangt minder dan het zoekwoord. Gebruik als extra.</span>
+          <span>Opties</span><span>2 à 3 markers filteren kale auto's eruit. Meer = meer missers.</span>
+          <span>Prijs min. + kW min.</span><span>Ondergrens op wat een goed uitgevoerde auto minimaal kost.</span>
         </div>
       </div>
     </div>
@@ -251,22 +251,22 @@ details summary{cursor:pointer;font-weight:500}
       <div class="card">
         <div class="row between"><h2 id="kandTitle">Kandidaat / BPM-indicatie</h2><button class="btn sec sm" id="btnNieuwKand">Nieuw</button></div>
         <div class="frm">
-          <label class="f full"><span>Omschrijving (merk, model, uitvoering)</span><input type="text" id="k_oms" placeholder="BMW X5 xDrive45e M Sport"></label>
-          <label class="f"><span>Kenteken (alleen NL) — vult de rest automatisch</span><input type="text" id="k_kenteken" placeholder="XX-123-X"></label>
+          <label class="f full"><span>Omschrijving</span><input type="text" id="k_oms" placeholder="BMW X5 xDrive45e M Sport"></label>
+          <label class="f"><span>Kenteken (NL)</span><input type="text" id="k_kenteken" placeholder="XX-123-X"></label>
           <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnKenteken" style="width:100%">Kenteken opzoeken bij RDW</button></div>
-          <label class="f full"><span>Link naar advertentie</span><input type="url" id="k_url" placeholder="https://..."></label>
-          <label class="f"><span>Land van aankoop</span><select id="k_land"><option value="DE">Duitsland</option><option value="NL">Nederland</option><option value="BE">België</option><option value="DK">Denemarken</option></select></label>
+          <label class="f full"><span>Link</span><input type="url" id="k_url" placeholder="https://..."></label>
+          <label class="f"><span>Land</span><select id="k_land"><option value="DE">Duitsland</option><option value="NL">Nederland</option><option value="BE">België</option><option value="DK">Denemarken</option></select></label>
           <label class="f"><span>Zoekprofiel</span><select id="k_profiel"><option value="">(geen)</option></select></label>
-          <label class="f"><span>Vraagprijs (€, zoals geadverteerd)</span><input type="number" id="k_prijs" step="500" placeholder="62500"></label>
+          <label class="f"><span>Vraagprijs</span><input type="number" id="k_prijs" step="500" placeholder="62500"></label>
           <label class="f"><span>BTW-status</span><select id="k_btw"><option value="btw">BTW-auto (MwSt. ausweisbar)</option><option value="marge">Marge (differenzbesteuert)</option></select></label>
           <label class="f"><span>Kilometerstand</span><input type="number" id="k_km" step="1000" placeholder="85000"></label>
-          <label class="f"><span>Datum eerste toelating</span><input type="date" id="k_det"></label>
+          <label class="f"><span>Eerste toelating</span><input type="date" id="k_det"></label>
           <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
           <label class="f"><span>Plug-in hybride</span><select id="k_phev"><option value="0">Nee</option><option value="1">Ja</option></select></label>
-          <label class="f"><span>CO2 WLTP (g/km)</span><input type="number" id="k_co2w" placeholder="bijv. 187"></label>
+          <label class="f"><span>CO2 WLTP</span><input type="number" id="k_co2w" placeholder="bijv. 187"></label>
           <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnSchatCo2" style="width:100%">CO2 schatten (RDW)</button></div>
-          <label class="f"><span>CO2 NEDC (g/km, alleen bij DET vóór 1-7-2020)</span><input type="number" id="k_co2n" placeholder="alleen indien bekend"></label>
-          <label class="f"><span>Verwachte RDW-keuringsdatum</span><input type="date" id="k_keuring"></label>
+          <label class="f"><span>CO2 NEDC</span><input type="number" id="k_co2n" placeholder="alleen indien bekend"></label>
+          <label class="f"><span>Keuringsdatum</span><input type="date" id="k_keuring"></label>
           <label class="f"><span>Status</span><select id="k_status"><option value="nieuw">Nieuw</option><option value="bekeken">Bekeken</option><option value="bod">Bod gedaan</option><option value="gekocht">Gekocht</option><option value="afgewezen">Afgewezen</option></select></label>
           <label class="f full"><span>Notitie</span><textarea id="k_notitie" rows="2"></textarea></label>
         </div>
@@ -298,12 +298,12 @@ details summary{cursor:pointer;font-weight:500}
       <div class="card">
         <h2>Kosten en aannames</h2>
         <div class="frm">
-          <label class="f"><span>Transport Duitsland (€)</span><input type="number" id="s_tr_DE" step="50"></label>
-          <label class="f"><span>Transport België (€)</span><input type="number" id="s_tr_BE" step="50"></label>
-          <label class="f"><span>Transport Denemarken (€)</span><input type="number" id="s_tr_DK" step="50"></label>
-          <label class="f"><span>Transport Nederland (€)</span><input type="number" id="s_tr_NL" step="50"></label>
-          <label class="f"><span>Importkosten RDW/kenteken/leges (€)</span><input type="number" id="s_import" step="25"></label>
-          <label class="f"><span>Dagen tot RDW-keuring (standaard)</span><input type="number" id="s_keuring" step="1"></label>
+          <label class="f"><span>Transport DE</span><input type="number" id="s_tr_DE" step="50"></label>
+          <label class="f"><span>Transport BE</span><input type="number" id="s_tr_BE" step="50"></label>
+          <label class="f"><span>Transport DK</span><input type="number" id="s_tr_DK" step="50"></label>
+          <label class="f"><span>Transport NL</span><input type="number" id="s_tr_NL" step="50"></label>
+          <label class="f"><span>Importkosten</span><input type="number" id="s_import" step="25"></label>
+          <label class="f"><span>Dagen tot keuring</span><input type="number" id="s_keuring" step="1"></label>
         </div>
         <div class="row mt"><button class="btn" id="btnBewaarInst">Instellingen bewaren</button></div>
       </div>
@@ -314,7 +314,7 @@ details summary{cursor:pointer;font-weight:500}
       </div>
       <div class="card">
         <h2>mobile.de merk-ID's</h2>
-        <p class="help">mobile.de werkt met nummers per merk en model. Merken staan hier; het model leer je per profiel via "Model-koppeling" (URL plakken).</p>
+        <p class="help">mobile.de werkt met nummers. Merken staan hier, modellen leer je per profiel.</p>
         <div style="overflow:auto;max-height:280px"><table class="t" id="makeIdTabel"><thead><tr><th>Merk</th><th>ID</th><th></th></tr></thead><tbody></tbody></table></div>
         <div class="row mt"><input type="text" id="mk_naam" placeholder="Merk" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px"><input type="number" id="mk_id" placeholder="ID" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;width:110px"><button class="btn sec sm" id="btnMakeIdAdd">Toevoegen</button></div>
       </div>
@@ -322,10 +322,10 @@ details summary{cursor:pointer;font-weight:500}
     <div>
       <div class="card">
         <h2>Automatisch ophalen (GitHub Actions)</h2>
-        <p class="help">De app zelf kan geen resultaten ophalen (browsers blokkeren dat). De meegeleverde ophaler draait in je GitHub-repo, leest <code>profiles.json</code>, haalt AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen op en schrijft <code>results.json</code>. mobile.de en Gaspedaal blokkeren dit; daar blijf je op de eigen alert van de site aangewezen.</p>
+        <p class="help">De ophaler draait in je GitHub-repo, leest <code>profiles.json</code>, haalt AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen op en schrijft <code>results.json</code>. mobile.de en Gaspedaal blokkeren dit; daar blijf je op de eigen alert van de site aangewezen.</p>
         <div class="frm">
-          <label class="f full"><span>URL van results.json (leeg = zelfde map als deze app)</span><input type="url" id="s_resurl" placeholder="results.json"></label>
-          <label class="f full"><span>Proxy — hiermee toont <b>Zoeken</b> de resultaten direct in de app. Staat standaard ingevuld; vervang hem alleen door je eigen als je die hebt.</span><input type="url" id="s_proxy" placeholder="https://kaap-proxy.jouwnaam.workers.dev/"></label>
+          <label class="f full"><span>URL results.json</span><input type="url" id="s_resurl" placeholder="results.json"></label>
+          <label class="f full"><span>Proxy (standaard ingevuld)</span><input type="url" id="s_proxy" placeholder="https://kaap-proxy.jouwnaam.workers.dev/"></label>
         </div>
         <div class="row mt">
           <button class="btn" id="btnExportProfiles">Exporteer profiles.json</button>
@@ -336,11 +336,11 @@ details summary{cursor:pointer;font-weight:500}
       </div>
       <div class="card">
         <h2>Bladwijzer-knop: advertentie naar kandidaat</h2>
-        <p class="help">Sleep de knop hieronder naar je bladwijzerbalk. Sta je op een advertentie (mobile.de, AutoScout24, Marktplaats), klik erop: titel, prijs, kilometerstand, eerste toelating en CO2 worden uit de pagina gelezen en hier ingevuld. Controleer altijd; het is tekstherkenning.</p>
+        <p class="help">Sleep naar je bladwijzerbalk. Klik op een advertentie: gegevens komen hier binnen. Altijd nakijken.</p>
         <a id="bookmarklet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP kandidaat</a>
         <p class="help mt">Werkt alleen als deze app via https (GitHub Pages) draait; vanaf een lokaal bestand blokkeren browsers het openen.</p>
         <h3 style="margin-top:18px">Bladwijzer-knop: aantal treffers terugmelden</h3>
-        <p class="help">Voor mobile.de en Gaspedaal, die we niet mogen uitlezen. Sleep deze knop ook naar je bladwijzerbalk. Klik je hem aan op een resultatenpagina van die sites, dan leest hij het aantal treffers en zet dat bij de betreffende zoeklink in de app.</p>
+        <p class="help">Sleep naar je bladwijzerbalk. Klik op de resultatenpagina van mobile.de of Gaspedaal: het aantal treffers komt bij de link te staan.</p>
         <a id="tellerlet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP teller</a>
       </div>
       <div class="card">
@@ -366,17 +366,17 @@ details summary{cursor:pointer;font-weight:500}
 <div class="toast" id="toast"></div>
 <div class="overlay" id="histVenster"><div class="hist-venster">
   <div class="row between"><h2>Wat er is veranderd</h2><button class="btn sec sm" id="histSluit">Sluiten</button></div>
-  <p class="help" style="margin-top:0">Elke wijziging krijgt een eigen versienummer. De nieuwste staat bovenaan.</p>
+  <p class="help" style="margin-top:0">Nieuwste bovenaan.</p>
   <div id="histLijst"></div>
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.22
+   KAAP Inkoop Radar  v1.23
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.22';
+const APP_VERSIE = '1.23';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -403,18 +403,18 @@ const BTW_PCT = {DE:0.19, NL:0.21, BE:0.21, DK:0.25};
 
 // ---------- Sites ----------
 const SITES = {
-  mobile:     {naam:'mobile.de',        land:'DE', std:true,  mode:'build', poll:false, info:'Duitsland, handel + particulier. Model-koppeling nodig (URL plakken). Blokkeert automatisch ophalen: alleen link + eigen alert.'},
-  as24de:     {naam:'AutoScout24 DE',   land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Parameters geverifieerd; resultaten worden opgehaald.'},
-  kleinanzeigen:{naam:'Kleinanzeigen',  land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Aanbieder instelbaar: dealer, particulier of beide. Resultaten worden opgehaald.'},
-  as24nl:     {naam:'AutoScout24 NL',   land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Parameters geverifieerd; resultaten worden opgehaald.'},
-  gaspedaal:  {naam:'Gaspedaal',        land:'NL', std:true,  mode:'build', poll:false, info:'Bundelt Marktplaats, AutoTrack en AutoScout24 NL. Brandstof, automaat en zoekwoord stel je op de site in. Blokkeert automatisch ophalen.'},
-  marktplaats:{naam:'Marktplaats',      land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Aanbieder instelbaar: dealer, particulier of beide. Resultaten worden opgehaald.'},
+  mobile:     {naam:'mobile.de',        land:'DE', std:true,  mode:'build', poll:false, info:'Model-koppeling nodig. Alleen link, geen resultaten.'},
+  as24de:     {naam:'AutoScout24 DE',   land:'DE', std:true,  mode:'build', poll:true,  info:'Resultaten worden opgehaald.'},
+  kleinanzeigen:{naam:'Kleinanzeigen',  land:'DE', std:true,  mode:'build', poll:true,  info:'Resultaten worden opgehaald.'},
+  as24nl:     {naam:'AutoScout24 NL',   land:'NL', std:true,  mode:'build', poll:true,  info:'Resultaten worden opgehaald.'},
+  gaspedaal:  {naam:'Gaspedaal',        land:'NL', std:true,  mode:'build', poll:false, info:'Bundelt NL-sites. Filters op de site. Alleen link.'},
+  marktplaats:{naam:'Marktplaats',      land:'NL', std:true,  mode:'build', poll:true,  info:'Resultaten worden opgehaald.'},
   as24be:     {naam:'AutoScout24 BE',   land:'BE', std:true,  mode:'build', poll:true,  info:'België, veel ex-lease BTW-auto\'s. Parameters geverifieerd; resultaten worden opgehaald.'},
-  twodehands: {naam:'2dehands',         land:'BE', std:true,  mode:'build', poll:true,  info:'België, zelfde platform als Marktplaats (zelfde filters en model-koppeling). Resultaten worden opgehaald.'},
-  twoememain: {naam:'2ememain',         land:'BE', std:false, mode:'build', poll:true,  info:'Franstalig België. Zelfde database als 2dehands (getest: identieke aantallen), alleen een Franse interface. Alleen aanzetten als je die taal wilt; anders overbodig.'},
-  gocar:      {naam:'Gocar',            land:'BE', std:false, mode:'paste', poll:false, info:'België (Roularta). Filter op de site, plak de volledige zoek-URL als koppeling.'},
-  vroom:      {naam:'Vroom',            land:'BE', std:false, mode:'paste', poll:false, info:'België (Mediahuis). Filter op de site, plak de volledige zoek-URL als koppeling.'},
-  bilbasen:   {naam:'Bilbasen (DK)',    land:'DK', std:false, mode:'build', poll:false, info:'Denemarken, alleen merk/model in de link; filters op de site.'},
+  twodehands: {naam:'2dehands',         land:'BE', std:true,  mode:'build', poll:true,  info:'Zelfde platform als Marktplaats. Resultaten worden opgehaald.'},
+  twoememain: {naam:'2ememain',         land:'BE', std:false, mode:'build', poll:true,  info:'Franse interface van 2dehands. Zelfde aanbod.'},
+  gocar:      {naam:'Gocar',            land:'BE', std:false, mode:'paste', poll:false, info:'Filter op de site; plak de zoek-URL.'},
+  vroom:      {naam:'Vroom',            land:'BE', std:false, mode:'paste', poll:false, info:'Filter op de site; plak de zoek-URL.'},
+  bilbasen:   {naam:'Bilbasen (DK)',    land:'DK', std:false, mode:'build', poll:false, info:'Alleen merk en model; filters op de site.'},
 };
 const CARROSSERIE = [
   {k:'suv',      l:'SUV',        mobile:'OffRoad',   as24:'4',  mp:'488'},
@@ -693,7 +693,7 @@ function bouwLink(s, p, v, c){
     if (!kop){
       const mid = makeIdVoor(p.merk);
       if (!mid){ L.status='miss'; L.note='Merk-ID voor mobile.de onbekend. Plak één keer een mobile.de-URL van dit model (Model-koppeling) of voeg het merk toe in Instellingen.'; return L; }
-      kop = mid + ';'; L.status='warn'; L.note='Model nog niet gekoppeld: de link toont het hele merk. Plak één keer de mobile.de-URL van dit model.';
+      kop = mid + ';'; L.status='warn'; L.note='Model niet gekoppeld: link toont het hele merk.';
     }
     const q = new URLSearchParams();
     q.set('isSearchRequest','true'); q.set('s','Car'); q.set('vc','Car'); q.set('dam','false');
@@ -710,7 +710,7 @@ function bouwLink(s, p, v, c){
     c.br.filter(b=>b.mobileFe).forEach(b => q.append('fe', b.mobileFe));
     q.set('sb','doc'); q.set('od','down');
     L.url = 'https://suchen.mobile.de/fahrzeuge/search.html?' + q.toString();
-    if (!L.note) L.note = 'Controleer bij eerste gebruik: Automatik, aanbieder en carrosserie moeten aangevinkt staan.';
+    if (!L.note) L.note = 'Controleer de filters op de site.';
     return L;
   }
   if (s === 'as24nl' || s === 'as24de' || s === 'as24be'){
@@ -734,8 +734,8 @@ function bouwLink(s, p, v, c){
     if (p.kw){ q.set('powertype','kw'); q.set('powerfrom', p.kw); }
     if (v) q.set('version', v);
     L.url = `${dom[0]}/${path}?` + q.toString();
-    if (!kop && p.model) L.note = `Model-slug automatisch afgeleid (${c.modelAs24}). 0 resultaten of verkeerd model? Plak de AutoScout24-URL van dit model.`;
-    else if (!p.model) L.note = 'Hele merk, geen model opgegeven.';
+    if (!kop && p.model) L.note = `Model afgeleid (${c.modelAs24}). Klopt niet? Plak de model-URL.`;
+    else if (!p.model) L.note = 'Hele merk.';
     return L;
   }
   if (s === 'marktplaats' || s === 'twodehands' || s === 'twoememain'){
@@ -777,7 +777,7 @@ function bouwLink(s, p, v, c){
     // Geen model-id? De ophaler zoekt het zelf op in de merkpagina van de site.
     if (l2 && !kop && p.model) L.resolve = {host, pad, merkSlug: c.merkS, model: cap(p.model)};
     L.status = 'warn';
-    L.note = (kop || !p.model ? '' : 'Model-id nog niet bekend: de ophaler zoekt het zelf op; de link hierboven gebruikt het model als zoekwoord. ') + 'Controleer bij eerste gebruik of alle filters zijn overgenomen.';
+    L.note = (kop || !p.model ? '' : 'Model-id onbekend; de ophaler zoekt het op. ') + 'Controleer de filters op de site.';
     return L;
   }
   if (s === 'kleinanzeigen'){
@@ -796,7 +796,7 @@ function bouwLink(s, p, v, c){
     const fuels = [...new Set(c.br.map(b => b.ka).filter(Boolean))];
     if (fuels.length === 1) attrs.push(`autos.fuel_s:${fuels[0]}`);
     L.url = `https://www.kleinanzeigen.de/s-autos/${seg.length ? seg.join('/') + '/' : ''}${kw ? kw + '/' : ''}k0c216+` + attrs.join('+');
-    L.note = (fuels.length > 1 ? 'Meerdere brandstoffen: Kleinanzeigen filtert er maar één, daarom hier weggelaten. ' : '') + 'Model staat als zoekwoord in de titel; merk als filter.';
+    L.note = (fuels.length > 1 ? 'Meerdere brandstoffen: Kleinanzeigen filtert er maar één, daarom hier weggelaten. ' : '') + 'Model als zoekwoord in de titel.';
     return L;
   }
   if (SITES[s].mode === 'paste'){
@@ -1014,7 +1014,7 @@ function renderLinks(){
       <div class="note">${esc(g.note)}${teller ? '<br>' + teller : ''}</div>${rijen}`;
     el.appendChild(d);
   });
-  $('button[data-copy]', el).forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(decodeURIComponent(b.dataset.copy)); toast('Link gekopieerd'); }));
+  $$('button[data-copy]', el).forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(decodeURIComponent(b.dataset.copy)); toast('Link gekopieerd'); }));
   window._links = links;
 }
 
@@ -1457,13 +1457,13 @@ function renderResultaten(){
   const el = $('#resLijst'); el.innerHTML = '';
   const meta = $('#resMeta');
   if (!RES){ meta.textContent = 'Nog niet geladen.'; return; }
-  if (!profielId){ meta.innerHTML = 'Dit blok hoort bij <b>bewaarde</b> zoekopdrachten: de ophaler draait op die lijst en zet de gevonden advertenties hier neer. Voor een eenmalige zoekactie heb je dit niet nodig, gebruik de links hierboven.'; el.innerHTML = ''; return; }
+  if (!profielId){ meta.innerHTML = 'Hoort bij <b>bewaarde</b> zoekopdrachten. Voor eenmalig zoeken: gebruik de links hierboven.'; el.innerHTML = ''; return; }
   if (RES.leeg){
     const lokaal = location.protocol === 'file:';
     meta.innerHTML = lokaal
       ? 'Deze app draait vanaf je schijf; browsers mogen dan geen results.json inlezen. Open de app via GitHub Pages, of gebruik de knop "Laad results.json van schijf".'
       : 'Nog geen resultatenbestand gevonden. Dat is normaal zolang de ophaler niet heeft gedraaid: exporteer eerst profiles.json, zet dat in de repo en start <b>Actions &gt; Inkoop-radar &gt; Run workflow</b>. Daarna verschijnen de resultaten hier vanzelf.';
-    el.innerHTML = `<div class="help" style="margin-top:8px">Gezocht op: ${esc((RES.paden||[]).join(', ') || 'results.json')}. Staat het bestand ergens anders, vul dan de volledige URL in bij Instellingen.</div>`;
+    el.innerHTML = `<div class="help" style="margin-top:8px">Gezocht: ${esc((RES.paden||[]).join(', ') || 'results.json')}. Staat het elders? Vul de URL in bij Instellingen.</div>`;
     return;
   }
   const pr = RES.profiles && RES.profiles[profielId];
@@ -1672,6 +1672,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.23', 'Kortere labels en uitleg door de hele app: minder tekst, rustiger beeld.'],
   ['1.22', 'Zoeklinks en resultaten staan nu gegroepeerd per site en model: uitvoeringen zitten in één blok met een Open-knop per uitvoering, dezelfde advertentie verschijnt één keer, en de goedkoopste staat bovenaan. Een ander model of merk krijgt een eigen blok.'],
   ['1.21', 'Aangeboden door heet nu Dealer in plaats van Alleen handel.'],
   ['1.20', 'Deurenfilter toegevoegd (AutoScout24, Marktplaats, 2dehands). En opgelost: typte je 20.000 in een prijs- of kilometerveld, dan las de app 20. Nu worden punten en spaties genegeerd.'],
