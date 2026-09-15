@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.29</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.31</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -355,6 +355,11 @@ details summary{cursor:pointer;font-weight:500}
         <h3 style="margin-top:18px">Bladwijzer-knop: aantal treffers terugmelden</h3>
         <p class="help">Sleep naar je bladwijzerbalk. Klik op de resultatenpagina van mobile.de of Gaspedaal: het aantal treffers komt bij de link te staan.</p>
         <a id="tellerlet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP teller</a>
+        <h3 style="margin-top:18px">Extensie: prijshistorie automatisch</h3>
+        <p class="help">Installeer de KAAP-extensie (map <b>extensie</b> uit de zip: chrome://extensions, ontwikkelaarsmodus aan, "Uitgepakte extensie laden"). Daarna staat bij elk AutoScout24-resultaat een knop <b>€ historie</b>: de extensie opent de advertentie kort op de achtergrond en haalt de prijswijzigingen op. Inloggen bij AutoScout24 blijft nodig.</p>
+        <h3 style="margin-top:18px">Of zonder extensie: bladwijzer</h3>
+        <p class="help">Log in bij AutoScout24, open een advertentie en klik deze knop: je ziet de volledige prijshistorie in beeld en hij wordt opgeslagen bij die auto in de app. Werkt alleen bij advertenties waarvan de prijs ooit is gewijzigd.</p>
+        <a id="histlet" class="btn bronze" href="#" onclick="return false" draggable="true">KAAP prijshistorie</a>
       </div>
       <div class="card">
         <h2>Geleerde model-koppelingen</h2>
@@ -384,12 +389,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.29
+   KAAP Inkoop Radar  v1.31
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.29';
+const APP_VERSIE = '1.31';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -496,7 +501,8 @@ function laad(){
   s.gezien = s.gezien || {};
   s.geschiedenis = s.geschiedenis || {};
   s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht
-  s.tellers = s.tellers || {};     // handmatig teruggemelde aantallen per zoeklink   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
+  s.tellers = s.tellers || {};     // handmatig teruggemelde aantallen per zoeklink
+  s.historie = s.historie || {};   // prijshistorie per advertentie, opgehaald met de bladwijzer   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
   if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   return s;
@@ -1176,6 +1182,27 @@ function renderInstellingen(){
   $('#bookmarklet').setAttribute('href', 'javascript:' + code);
   const tellerCode = `(function(){var t=document.body.innerText;var m=t.match(/([0-9][0-9.\\s]{0,9})\\s*(Angebote|Treffer|Fahrzeuge|resultaten|resultaat|auto's|occasions|advertenties|Ergebnisse)/i);if(!m){var p=prompt('Aantal treffers niet gevonden. Typ het zelf over:');if(!p)return;m=[0,p];}var n=m[1].replace(/[^0-9]/g,'');window.open('${app}?teller='+n+'&bron='+encodeURIComponent(location.href),'_blank');})();`;
   $('#tellerlet').setAttribute('href', 'javascript:' + tellerCode);
+
+  const histCode = `(function(){
+    var L=[].slice.call(document.querySelectorAll('[class*=PriceHistoryLink] *')).filter(function(e){return /prijshistorie|preishistorie|price history/i.test(e.textContent)&&e.children.length===0;})[0];
+    if(L)L.click();
+    setTimeout(function(){
+      var m=document.querySelector('[class*=PriceHistoryModal_container]');
+      var t=m?m.innerText.replace(/\\u00a0/g,' '):'';
+      var r=[],x,re=/(\\d{2}-\\d{2}-\\d{4})\\s*\\u20ac\\s*([\\d.]+)/g;
+      while((x=re.exec(t))!==null)r.push({d:x[1],p:+x[2].replace(/\\./g,'')});
+      if(!r.length){alert('Geen prijshistorie gevonden. Ben je ingelogd, en is de prijs ooit gewijzigd?');return;}
+      var eerste=r[r.length-1],laatste=r[0];
+      var dd=eerste.d.split('-'),dagen=Math.floor((Date.now()-new Date(+dd[2],+dd[1]-1,+dd[0]))/864e5);
+      var daling=Math.round((1-laatste.p/eerste.p)*100);
+      var box=document.createElement('div');
+      box.style.cssText='position:fixed;right:18px;bottom:18px;z-index:999999;background:#fff;border:1px solid #ccc;border-radius:10px;padding:14px 16px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.2);max-width:300px';
+      box.innerHTML='<b>Prijshistorie</b><br>'+r.map(function(y,i){return y.d+' &euro; '+y.p.toLocaleString('nl-NL')+(i===0?' <span style=color:#777>nu</span>':'');}).join('<br>')+'<br><span style=color:#777>'+dagen+' dagen online, '+daling+'% gezakt</span><br><br><a href="${app}?historie='+encodeURIComponent(JSON.stringify(r))+'&bron='+encodeURIComponent(location.href.split("?")[0])+'" target="_blank" style="color:#A77446;font-weight:600">Opslaan in KAAP</a> &nbsp; <a href="#" style="color:#777" onclick="this.closest(\\'div\\').remove();return false">sluiten</a>';
+      document.body.appendChild(box);
+    },1200);
+  })();`;
+  $('#histlet').setAttribute('href', 'javascript:' + histCode);
+
 }
 function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.keys(S.instellingen.makeIds).sort().map(m=>`<option value="${esc(m)}">`).join(''); }
 
@@ -1234,7 +1261,7 @@ function resKaart(it, land, isNew, prevPrijs, idx){
   r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, land});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
   return r;
 }
 
@@ -1582,6 +1609,73 @@ function verwerkTeller(){
   toast(`${num(+n)} treffers genoteerd voor deze zoekopdracht.`);
 }
 
+
+
+// ---------- Brug naar de KAAP-extensie (prijshistorie van AutoScout24) ----------
+let EXTENSIE = false;
+const historieWachtend = new Map();
+window.addEventListener('message', (e) => {
+  if ((e.source && e.source !== window) || !e.data || !e.data.kaap) return;
+  if (e.data.kaap === 'extensie-aanwezig'){
+    if (!EXTENSIE){ EXTENSIE = true; if (RES) renderResultaten(); else if (LIVE) renderLive(); }
+    return;
+  }
+  if (e.data.kaap === 'historie-antwoord'){
+    const knop = historieWachtend.get(e.data.url);
+    historieWachtend.delete(e.data.url);
+    if (knop){ knop.disabled = false; knop.textContent = '€ historie'; }
+    if (e.data.rijen && e.data.rijen.length){
+      S.historie[linkSleutel(e.data.url)] = {rijen: e.data.rijen, d: Date.now()};
+      bewaar();
+      toonHistoriePopup(e.data.url, knop ? knop.dataset.titel : '');
+      if (RES) renderResultaten(); else if (LIVE) renderLive();
+    } else {
+      toast(e.data.fout ? 'Historie ophalen mislukt: ' + e.data.fout : 'Geen prijshistorie: ben je ingelogd bij AutoScout24, en is de prijs ooit gewijzigd?');
+    }
+  }
+});
+function vraagHistorie(url, knop){
+  if (!EXTENSIE){ toast('Installeer eerst de KAAP-extensie (zie Instellingen).'); return; }
+  knop.disabled = true; knop.textContent = 'bezig…';
+  historieWachtend.set(url, knop);
+  window.postMessage({kaap: 'historie-verzoek', url}, '*');
+  setTimeout(() => { if (historieWachtend.has(url)){ historieWachtend.delete(url); knop.disabled = false; knop.textContent = '€ historie'; toast('Geen antwoord van de extensie.'); } }, 30000);
+}
+
+// ---------- Prijshistorie van AutoScout24, opgehaald met de bladwijzer ----------
+function historieVoor(url){ return url ? S.historie[linkSleutel(url)] : null; }
+function verwerkHistorie(){
+  const q = new URLSearchParams(location.search);
+  const data = q.get('historie'), bron = q.get('bron');
+  if (!data || !bron) return;
+  try {
+    const rijen = JSON.parse(decodeURIComponent(data));
+    S.historie[linkSleutel(bron)] = {rijen, d: Date.now()};
+    bewaar();
+    history.replaceState(null, '', location.pathname);
+    toast(`Prijshistorie opgeslagen: ${rijen.length} prijzen.`);
+    if (RES) renderResultaten(); else renderLinks();
+  } catch(e){ toast('Prijshistorie niet gelezen'); }
+}
+function toonHistoriePopup(url, titel){
+  const h = historieVoor(url);
+  if (!h) return;
+  const eerste = h.rijen[h.rijen.length - 1], laatste = h.rijen[0];
+  const dagen = (() => { const m = eerste.d.match(/(\d{2})-(\d{2})-(\d{4})/); return m ? Math.floor((Date.now() - new Date(+m[3], +m[2]-1, +m[1])) / 86400000) : null; })();
+  const daling = eerste.p && laatste.p ? Math.round((1 - laatste.p / eerste.p) * 100) : null;
+  $('#histLijst').innerHTML = `<div class="rel"><b>${esc(titel || 'Advertentie')}</b>
+      <ul>${h.rijen.map((r, i) => `<li>${esc(r.d)} — ${eur(r.p)}${i === 0 ? ' <small class="muted">nu</small>' : ''}${i === h.rijen.length - 1 ? ' <small class="muted">vraagprijs bij plaatsing</small>' : ''}</li>`).join('')}</ul>
+      <p class="help">${dagen != null ? dagen + ' dagen online' : ''}${daling ? ' · ' + daling + '% gezakt' : ''} · ${h.rijen.length - 1} prijswijziging${h.rijen.length === 2 ? '' : 'en'}</p></div>`;
+  $('#histVenster').querySelector('h2').textContent = 'Prijshistorie';
+  $('#histVenster').classList.add('on');
+}
+document.addEventListener('click', (e) => {
+  const knop = e.target.closest('.histknop'); if (!knop) return;
+  const url = decodeURIComponent(knop.dataset.url);
+  if (historieVoor(url)) toonHistoriePopup(url, knop.dataset.titel);
+  else vraagHistorie(url, knop);
+});
+
 // ---------- Inkomende kandidaat via bladwijzer ----------
 function verwerkInkomend(){
   const q = new URLSearchParams(location.search);
@@ -1728,6 +1822,8 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.31', 'Werkt samen met de KAAP-extensie: knop € historie bij elk AutoScout24-resultaat haalt de prijshistorie automatisch op, zonder bladwijzer.'],
+  ['1.30', 'Bladwijzer voor de prijshistorie van AutoScout24: klik hem op een advertentie en je ziet alle prijswijzigingen met datum, het aantal dagen online en het percentage. Opslaan zet hem als knopje bij die auto in de app.'],
   ['1.29', 'BTW-filter werkt nu ook op mobile.de (vat=1 voor BTW, vat=0 voor marge, beide nagemeten). Onder het veld staat op welke sites het echt werkt: AutoScout24 en Kleinanzeigen kennen het niet.'],
   ['1.28', 'Carrosserie, brandstof, opties en sites zijn uitklapbaar en staan dicht. Het bolletje naast de titel toont hoeveel je hebt aangevinkt.'],
   ['1.27', 'BTW- of margefilter, label BTW/Marge op de advertentie, dagen online volgens de site, en het prijsverloop zichtbaar onder de prijs.'],
@@ -1794,6 +1890,7 @@ function init(){
 }
 init();
 verwerkTeller();
+verwerkHistorie();
 laadResultaten(true);
 verwerkInkomend();
 </script>
