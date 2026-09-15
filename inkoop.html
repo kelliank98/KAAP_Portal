@@ -88,14 +88,14 @@ label.f{display:block}
 .mt{margin-top:14px}
 
 .links{display:flex;flex-direction:column;gap:8px}
-.lnk{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;background:#fff}
+.lnk{display:block;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff}
 @media (max-width:640px){.lnk{grid-template-columns:1fr;gap:6px}}
 .lnk .site{font-weight:600}
-.lnk .site small{display:block;font-weight:400}
-.lnk .note{font-size:12.5px;color:var(--muted);word-break:break-word}
-.lnk .acties{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.lnk .site small{font-weight:400;color:var(--muted);margin-left:6px}
+.lnk .note{font-size:12.5px;color:var(--muted);margin:3px 0 7px}
+.lnk .acties{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
 .lnk .acties .row{margin-top:0 !important;white-space:nowrap}
-.lnk .acties .row span{text-align:right}
+.lnk .acties .row span{color:var(--muted)}
 .lnk.warn{border-left:3px solid var(--warn)}
 .lnk.miss{border-left:3px solid var(--bad)}
 .lnk.ok{border-left:3px solid var(--ok)}
@@ -157,7 +157,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.24</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.25</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -374,12 +374,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.24
+   KAAP Inkoop Radar  v1.25
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.24';
+const APP_VERSIE = '1.25';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -1010,7 +1010,7 @@ function renderLinks(){
     const meer = g.varianten.length > 1;
     const teller = g.varianten.map(v => tellerTekst(v.url)).find(Boolean);
     const rijen = g.varianten.map(v => v.url
-      ? `<div class="row">${meer ? `<span class="muted" style="font-size:12.5px;min-width:110px">${esc(v.variant || 'zonder zoekwoord')}</span>` : ''}<a class="btn sm" href="${v.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(v.url)}">Kopieer</button></div>`
+      ? `<div class="row">${meer ? `<span class="muted" style="font-size:12.5px;min-width:96px">${esc(v.variant || 'zonder zoekwoord')}</span>` : ''}<a class="btn sm" href="${v.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(v.url)}">Kopieer</button></div>`
       : `<div class="row"><span class="muted" style="font-size:12.5px">${esc(v.variant || '')}: geen link</span></div>`).join('');
     const d = document.createElement('div'); d.className = 'lnk ' + g.status;
     d.innerHTML = `<div class="site">${esc(g.naam)}<small>${esc(SITES[g.site].land)}${g.model ? ' · ' + esc(g.model) : ''}</small></div>
@@ -1676,6 +1676,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.25', 'Zoeklinkkaarten staan onder elkaar in plaats van in kolommen; de notitie werd anders tot één letter breed geperst.'],
   ['1.24', 'Opmaakfout hersteld: de knoppen per uitvoering stonden naast elkaar in plaats van onder elkaar.'],
   ['1.23', 'Kortere labels en uitleg door de hele app: minder tekst, rustiger beeld.'],
   ['1.22', 'Zoeklinks en resultaten staan nu gegroepeerd per site en model: uitvoeringen zitten in één blok met een Open-knop per uitvoering, dezelfde advertentie verschijnt één keer, en de goedkoopste staat bovenaan. Een ander model of merk krijgt een eigen blok.'],
