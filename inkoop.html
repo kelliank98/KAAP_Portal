@@ -64,6 +64,14 @@ label.f{display:block}
 .f input[type=text],.f input[type=number],.f input[type=date],.f input[type=month],.f input[type=url],.f select,.f textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
 .f input:focus,.f select:focus,.f textarea:focus,button:focus-visible{outline:2px solid var(--bronze);outline-offset:1px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+.vouw{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;background:#fff}
+.vouw summary{cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:500;list-style:none;display:flex;align-items:center;gap:6px}
+.vouw summary::-webkit-details-marker{display:none}
+.vouw summary::before{content:'▸';font-size:11px;color:var(--bronze)}
+.vouw[open] summary::before{content:'▾'}
+.vouw[open] summary{margin-bottom:8px}
+.vouw .tel{background:var(--bronze);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;line-height:16px}
+.vouw .tel:empty{display:none}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;user-select:none;background:#fff;font-size:13.5px}
 .chip input{margin:0}
 .chip.on{border-color:var(--bronze);background:var(--bronze-pale)}
@@ -157,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.27</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.28</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -187,18 +195,18 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Aanbieder</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
           <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
           <label class="f"><span>Prijs tot</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
-          <div class="f full"><span>Carrosserie</span><div class="chips" id="p_carr"></div></div>
-          <div class="f full"><span>Brandstof</span><div class="chips" id="p_brandstof"></div></div>
+          <details class="f full vouw"><summary>Carrosserie<span class="tel" id="tel_carr"></span></summary><div class="chips" id="p_carr"></div></details>
+          <details class="f full vouw"><summary>Brandstof<span class="tel" id="tel_brandstof"></span></summary><div class="chips" id="p_brandstof"></div></details>
           <label class="f full"><span>Uitvoering</span><input type="text" id="p_uitv" list="uitvlijst" placeholder="M Sport"><datalist id="uitvlijst"></datalist></label>
           <div class="f full hist" id="hist_uitv"></div>
           <label class="f full"><span>Uitvoering mobile.de</span><input type="text" id="p_uitv_de" placeholder="M Sportpaket"></label>
           <label class="f full"><span>Model op Duitse sites</span><input type="text" id="p_model_de" placeholder="leeg = zelfde als Model"></label>
           <label class="f full"><span>Uitsluiten</span><input type="text" id="p_uitv_niet" list="nietlijst" placeholder="xLine, x-Line, Schaden"><datalist id="nietlijst"></datalist></label>
           <div class="f full hist" id="hist_niet"></div>
-          <div class="f full"><span>Opties</span><div class="chips" id="p_opties"></div>
+          <details class="f full vouw"><summary>Opties<span class="tel" id="tel_opties"></span></summary><div class="chips" id="p_opties"></div>
             <div class="hist" id="hist_opties"></div>
-            <div class="help">Max. 2 à 3: elk vinkje kost echte auto's.</div></div>
-          <div class="f full"><span>Sites</span><div class="chips" id="p_sites"></div></div>
+            <div class="help">Max. 2 à 3: elk vinkje kost echte auto's.</div></details>
+          <details class="f full vouw"><summary>Sites<span class="tel" id="tel_sites"></span></summary><div class="chips" id="p_sites"></div></details>
         </div>
         <div class="row mt">
           <button class="btn bronze" id="btnZoekNu">Zoeken</button>
@@ -375,12 +383,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.27
+   KAAP Inkoop Radar  v1.28
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.27';
+const APP_VERSIE = '1.28';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -989,7 +997,17 @@ function renderProfielLijst(){
     el.appendChild(d);
   });
 }
+// Aantal aangevinkte chips naast de titel van een uitklapblok.
+function werkTellersBij(){
+  [['p_carr','tel_carr'],['p_brandstof','tel_brandstof'],['p_opties','tel_opties'],['p_sites','tel_sites']].forEach(([chips, tel]) => {
+    const t = $('#' + tel); if (!t) return;
+    const n = $$('input:checked', $('#' + chips)).length;
+    t.textContent = n ? n : '';
+  });
+}
+
 function renderLinks(){
+  werkTellersBij();
   const p = leesProfielForm();
   if (!profielId && p.merk){ S.concept = p; bewaar(); }
   const el = $('#linkLijst'); el.innerHTML = '';
@@ -1698,6 +1716,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.28', 'Carrosserie, brandstof, opties en sites zijn uitklapbaar en staan dicht. Het bolletje naast de titel toont hoeveel je hebt aangevinkt.'],
   ['1.27', 'BTW- of margefilter, label BTW/Marge op de advertentie, dagen online volgens de site, en het prijsverloop zichtbaar onder de prijs.'],
   ['1.26', 'Per blok worden nu 60 advertenties getoond in plaats van 30. Zijn er meer, dan staat eronder hoeveel er buiten beeld blijven.'],
   ['1.25', 'Zoeklinkkaarten staan onder elkaar in plaats van in kolommen; de notitie werd anders tot één letter breed geperst.'],
