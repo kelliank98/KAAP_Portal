@@ -15,6 +15,10 @@ jobs:
   controle:
     runs-on: ubuntu-latest
     env:
+      # Meldingen gaan standaard NIET direct naar mail of WhatsApp: de uitslag komt
+      # in STATUS.md, die leg je voor aan Claude. Wil je toch direct bericht,
+      # zet dan het secret MELD_DIRECT op 1.
+      MELD_DIRECT: ${{ secrets.MELD_DIRECT }}
       MAIL_TO: ${{ secrets.MAIL_TO }}
       CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
     steps:
@@ -42,6 +46,12 @@ jobs:
         continue-on-error: true
         run: node tools/kaap-check.mjs "https://kaap-proxy.kelliankaap.workers.dev/"
 
+      - name: Storing samenvatten in het overzicht
+        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure'
+        run: |
+          echo "### Storing bij de weekcontrole" >> $GITHUB_STEP_SUMMARY
+          echo "Zie STATUS.md in de repo en leg het blok 'Voorleggen aan Claude' voor." >> $GITHUB_STEP_SUMMARY
+
       - name: STATUS.md vastleggen
         if: steps.klok.outputs.draaien == 'ja'
         run: |
@@ -52,7 +62,7 @@ jobs:
           git push
 
       - name: Mail bij storing
-        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MAIL_TO != ''
+        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.MAIL_TO != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -66,7 +76,7 @@ jobs:
           body: file://STATUS.md
 
       - name: WhatsApp bij storing
-        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.CALLMEBOT_PHONE != ''
+        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.CALLMEBOT_PHONE != ''
         env:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: |
