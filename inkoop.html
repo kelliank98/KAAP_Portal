@@ -157,7 +157,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.26</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.27</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -183,6 +183,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Km max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
           <label class="f"><span>kW min.</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
           <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
+          <label class="f"><span>BTW of marge</span><select id="p_btw"><option value="">Beide</option><option value="btw">BTW</option><option value="marge">Marge</option></select></label>
           <label class="f"><span>Aanbieder</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
           <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
           <label class="f"><span>Prijs tot</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
@@ -374,12 +375,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.26
+   KAAP Inkoop Radar  v1.27
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.26';
+const APP_VERSIE = '1.27';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -748,6 +749,7 @@ function bouwLink(s, p, v, c){
     const ids = ['534','10882'];
     if (p.aanbieder === 'dealer') ids.push('10899');
     else if (p.aanbieder === 'particulier') ids.push('10898');
+    if (p.btw === 'btw') ids.push('13149');          // Marktplaats: BTW verrekenbaar
     if (p.deuren === '23') ids.push('171');          // Marktplaats: 1-3 deuren
     else if (p.deuren === '45') ids.push('172');     // 4-5 deuren
     else if (p.deuren === '6') ids.push('173');      // 6 of meer
@@ -955,7 +957,7 @@ function leesProfielForm(){
   return {
     id: profielId, naam: cap($('#p_naam').value), merk: cap($('#p_merk').value), model: cap($('#p_model').value),
     bjvan: veldGetal('p_bjvan'), bjtot: veldGetal('p_bjtot'), km: veldGetal('p_km'), kw: veldGetal('p_kw'),
-    pmin: veldGetal('p_pmin'), pmax: veldGetal('p_pmax'), aanbieder: $('#p_aanbieder').value, deuren: $('#p_deuren').value,
+    pmin: veldGetal('p_pmin'), pmax: veldGetal('p_pmax'), aanbieder: $('#p_aanbieder').value, deuren: $('#p_deuren').value, btw: $('#p_btw').value,
     carr: chipValues($('#p_carr')), brandstof: chipValues($('#p_brandstof')), opties: chipValues($('#p_opties')),
     uitv: cap($('#p_uitv').value), uitvDe: cap($('#p_uitv_de').value), modelDe: cap($('#p_model_de').value), uitvNiet: cap($('#p_uitv_niet').value), sites,
   };
@@ -963,11 +965,11 @@ function leesProfielForm(){
 function vulProfielForm(p){
   profielId = p ? p.id : null;
   const std = {}; for (const k in SITES) std[k] = S.instellingen.sites[k];
-  p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,aanbieder:'',deuren:'',carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
+  p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,kw:null,pmin:null,pmax:null,aanbieder:'',deuren:'',btw:'',carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
   $('#profTitle').textContent = p.id ? 'Bewaarde zoekopdracht' : 'Zoekopdracht';
   $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
   $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_km').value = p.km||''; $('#p_kw').value = p.kw||'';
-  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || '';
+  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || ''; $('#p_btw').value = p.btw || '';
   $('#p_uitv').value = p.uitv||''; $('#p_uitv_de').value = p.uitvDe||''; $('#p_uitv_niet').value = p.uitvNiet||''; $('#p_model_de').value = p.modelDe||'';
   renderChips($('#p_carr'), CARROSSERIE, p.carr||[]);
   renderChips($('#p_brandstof'), BRANDSTOF, p.brandstof||[]);
@@ -1185,13 +1187,23 @@ function resKaart(it, land, isNew, prevPrijs, idx){
   const bpm = bpmVoorItem(it, land);
   const band = bpm ? null : bpmBereik(it, land, idx);
   const r = document.createElement('div'); r.className = 'res';
+  const dagenOnline = (() => {
+    const g = it.geplaatst;
+    if (!g) return null;
+    if (/vandaag|heute/i.test(g)) return 0;
+    if (/gisteren|gestern|eergisteren/i.test(g)) return 1;
+    const d = String(g).match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})/);
+    if (d) return Math.max(0, Math.floor((Date.now() - new Date(+d[3], +d[2]-1, +d[1])) / 86400000));
+    return null;
+  })();
   let dagen = null;
   if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
-  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' + (it.co2_geschat ? ' (geschat)' : '') : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''].filter(Boolean).join(' · ');
+  const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' + (it.co2_geschat ? ' (geschat)' : '') : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagenOnline != null ? `<b title="zolang staat de advertentie online volgens de site">${dagenOnline === 0 ? 'vandaag online' : dagenOnline === 1 ? '1 dag online' : dagenOnline + ' dagen online'}</b>` : (dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''),
+    it.btw === true ? '<span class="tag btw">BTW</span>' : (it.btw === false ? '<span class="tag">Marge</span>' : '')].filter(Boolean).join(' · ');
   r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, land});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
     <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted" title="${it.prijsverloop ? it.prijsverloop.map(x => x.d + ': ' + eur(x.p)).join(' | ') : ''}">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
+    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
   return r;
 }
 
@@ -1229,6 +1241,8 @@ function modelInTitel(titel, model){
   return m ? normTekst(titel).includes(m) : true;
 }
 function pastCriteria(it, p){
+  if (p.btw === 'btw' && it.btw === false) return false;
+  if (p.btw === 'marge' && it.btw === true) return false;
   const jaar = it.ez ? +String(it.ez).slice(0, 4) : null;
   if (p.bjvan && jaar && jaar < p.bjvan) return false;
   if (p.bjtot && jaar && jaar > p.bjtot) return false;
@@ -1272,6 +1286,7 @@ function parseerAs24(tekst, host){
       price: it.price?.priceRaw ?? getal(it.price?.priceFormatted), km: getal(tr.mileage) ?? getal(v.mileageInKm),
       ez: ezUit(tr.firstRegistration), fuel: normBrandstof(v.fuel) || brandstofUitTitel(v.modelVersionInput),
       co2: co2 ? +co2[1] : null, img: (it.images || [])[0] || null, seller: it.seller?.companyName || null,
+      btw: it.price?.isVatLabelLegallyRequired === true ? true : (v.vatReportable === true ? true : (v.vatReportable === false ? false : null)),
       city: it.location?.city || null, url: it.url ? host + it.url : null};
   });
   return {count: pp.numberOfResults ?? null, items};
@@ -1284,6 +1299,7 @@ function parseerLrp(tekst, host){
       km: getal(attr('mileage')), ez: ezUit(attr('constructionYear')), fuel: normBrandstof(attr('fuel')) || brandstofUitTitel(x.title),
       co2: null, img: (x.imageUrls||[])[0] ? 'https:' + String(x.imageUrls[0]).replace(/^https?:/,'') : null,
       transmission: attr('transmission'), seller: x.sellerInformation?.sellerName || null, city: x.location?.cityName || null,
+      geplaatst: x.date || null, btw: /btw/i.test(attr('btwv') || '') ? true : null,
       url: x.vipUrl ? host + x.vipUrl : null};
   });
   return {count: d.totalResultCount ?? null, items};
@@ -1305,6 +1321,7 @@ function parseerKleinanzeigen(tekst){
     items.push({id, title: unent(title||'').slice(0,120), price: getal((txt.match(/([\d\.]{4,9})\s*€/)||[])[1]),
       km: getal((txt.match(/([\d\.]{4,9})\s*km\b/)||[])[1]), ez: ez[2] ? `${ez[2]}-${ez[1]}` : null,
       fuel: brandstofUitTitel(title), co2: null, img: img ? unent(img) : null, seller: null,
+      btw: /mwst|ausweisbar|netto/i.test(txt) ? true : null, geplaatst: (txt.match(/(Heute|Gestern|\d{2}\.\d{2}\.\d{4})/) || [])[1] || null,
       city: (blk.match(/info--location"[^>]*>\s*([^<]+?)\s*</) || [])[1] || null,
       url: href ? 'https://www.kleinanzeigen.de' + href : null});
   });
@@ -1460,6 +1477,7 @@ function bpmVoorItem(it, land){
   return r.fout ? null : r;
 }
 function renderResultaten(){
+  if (LIVE) return;   // een live zoekopdracht staat in beeld; die niet overschrijven
   const el = $('#resLijst'); el.innerHTML = '';
   const meta = $('#resMeta');
   if (!RES){ meta.textContent = 'Nog niet geladen.'; return; }
@@ -1559,7 +1577,7 @@ $$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.datase
 // profiel events
 ['p_naam','p_merk','p_model','p_bjvan','p_bjtot','p_km','p_kw','p_pmin','p_pmax','p_uitv','p_uitv_de','p_uitv_niet','p_model_de'].forEach(id => $('#'+id).addEventListener('input', renderLinks));
 ['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
-['p_aanbieder','p_deuren'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
+['p_aanbieder','p_deuren','p_btw'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
 ['p_merk','p_uitv','p_uitv_niet'].forEach(id => $('#'+id).addEventListener('input', renderHist));
 $('#p_opties').addEventListener('chipchange', renderHist);
 $('#btnNieuwProfiel').addEventListener('click', () => { S.concept = null; bewaar(); vulProfielForm(null); });
@@ -1660,7 +1678,7 @@ $('#btnReset').addEventListener('click', () => { if (!confirm('Alle profielen, k
 
 
 // resultaten events
-$('#btnResLaad').addEventListener('click', () => laadResultaten());
+$('#btnResLaad').addEventListener('click', () => { LIVE = null; laadResultaten(); });
 $('#btnGezien').addEventListener('click', () => { if (!profielId){ toast('Bewaar eerst het profiel.'); return; } S.gezien[profielId] = new Date().toISOString(); bewaar(); renderResultaten(); toast('Gemarkeerd als gezien'); });
 $('#btnExportProfiles').addEventListener('click', exportProfiles);
 $('#fileRes').addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { RES = JSON.parse(rd.result); renderResultaten(); $('#s_lastrun').textContent = RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'; toast('results.json geladen'); } catch(err){ toast('Ongeldig bestand'); } }; rd.readAsText(f); e.target.value = ''; });
@@ -1680,6 +1698,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.27', 'BTW- of margefilter, label BTW/Marge op de advertentie, dagen online volgens de site, en het prijsverloop zichtbaar onder de prijs.'],
   ['1.26', 'Per blok worden nu 60 advertenties getoond in plaats van 30. Zijn er meer, dan staat eronder hoeveel er buiten beeld blijven.'],
   ['1.25', 'Zoeklinkkaarten staan onder elkaar in plaats van in kolommen; de notitie werd anders tot één letter breed geperst.'],
   ['1.24', 'Opmaakfout hersteld: de knoppen per uitvoering stonden naast elkaar in plaats van onder elkaar.'],
@@ -1716,6 +1735,24 @@ document.querySelector('.brand span').addEventListener('click', toonGeschiedenis
 $('#histSluit').addEventListener('click', () => $('#histVenster').classList.remove('on'));
 $('#histVenster').addEventListener('click', (e) => { if (e.target.id === 'histVenster') $('#histVenster').classList.remove('on'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#histVenster').classList.remove('on'); });
+
+// Testers wilden nette invoer: elk woord begint met een hoofdletter zodra je het veld verlaat.
+function metHoofdletters(s, isMerk){
+  const t = (s || '').trim();
+  if (isMerk){
+    const bekend = Object.keys(S.instellingen.makeIds).find(m => m.toLowerCase() === t.toLowerCase());
+    if (bekend) return bekend;                       // BMW, Mercedes-Benz, Volkswagen
+  }
+  return t.replace(/(^|[\s,\-\/])([a-z])/g, (m, voor, letter) => voor + letter.toUpperCase());
+}
+['p_naam','p_merk','p_model','p_uitv','p_uitv_de','p_model_de','p_uitv_niet','k_oms'].forEach(id => {
+  const e = $('#' + id);
+  if (!e) return;
+  e.addEventListener('blur', () => {
+    const nieuw = metHoofdletters(e.value, id === 'p_merk');
+    if (nieuw !== e.value){ e.value = nieuw; e.dispatchEvent(new Event('input', {bubbles:true})); }
+  });
+});
 
 function init(){
   vulMerkenlijst(); vulProfielForm(S.concept && !S.profielen.length ? S.concept : null); vulKandForm(null); renderInstellingen(); vulProfielSelect();
