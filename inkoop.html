@@ -157,7 +157,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.25</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.26</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -374,12 +374,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.25
+   KAAP Inkoop Radar  v1.26
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.25';
+const APP_VERSIE = '1.26';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -1409,7 +1409,9 @@ function renderLive(){
       + (g.weg ? `<div class="help" style="margin-top:4px">${g.weg} resulta${g.weg === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
       + (g.ongecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(g.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    items.slice(0, 30).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx)));
+    const TOON = 60;
+    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx)));
+    if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond. Scherper filteren of op de site kijken.</div>`);
     if (!g.bezig && !items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
@@ -1502,7 +1504,9 @@ function renderResultaten(){
       (g.fouten.length ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(g.fouten[0])}</div>` : '') +
       (g.warns.length ? `<div class="note warn" style="margin-top:6px">${esc(g.warns[0])}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
+    const TOON = 60;
+    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
+    if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond.</div>`);
     if (!items.length && !g.fouten.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
@@ -1676,6 +1680,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.26', 'Per blok worden nu 60 advertenties getoond in plaats van 30. Zijn er meer, dan staat eronder hoeveel er buiten beeld blijven.'],
   ['1.25', 'Zoeklinkkaarten staan onder elkaar in plaats van in kolommen; de notitie werd anders tot één letter breed geperst.'],
   ['1.24', 'Opmaakfout hersteld: de knoppen per uitvoering stonden naast elkaar in plaats van onder elkaar.'],
   ['1.23', 'Kortere labels en uitleg door de hele app: minder tekst, rustiger beeld.'],
