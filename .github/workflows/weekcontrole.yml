@@ -1,0 +1,77 @@
+name: Weekcontrole
+
+on:
+  # Zondag 12:00 Nederlandse tijd, het hele jaar door.
+  # GitHub draait op UTC; daarom twee tijden plus een controle op de klok.
+  schedule:
+    - cron: "0 10 * * 0"   # 12:00 in de zomer
+    - cron: "0 11 * * 0"   # 12:00 in de winter
+  workflow_dispatch:        # zelf starten mag altijd
+
+permissions:
+  contents: write
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    env:
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+    steps:
+      - name: Is het 12 uur in Nederland?
+        id: klok
+        run: |
+          uur=$(TZ=Europe/Amsterdam date +%H)
+          echo "uur=$uur"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$uur" != "12" ]; then
+            echo "draaien=nee" >> $GITHUB_OUTPUT
+          else
+            echo "draaien=ja" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.klok.outputs.draaien == 'ja'
+
+      - uses: actions/setup-node@v4
+        if: steps.klok.outputs.draaien == 'ja'
+        with: { node-version: '20' }
+
+      - name: Alle sites controleren
+        if: steps.klok.outputs.draaien == 'ja'
+        id: check
+        continue-on-error: true
+        run: node tools/kaap-check.mjs "https://kaap-proxy.kelliankaap.workers.dev/"
+
+      - name: STATUS.md vastleggen
+        if: steps.klok.outputs.draaien == 'ja'
+        run: |
+          git config user.name "kaap-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add STATUS.md
+          git diff --cached --quiet || git commit -m "Weekcontrole $(TZ=Europe/Amsterdam date '+%d-%m-%Y')"
+          git push
+
+      - name: Mail bij storing
+        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MAIL_TO != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "KAAP Inkoop Radar — storing bij de weekcontrole"
+          to: ${{ secrets.MAIL_TO }}
+          from: KAAP Inkoop Radar
+          body: file://STATUS.md
+
+      - name: WhatsApp bij storing
+        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.CALLMEBOT_PHONE != ''
+        env:
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+        run: |
+          tekst="KAAP weekcontrole: een of meer sites werken niet. Zie STATUS.md in de repo."
+          curl -s -G "https://api.callmebot.com/whatsapp.php" \
+            --data-urlencode "phone=$CALLMEBOT_PHONE" \
+            --data-urlencode "apikey=$CALLMEBOT_APIKEY" \
+            --data-urlencode "text=$tekst" -o /dev/null
