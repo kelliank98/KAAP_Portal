@@ -93,7 +93,15 @@ Alleen-link-sites: ${linkRegels.map(r => `${r.naam}: ${r.status}`).join(' · ')}
 
 *Ophaler = zoals de radar in GitHub ophaalt. App = zoals Zoeken in de app het doet, via je Cloudflare-proxy.
 MISLUKT betekent geblokkeerd of veranderd; dan moet de parser of de proxy nagekeken worden.*
-`;
+${storingen ? `
+## Voorleggen aan Claude
+
+Plak deze regel in een gesprek:
+
+\`\`\`
+Weekcontrole ${nu}: ${regels.filter(r => r.ophaler.startsWith('MISLUKT') || r.app.startsWith('MISLUKT')).map(r => `${r.naam} — ophaler ${r.ophaler}, app ${r.app}`).join('; ')}. Uitzoeken en repareren.
+\`\`\`
+` : ''}`;
 
 const fs = await import('node:fs');
 fs.writeFileSync('STATUS.md', md);
