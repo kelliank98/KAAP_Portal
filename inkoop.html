@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.20</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.21</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -180,7 +180,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Kilometerstand max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
           <label class="f"><span>Vermogen min. (kW, optioneel)</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
           <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
-          <label class="f"><span>Aangeboden door</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Alleen handel</option><option value="particulier">Alleen particulier</option></select></label>
+          <label class="f"><span>Aangeboden door</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
           <label class="f"><span>Prijs min. (€)</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
           <label class="f"><span>Prijs max. (€)</span><input type="number" id="p_pmax" step="1000" placeholder="90000"></label>
           <div class="f full"><span>Carrosserie</span><div class="chips" id="p_carr"></div></div>
@@ -214,7 +214,7 @@ details summary{cursor:pointer;font-weight:500}
     <div>
       <div class="card" id="linkKaart">
         <div class="row between"><h2>Zoekopdrachten per site</h2><button class="btn sec sm" id="btnOpenAlle">Open alle in tabbladen</button></div>
-        <p class="muted" style="font-size:13.5px">Deze links werken zonder iets te bewaren; ze veranderen mee terwijl je typt. Automaat staat overal vast; aanbieder stel je zelf in (leeg = handel én particulier). Wil je ook zonder deze app gewaarschuwd worden, sla de zoekopdracht dan op de site zelf op als alert.</p>
+        <p class="muted" style="font-size:13.5px">Deze links werken zonder iets te bewaren; ze veranderen mee terwijl je typt. Automaat staat overal vast; aanbieder stel je zelf in (leeg = dealer én particulier). Wil je ook zonder deze app gewaarschuwd worden, sla de zoekopdracht dan op de site zelf op als alert.</p>
         <div class="note warn" id="popupWaarschuwing" style="display:none;margin-bottom:10px"></div>
         <div id="linkLijst" class="links"></div>
         <details class="mt"><summary>Model-koppeling per site (URL plakken)</summary>
@@ -371,12 +371,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.20
+   KAAP Inkoop Radar  v1.21
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.20';
+const APP_VERSIE = '1.21';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -405,10 +405,10 @@ const BTW_PCT = {DE:0.19, NL:0.21, BE:0.21, DK:0.25};
 const SITES = {
   mobile:     {naam:'mobile.de',        land:'DE', std:true,  mode:'build', poll:false, info:'Duitsland, handel + particulier. Model-koppeling nodig (URL plakken). Blokkeert automatisch ophalen: alleen link + eigen alert.'},
   as24de:     {naam:'AutoScout24 DE',   land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Parameters geverifieerd; resultaten worden opgehaald.'},
-  kleinanzeigen:{naam:'Kleinanzeigen',  land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Aanbieder instelbaar: handel, particulier of beide. Resultaten worden opgehaald.'},
+  kleinanzeigen:{naam:'Kleinanzeigen',  land:'DE', std:true,  mode:'build', poll:true,  info:'Duitsland. Aanbieder instelbaar: dealer, particulier of beide. Resultaten worden opgehaald.'},
   as24nl:     {naam:'AutoScout24 NL',   land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Parameters geverifieerd; resultaten worden opgehaald.'},
   gaspedaal:  {naam:'Gaspedaal',        land:'NL', std:true,  mode:'build', poll:false, info:'Bundelt Marktplaats, AutoTrack en AutoScout24 NL. Brandstof, automaat en zoekwoord stel je op de site in. Blokkeert automatisch ophalen.'},
-  marktplaats:{naam:'Marktplaats',      land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Aanbieder instelbaar: handel, particulier of beide. Resultaten worden opgehaald.'},
+  marktplaats:{naam:'Marktplaats',      land:'NL', std:true,  mode:'build', poll:true,  info:'Nederland. Aanbieder instelbaar: dealer, particulier of beide. Resultaten worden opgehaald.'},
   as24be:     {naam:'AutoScout24 BE',   land:'BE', std:true,  mode:'build', poll:true,  info:'België, veel ex-lease BTW-auto\'s. Parameters geverifieerd; resultaten worden opgehaald.'},
   twodehands: {naam:'2dehands',         land:'BE', std:true,  mode:'build', poll:true,  info:'België, zelfde platform als Marktplaats (zelfde filters en model-koppeling). Resultaten worden opgehaald.'},
   twoememain: {naam:'2ememain',         land:'BE', std:false, mode:'build', poll:true,  info:'Franstalig België. Zelfde database als 2dehands (getest: identieke aantallen), alleen een Franse interface. Alleen aanzetten als je die taal wilt; anders overbodig.'},
@@ -1615,6 +1615,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.21', 'Aangeboden door heet nu Dealer in plaats van Alleen handel.'],
   ['1.20', 'Deurenfilter toegevoegd (AutoScout24, Marktplaats, 2dehands). En opgelost: typte je 20.000 in een prijs- of kilometerveld, dan las de app 20. Nu worden punten en spaties genegeerd.'],
   ['1.19', 'Naam geschreven als KAAP Inkoop Radar, zonder streepje.'],
   ['1.18', 'Ondertitel uit de kop gehaald; alleen het versienummer blijft staan.'],
