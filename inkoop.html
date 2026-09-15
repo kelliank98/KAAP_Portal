@@ -154,7 +154,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.21</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.22</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -371,12 +371,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.21
+   KAAP Inkoop Radar  v1.22
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.21';
+const APP_VERSIE = '1.22';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -993,16 +993,31 @@ function renderLinks(){
   if (!links.length){ el.innerHTML = '<div class="empty">Geen sites aangevinkt.</div>'; $('#btnOpenAlle').disabled = true; return; }
   $('#btnOpenAlle').disabled = false;
   $('#btnOpenAlle').textContent = `Open alle (${links.filter(l=>l.url).length})`;
+  // Eén kaart per site en model; uitvoeringen krijgen elk een eigen Open-knop.
+  const groepen = new Map();
   links.forEach(l => {
-    const d = document.createElement('div'); d.className = 'lnk ' + l.status;
-    d.innerHTML = `<div class="site">${esc(l.naam)}<small>${esc(SITES[l.site].land)}${l.variant ? ' · ' + esc(l.variant) : ''}</small></div>
-      <div class="note">${esc(l.note || SITES[l.site].info)}${tellerTekst(l.url) ? '<br>' + tellerTekst(l.url) : ''}</div>
-      <div class="row">${l.url ? `<a class="btn sm" href="${l.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(l.url)}">Kopieer</button>` : ''}</div>`;
+    const k = l.site + '|' + (l.model || '');
+    if (!groepen.has(k)) groepen.set(k, {site:l.site, naam:l.naam, model:l.model, status:l.status, note:'', varianten:[]});
+    const g = groepen.get(k);
+    if (!g.note) g.note = l.note || SITES[l.site].info;
+    if (l.status === 'warn') g.status = 'warn';
+    g.varianten.push(l);
+  });
+  groepen.forEach(g => {
+    const meer = g.varianten.length > 1;
+    const teller = g.varianten.map(v => tellerTekst(v.url)).find(Boolean);
+    const rijen = g.varianten.map(v => v.url
+      ? `<div class="row" style="margin-top:4px">${meer ? `<span class="muted" style="font-size:12.5px;min-width:110px">${esc(v.variant || 'zonder zoekwoord')}</span>` : ''}<a class="btn sm" href="${v.url}" target="_blank" rel="noopener">Open</a><button class="btn sec sm" data-copy="${encodeURIComponent(v.url)}">Kopieer</button></div>`
+      : `<div class="row" style="margin-top:4px"><span class="muted" style="font-size:12.5px">${esc(v.variant || '')}: geen link</span></div>`).join('');
+    const d = document.createElement('div'); d.className = 'lnk ' + g.status;
+    d.innerHTML = `<div class="site">${esc(g.naam)}<small>${esc(SITES[g.site].land)}${g.model ? ' · ' + esc(g.model) : ''}</small></div>
+      <div class="note">${esc(g.note)}${teller ? '<br>' + teller : ''}</div>${rijen}`;
     el.appendChild(d);
   });
-  $$('button[data-copy]', el).forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(decodeURIComponent(b.dataset.copy)); toast('Link gekopieerd'); }));
+  $('button[data-copy]', el).forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(decodeURIComponent(b.dataset.copy)); toast('Link gekopieerd'); }));
   window._links = links;
 }
+
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ---------- Kandidaten ----------
@@ -1342,29 +1357,60 @@ async function zoekLive(){
   }));
   LIVE.bezig = false; renderLive();
 }
+
+// Resultaten van dezelfde site en hetzelfde model samenvoegen: uitvoeringen bij elkaar,
+// dubbele advertenties eruit, goedkoopste bovenaan.
+function voegSamen(delen){
+  const items = [], gezien = new Set();
+  delen.forEach(d => (d.items || []).forEach(it => {
+    const sleutel = it.id || it.url;
+    if (sleutel && gezien.has(sleutel)) return;
+    if (sleutel) gezien.add(sleutel);
+    items.push(it);
+  }));
+  items.sort((a, b) => (a.price == null ? Infinity : a.price) - (b.price == null ? Infinity : b.price));
+  return items;
+}
+
 function renderLive(){
   const el = $('#resLijst'), meta = $('#resMeta');
   if (!LIVE) return;
-  const totaal = LIVE.sites.reduce((n,s) => n + s.items.length, 0);
   const klaar = LIVE.sites.filter(s => s.status !== 'wacht').length;
-  meta.innerHTML = `Live gezocht op ${LIVE.sites.length} site${LIVE.sites.length===1?'':'s'} voor <b>${esc(LIVE.naam)}</b> — ${klaar}/${LIVE.sites.length} klaar, ${totaal} resultaten. Niets bewaard.`;
-  el.innerHTML = '';
+  // Groeperen per site en model; uitvoeringen komen in één blok.
+  const groepen = new Map();
   LIVE.sites.forEach(s => {
+    const k = s.site + '|' + (s.model || '');
+    if (!groepen.has(k)) groepen.set(k, {naam:s.naam, land:s.land, model:s.model, url:s.url, delen:[], count:0, fouten:[], weg:0, ongecontroleerd:false, bezig:false});
+    const g = groepen.get(k);
+    g.delen.push(s);
+    g.count += (s.count || 0);
+    if (s.error) g.fouten.push(s.error);
+    g.weg += (s.weggefilterd || 0);
+    if (s.modelOngecontroleerd) g.ongecontroleerd = true;
+    if (s.status === 'wacht') g.bezig = true;
+  });
+  const alle = LIVE.sites.flatMap(x => x.items);
+  const idx = co2Index(alle);
+  const totaal = [...groepen.values()].reduce((n, g) => n + voegSamen(g.delen).length, 0);
+  meta.innerHTML = `Live gezocht op ${groepen.size} blok${groepen.size===1?'':'ken'} voor <b>${esc(LIVE.naam)}</b> — ${klaar}/${LIVE.sites.length} zoekopdrachten klaar, ${totaal} resultaten. Niets bewaard.`;
+  el.innerHTML = '';
+  groepen.forEach(g => {
+    const items = voegSamen(g.delen);
     const box = document.createElement('div'); box.className = 'mt';
-    const kop = s.status === 'wacht' ? '<small class="muted">bezig…</small>'
-      : s.status === 'fout' ? `<small class="muted">mislukt</small>`
-      : `<small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${s.items.length} getoond</small>`;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam)} <span class="tag land">${esc(s.land || '')}</span>${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Op de site</a></div>`
-      + (s.error ? `<div class="note warn" style="margin-top:6px">${esc(s.error)}</div>` : '')
-      + (s.weggefilterd ? `<div class="help" style="margin-top:4px">${s.weggefilterd} resulta${s.weggefilterd === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
-      + (s.modelOngecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(s.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd. Controleer zelf of dit het juiste model is.</div>` : '');
+    const kop = g.bezig ? '<small class="muted">bezig…</small>'
+      : g.fouten.length === g.delen.length ? '<small class="muted">mislukt</small>'
+      : `<small class="muted">${g.count ? num(g.count) + ' op de site, ' : ''}${items.length} getoond${g.delen.length > 1 ? ' · ' + g.delen.length + ' uitvoeringen samengevoegd' : ''}</small>`;
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(g.naam)} <span class="tag land">${esc(g.land || '')}</span>${g.model ? ' · ' + esc(g.model) : ''} ${kop}</h3><a class="btn sec sm" href="${esc(g.url)}" target="_blank" rel="noopener">Op de site</a></div>`
+      + (g.fouten.length ? `<div class="note warn" style="margin-top:6px">${esc(g.fouten[0])}</div>` : '')
+      + (g.weg ? `<div class="help" style="margin-top:4px">${g.weg} resulta${g.weg === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
+      + (g.ongecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(g.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    const idx = co2Index(LIVE.sites.flatMap(x => x.items));
-    s.items.slice(0, 20).forEach(it => lijst.appendChild(resKaart(it, s.land, false, null, idx)));
-    if (s.status === 'klaar' && !s.items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    items.slice(0, 30).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx)));
+    if (!g.bezig && !items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
 }
+
 
 // ---------- Resultaten (results.json van de ophaler) ----------
 let RES = null, LIVE = null;
@@ -1427,25 +1473,36 @@ function renderResultaten(){
   const excl = splitList(prof.uitvNiet).map(x => x.toLowerCase());
   const uitgesloten = (it) => excl.some(t => (it.title||'').toLowerCase().includes(t));
   let totaal = 0, nieuw = 0, verborgen = 0;
-  const sites = Object.keys(pr.sites || {});
-  sites.forEach(sk => {
-    const s = pr.sites[sk]; const land = s.land || (SITES[sk] ? SITES[sk].land : '');
-    const alle = (s.items || []);
-    const items = alle.filter(it => !uitgesloten(it)).sort((a,b) => (b.first_seen||'').localeCompare(a.first_seen||''));
-    verborgen += alle.length - items.length;
+  // Per site en model groeperen; uitvoeringen samenvoegen, dubbele advertenties eruit, goedkoopste eerst.
+  const groepen = new Map();
+  Object.keys(pr.sites || {}).forEach(sk => {
+    const s = pr.sites[sk];
+    const site = sk.split(':')[0];
+    const k = site + '|' + (s.model || '');
+    if (!groepen.has(k)) groepen.set(k, {site, naam: s.naam || (SITES[site] ? SITES[site].naam : site), land: s.land || (SITES[site] ? SITES[site].land : ''), model: s.model, url: s.url, delen: [], count: 0, fouten: [], warns: []});
+    const g = groepen.get(k);
+    g.delen.push({items: (s.items || []).filter(it => !uitgesloten(it))});
+    verborgen += (s.items || []).length - (s.items || []).filter(it => !uitgesloten(it)).length;
+    g.count += (s.count || 0);
+    if (s.error) g.fouten.push(s.error);
+    if (s.warn) g.warns.push(s.warn);
+  });
+  const alleItems = Object.values(pr.sites || {}).flatMap(s => s.items || []);
+  const idx = co2Index(alleItems);
+  groepen.forEach(g => {
+    const items = voegSamen(g.delen);
     totaal += items.length;
-    const box = document.createElement('div'); box.className = 'mt';
     const nNew = items.filter(it => gezien ? new Date(it.first_seen) > gezien : true).length; nieuw += nNew;
-    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(s.naam || (SITES[sk]?SITES[sk].naam:sk))} <span class="tag land">${esc(land || '')}</span>${s.model ? ' · ' + esc(s.model) : ''}${s.variant ? ' · ' + esc(s.variant) : ''} <small class="muted">${s.count != null ? num(s.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}</small></h3>${s.url ? `<a class="btn sec sm" href="${esc(s.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
-      (s.error ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(s.error)}</div>` : '') +
-      (s.warn ? `<div class="note warn" style="margin-top:6px">${esc(s.warn)}</div>` : '');
+    const box = document.createElement('div'); box.className = 'mt';
+    box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(g.naam)} <span class="tag land">${esc(g.land || '')}</span>${g.model ? ' · ' + esc(g.model) : ''} <small class="muted">${g.count ? num(g.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}${g.delen.length > 1 ? ' · ' + g.delen.length + ' uitvoeringen samengevoegd' : ''}</small></h3>${g.url ? `<a class="btn sec sm" href="${esc(g.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
+      (g.fouten.length ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(g.fouten[0])}</div>` : '') +
+      (g.warns.length ? `<div class="note warn" style="margin-top:6px">${esc(g.warns[0])}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
-    const idx = co2Index(alle);
-    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
-    if (!items.length && !s.error) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    items.slice(0, 40).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
+    if (!items.length && !g.fouten.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
-  meta.textContent = `${sites.length} site${sites.length===1?'':'s'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
+  meta.textContent = `${groepen.size} blok${groepen.size===1?'':'ken'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
 }
 
 
@@ -1615,6 +1672,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.22', 'Zoeklinks en resultaten staan nu gegroepeerd per site en model: uitvoeringen zitten in één blok met een Open-knop per uitvoering, dezelfde advertentie verschijnt één keer, en de goedkoopste staat bovenaan. Een ander model of merk krijgt een eigen blok.'],
   ['1.21', 'Aangeboden door heet nu Dealer in plaats van Alleen handel.'],
   ['1.20', 'Deurenfilter toegevoegd (AutoScout24, Marktplaats, 2dehands). En opgelost: typte je 20.000 in een prijs- of kilometerveld, dan las de app 20. Nu worden punten en spaties genegeerd.'],
   ['1.19', 'Naam geschreven als KAAP Inkoop Radar, zonder streepje.'],
