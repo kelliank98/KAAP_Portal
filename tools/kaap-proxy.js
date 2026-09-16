@@ -1,5 +1,5 @@
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const cors = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -24,7 +24,22 @@ export default {
     const ok = sites.some(d => u.hostname === d || u.hostname.endsWith("." + d));
     if (!ok) return new Response("Site niet toegestaan: " + u.hostname, { status: 403, headers: cors });
 
-    const r = await fetch(u.toString(), {
+    // Betaalde IP's (optioneel). Zet in Cloudflare onder Variables:
+    //   BETAALD_KEY    je sleutel bij de dienst
+    //   BETAALD_URL    sjabloon, bijv. https://api.scraperapi.com/?api_key={key}&url={url}
+    //   BETAALD_HOSTS  kleinanzeigen.de,mobile.de   (leeg = voor alle sites)
+    // Zonder BETAALD_KEY verandert er niets: alles loopt zoals nu.
+    const betaaldVoor = (host) => {
+      if (!env || !env.BETAALD_KEY || !env.BETAALD_URL) return false;
+      const lijst = (env.BETAALD_HOSTS || "").split(",").map(x => x.trim()).filter(Boolean);
+      return lijst.length === 0 || lijst.some(d => host === d || host.endsWith("." + d));
+    };
+
+    const haalAdres = betaaldVoor(u.hostname)
+      ? env.BETAALD_URL.replace("{key}", env.BETAALD_KEY).replace("{url}", encodeURIComponent(u.toString()))
+      : u.toString();
+
+    const r = await fetch(haalAdres, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
         "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
