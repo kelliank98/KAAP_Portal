@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.33</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.34</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -193,7 +193,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Km max.</span><input type="number" id="p_km" step="5000" placeholder="100000"></label>
           <label class="f"><span>kW min.</span><input type="number" id="p_kw" step="10" placeholder="bijv. 200"></label>
           <label class="f"><span>Deuren</span><select id="p_deuren"><option value="">Alle</option><option value="23">2 of 3</option><option value="45">4 of 5</option><option value="6">6 of meer</option></select></label>
-          <label class="f"><span>BTW of marge</span><select id="p_btw"><option value="">Geen voorkeur</option><option value="btw">BTW</option><option value="marge">Marge</option></select></label>
+          <div class="f"><span>BTW of marge</span><div class="chips" id="p_btw"></div></div>
           <div class="f full help" id="btwHint" style="margin-top:-4px"></div>
           <label class="f"><span>Aanbieder</span><select id="p_aanbieder"><option value="">Beide</option><option value="dealer">Dealer</option><option value="particulier">Particulier</option></select></label>
           <details class="f full vouw"><summary>Carrosserie<span class="tel" id="tel_carr"></span></summary><div class="chips" id="p_carr"></div></details>
@@ -389,12 +389,12 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.33
+   KAAP Inkoop Radar  v1.34
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    ======================================================================= */
-const APP_VERSIE = '1.33';
+const APP_VERSIE = '1.34';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -974,7 +974,7 @@ function leesProfielForm(){
   return {
     id: profielId, naam: cap($('#p_naam').value), merk: cap($('#p_merk').value), model: cap($('#p_model').value),
     bjvan: veldGetal('p_bjvan'), bjtot: veldGetal('p_bjtot'), km: veldGetal('p_km'), kw: veldGetal('p_kw'),
-    pmin: veldGetal('p_pmin'), pmax: veldGetal('p_pmax'), aanbieder: $('#p_aanbieder').value, deuren: $('#p_deuren').value, btw: $('#p_btw').value,
+    pmin: veldGetal('p_pmin'), pmax: veldGetal('p_pmax'), aanbieder: $('#p_aanbieder').value, deuren: $('#p_deuren').value, btw: (chipValues($('#p_btw')).length === 1 ? chipValues($('#p_btw'))[0] : ''),
     carr: chipValues($('#p_carr')), brandstof: chipValues($('#p_brandstof')), opties: chipValues($('#p_opties')),
     uitv: cap($('#p_uitv').value), uitvDe: cap($('#p_uitv_de').value), modelDe: cap($('#p_model_de').value), uitvNiet: cap($('#p_uitv_niet').value), sites,
   };
@@ -986,8 +986,9 @@ function vulProfielForm(p){
   $('#profTitle').textContent = p.id ? 'Bewaarde zoekopdracht' : 'Zoekopdracht';
   $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
   $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_km').value = p.km||''; $('#p_kw').value = p.kw||'';
-  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || ''; $('#p_btw').value = p.btw || '';
+  $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || '';
   $('#p_uitv').value = p.uitv||''; $('#p_uitv_de').value = p.uitvDe||''; $('#p_uitv_niet').value = p.uitvNiet||''; $('#p_model_de').value = p.modelDe||'';
+  renderChips($('#p_btw'), [{k:'btw', l:'BTW'}, {k:'marge', l:'Marge'}], p.btw ? [p.btw] : []);
   renderChips($('#p_carr'), CARROSSERIE, p.carr||[]);
   renderChips($('#p_brandstof'), BRANDSTOF, p.brandstof||[]);
   renderChips($('#p_opties'), OPTIES, p.opties||[]);
@@ -1018,7 +1019,8 @@ function werkTellersBij(){
 // Eerlijk zijn over waar dit filter echt werkt: sites negeren onbekende parameters zonder foutmelding.
 function toonBtwHint(){
   const el = $('#btwHint'); if (!el) return;
-  const keuze = $('#p_btw').value;
+  const gekozen = chipValues($('#p_btw'));
+  const keuze = gekozen.length === 1 ? gekozen[0] : '';
   if (!keuze){ el.textContent = ''; return; }
   el.textContent = keuze === 'btw'
     ? 'Werkt op mobile.de, Marktplaats, 2dehands en 2ememain. AutoScout24 en Kleinanzeigen kennen dit filter niet; daar zie je ook margeauto\u0027s.'
@@ -1701,7 +1703,8 @@ $$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.datase
 // profiel events
 ['p_naam','p_merk','p_model','p_bjvan','p_bjtot','p_km','p_kw','p_pmin','p_pmax','p_uitv','p_uitv_de','p_uitv_niet','p_model_de'].forEach(id => $('#'+id).addEventListener('input', renderLinks));
 ['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
-['p_aanbieder','p_deuren','p_btw'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
+['p_aanbieder','p_deuren'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
+$('#p_btw').addEventListener('chipchange', renderLinks);
 ['p_merk','p_uitv','p_uitv_niet'].forEach(id => $('#'+id).addEventListener('input', renderHist));
 $('#p_opties').addEventListener('chipchange', renderHist);
 $('#btnNieuwProfiel').addEventListener('click', () => { S.concept = null; bewaar(); vulProfielForm(null); });
@@ -1822,6 +1825,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.34', 'BTW en marge zijn twee vinkjes geworden. Niets aanvinken betekent allebei; \u00e9\u00e9n vinkje filtert.'],
   ['1.33', 'BTW of marge: de eerste keuze heet nu Geen voorkeur in plaats van Beide.'],
   ['1.32', 'Prijs van en Prijs tot staan naast elkaar, direct onder het bouwjaar.'],
   ['1.31', 'Werkt samen met de KAAP-extensie: knop € historie bij elk AutoScout24-resultaat haalt de prijshistorie automatisch op, zonder bladwijzer.'],
