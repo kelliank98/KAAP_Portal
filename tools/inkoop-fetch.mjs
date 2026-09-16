@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.09
+  KAAP Inkoop-radar – ophaler  v1.10
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
@@ -9,6 +9,7 @@
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
 */
 import fs from 'node:fs';
+import { apifyAan, haalViaApify } from './bron-apify.mjs';
 
 const [, , PROFILES = 'profiles.json', RESULTS = 'results.json'] = process.argv;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -323,8 +324,12 @@ for (const p of (src.profiles || [])) {
     const prevMap = new Map((prevSite?.items || []).map(i => [i.id, i]));
     const site = { naam: l.naam, land: l.land, model: l.model || '', variant: l.variant || '', url: l.url, checked: new Date().toISOString(), count: null, items: [], error: null, warn: null };
     try {
-      const res = await HANDLERS[l.site](l);
+      // Betaalde bron alleen als APIFY_TOKEN en APIFY_SITES dat zeggen; anders de gratis weg.
+      const res = apifyAan(l.site)
+        ? await haalViaApify(l.site, l.url, key)
+        : await HANDLERS[l.site](l);
       site.count = res.count; site.warn = res.warn || null;
+      if (res.bron === 'apify') site.bron = 'apify';
       const geschat = await vulCo2Aan(res.items, l);
       if (geschat) site.warn = [site.warn, `CO2 geschat via RDW voor ${geschat} advertentie(s)`].filter(Boolean).join(' | ');
       site.items = res.items.filter(it => !uitgesloten(it)).map(it => {
@@ -356,6 +361,9 @@ for (const p of (src.profiles || [])) {
   out.profiles[p.id] = P;
 }
 
+// Hoeveel advertenties deze ronde opleverde; bij een betaalde bron is dit je kostenbasis.
+const opgehaald = Object.values(out.profiles).reduce((n, pr) => n + Object.values(pr.sites).reduce((m, s2) => m + (s2.items?.length || 0), 0), 0);
+out.volume = {opgehaald, moment: new Date().toISOString()};
 fs.writeFileSync(RESULTS, JSON.stringify(out, null, 1));
 const regel = (n) => `- **${n.profiel}** · ${n.site}: [${n.title}](${n.url}) – ${n.price ? '€ ' + n.price.toLocaleString('nl-NL') : 'prijs onbekend'}${n.price_prev ? ' (was € ' + n.price_prev.toLocaleString('nl-NL') + ')' : ''}${n.km ? ', ' + n.km.toLocaleString('nl-NL') + ' km' : ''}${n.ez ? ', EZ ' + n.ez : ''}${n.co2 ? ', ' + n.co2 + ' g/km' : ''}`;
 const nieuw = newItems.filter(n => n.soort === 'nieuw'), prijs = newItems.filter(n => n.soort === 'prijs');
@@ -366,4 +374,4 @@ const md = newItems.length
   : '';
 fs.writeFileSync('new_items.md', md);
 if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `new=${newItems.length ? 'true' : 'false'}\ncount=${newItems.length}\n`);
-console.log(`Klaar: ${Object.keys(out.profiles).length} profielen, ${newItems.length} nieuw, ${fouten} fout(en).`);
+console.log(`Klaar: ${Object.keys(out.profiles).length} profielen, ${newItems.length} nieuw, ${fouten} fout(en). Opgehaald: ${opgehaald} advertenties.`);
