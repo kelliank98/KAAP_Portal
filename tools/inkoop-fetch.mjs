@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.10
+  KAAP Inkoop-radar – ophaler  v1.11
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
@@ -23,7 +23,15 @@ function readJson(p, fallback) {
 async function get(url, accept = 'text/html', ua = UA, pogingen = 3) {
   let laatste = null;
   for (let i = 1; i <= pogingen; i++) {
-    const r = await fetch(url, { headers: { 'User-Agent': ua, 'Accept': accept + ',*/*;q=0.8', 'Accept-Language': 'nl-NL,nl;q=0.9,de;q=0.8,en;q=0.7' }, redirect: 'follow' });
+    // Betaalde IP's (optioneel): secrets BETAALD_KEY, BETAALD_URL, BETAALD_HOSTS.
+    const host = (() => { try { return new URL(url).hostname; } catch(e){ return ''; } })();
+    const lijst = (process.env.BETAALD_HOSTS || '').split(',').map(x => x.trim()).filter(Boolean);
+    const viaBetaald = process.env.BETAALD_KEY && process.env.BETAALD_URL &&
+      (lijst.length === 0 || lijst.some(d => host === d || host.endsWith('.' + d)));
+    const adres = viaBetaald
+      ? process.env.BETAALD_URL.replace('{key}', process.env.BETAALD_KEY).replace('{url}', encodeURIComponent(url))
+      : url;
+    const r = await fetch(adres, { headers: { 'User-Agent': ua, 'Accept': accept + ',*/*;q=0.8', 'Accept-Language': 'nl-NL,nl;q=0.9,de;q=0.8,en;q=0.7' }, redirect: 'follow' });
     if (r.ok) return accept.includes('json') ? r.json() : r.text();
     laatste = r.status;
     if (![403, 429, 500, 502, 503].includes(r.status) || i === pogingen) break;
