@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.34</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.35</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -389,12 +389,13 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.34
+   KAAP Inkoop Radar  v1.35
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
+   Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.34';
+const APP_VERSIE = '1.35';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -499,10 +500,10 @@ function laad(){
   s.profielen = s.profielen || [];
   s.kandidaten = s.kandidaten || [];
   s.gezien = s.gezien || {};
-  s.geschiedenis = s.geschiedenis || {};
+  s.geschiedenis = s.geschiedenis || {};   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
   s.concept = s.concept || null;   // laatste niet-bewaarde zoekopdracht
   s.tellers = s.tellers || {};     // handmatig teruggemelde aantallen per zoeklink
-  s.historie = s.historie || {};   // prijshistorie per advertentie, opgehaald met de bladwijzer   // per merk: eerder gebruikte zoekwoorden, uitsluitingen en opties
+  s.historie = s.historie || {};   // prijshistorie per advertentie, opgehaald met de bladwijzer
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
   if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   return s;
@@ -897,7 +898,6 @@ function renderChips(el, items, gekozen, multi=true){
   });
 }
 const chipValues = (el) => $$('input:checked', el).map(i => i.value);
-function $$q(sel, root){ return Array.from(root.querySelectorAll(sel)); }
 
 
 // ---------- Geschiedenis per merk (zoekwoorden, uitsluitingen, opties) ----------
@@ -1099,7 +1099,6 @@ function bpmVoor(k){
 function renderBpm(){
   const k = leesKandForm();
   const el = $('#bpmOut');
-  if (k.land === 'NL' && !k.det){ }
   const r = bpmVoor(k);
   const kp = kostprijs(k, r);
   let h = '';
@@ -1528,7 +1527,7 @@ async function laadResultaten(stil){
 }
 function parseEz(ez){ if (!ez) return null; const m = String(ez).match(/^(\d{4})(?:-(\d{1,2}))?/); if (!m) return null; return new Date(+m[1], m[2] ? +m[2]-1 : 6, 1); }
 function bpmVoorItem(it, land){
-  if (land === 'NL' || !it.co2 || !it.ez || !it.fuel || it.fuel === 'elektrisch' && false) return null;
+  if (land === 'NL' || !it.co2 || !it.ez || !it.fuel) return null;
   const det = parseEz(it.ez); if (!det) return null;
   const phev = (it.fuel === 'hybride' || it.fuel === 'hybride_diesel') && it.co2 <= 60;
   const keuring = new Date(); keuring.setDate(keuring.getDate() + (+S.instellingen.keuringDagen||14));
@@ -1825,6 +1824,7 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.35', 'Geautomatiseerde test toegevoegd (Node + jsdom): 41 controles op BPM-referentiegevallen, afschrijving, kostprijs, zoeklinks per site en opslag. Dode code opgeruimd, geen gedragswijziging. README bijgewerkt.'],
   ['1.34', 'BTW en marge zijn twee vinkjes geworden. Niets aanvinken betekent allebei; \u00e9\u00e9n vinkje filtert.'],
   ['1.33', 'BTW of marge: de eerste keuze heet nu Geen voorkeur in plaats van Beide.'],
   ['1.32', 'Prijs van en Prijs tot staan naast elkaar, direct onder het bouwjaar.'],
