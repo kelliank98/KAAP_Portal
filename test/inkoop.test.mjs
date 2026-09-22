@@ -185,6 +185,46 @@ describe('Kostprijs', () => {
   });
 });
 
+describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
+  const nu = new Date('2026-09-22T12:00:00Z').getTime();
+  const res = (urenGeleden, fouten) => ({generated: new Date(nu - urenGeleden * 3600000).toISOString(),
+    profiles: {p1: {sites: {'as24nl:0': {items: [], error: fouten ? 'HTTP 503' : null}, 'marktplaats:0': {items: []}}}}});
+  test('groen binnen 3 uur, oranje tot 24 uur, rood daarna', () => {
+    assert.equal(w.ophaalStatus(res(1), nu).klasse, 'ok');
+    assert.equal(w.ophaalStatus(res(5), nu).klasse, 'warn');
+    assert.equal(w.ophaalStatus(res(30), nu).klasse, 'bad');
+  });
+  test('een site met een fout maakt een verse run oranje', () => {
+    const st = w.ophaalStatus(res(1, true), nu);
+    assert.equal(st.klasse, 'warn');
+    assert.match(st.tekst, /1 site met een fout/);
+  });
+  test('geen results.json: grijs met uitleg', () => {
+    assert.equal(w.ophaalStatus({leeg: true}, nu).klasse, '');
+    assert.match(w.ophaalStatus({leeg: true}, nu).tekst, /geen results.json/);
+    assert.equal(w.ophaalStatus(null, nu).klasse, '');
+  });
+  test('bolletje in de kop volgt de status', () => {
+    const el = d.querySelector('#ophaalStatus');
+    assert.ok(el, 'bolletje aanwezig');
+    // zetOphaalStatus gebruikt de echte klok; daarom hier een run van een uur geleden ten opzichte van nu.
+    const vers = {generated: new Date(Date.now() - 3600000).toISOString(), profiles: {}};
+    w.eval('RES = ' + JSON.stringify(vers) + '; zetOphaalStatus();');
+    assert.ok(el.classList.contains('ok'), el.className);
+    assert.match(el.title, /Ophaler: laatste run/);
+    w.eval('RES = null; zetOphaalStatus();');
+  });
+  test('bladwijzers sturen hun versie mee; een oudere bladwijzer geeft een melding', () => {
+    const bv = G('BLADWIJZER_VERSIE');
+    assert.ok(bv >= 2);
+    for (const id of ['bookmarklet', 'tellerlet', 'histlet']) assert.ok(d.querySelector('#' + id).getAttribute('href').includes('&bv=' + bv), id);
+    assert.equal(w.bladwijzerVerouderd(new w.URLSearchParams('add=1&bv=' + bv)), '');
+    assert.match(w.bladwijzerVerouderd(new w.URLSearchParams('add=1')), /verouderd \(versie 1/);
+    assert.match(w.bladwijzerVerouderd(new w.URLSearchParams('add=1&bv=1')), /verouderd/);
+    assert.equal(d.querySelector('#bwVersie').textContent, 'v' + bv);
+  });
+});
+
 describe('Prijsbenchmark (v1.39)', () => {
   const items = [
     {price: 60000, ez: '2021-03'}, {price: 62000, ez: '2021-05'}, {price: 65000, ez: '2021-01'}, {price: 70000, ez: '2021-09'},
