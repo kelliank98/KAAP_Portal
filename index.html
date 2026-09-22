@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- KAAP Factuur - App v1.25 -->
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
@@ -12,7 +11,7 @@
     --light:#9AA1B0;--ivory:#FBFAF7;--field:#F3F1EB;--row-alt:#F7F5F0;--rule:#E4E1D8;--white:#fff;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{background:#E8E6E0;font-family:'Poppins',sans-serif;color:var(--ink);}
+  html,body{background:#E8E6E0;font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
   body{padding:20px 16px 80px;}
   .nav{max-width:900px;margin:0 auto 18px;background:var(--navy);border-radius:10px;padding:14px 18px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 6px 24px rgba(27,40,65,.18);}
@@ -119,6 +118,8 @@
   table.reg{width:100%;border-collapse:collapse;font-size:12px;}
   table.reg th{text-align:left;font-weight:500;color:var(--navy);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid var(--rule);}
   table.reg th.r{text-align:right;}
+  table.reg th[data-sort]{cursor:pointer;user-select:none;}
+  table.reg th[data-sort]:hover{color:var(--gold);}
   table.reg td{padding:10px;border-bottom:1px solid var(--rule);color:var(--ink);}
   table.reg td.r{text-align:right;font-variant-numeric:tabular-nums;}
   table.reg tr:hover td{background:var(--row-alt);}
@@ -193,6 +194,7 @@
   <button class="versie" id="app-versie" title="Updategeschiedenis bekijken">v?</button>
   <button class="tab active" data-view="gen">Factuur</button>
   <button class="tab" data-view="reg">Register</button>
+  <button class="tab" data-view="klant">Klanten</button>
   <button class="tab" data-view="voor">Voorraad</button>
   <button class="tab" data-view="stat">Statistieken</button>
 </div>
@@ -307,6 +309,7 @@
           <option value="07">Juli</option><option value="08">Augustus</option><option value="09">September</option>
           <option value="10">Oktober</option><option value="11">November</option><option value="12">December</option>
         </select>
+        <button class="btn ghost" id="btn-csv" title="Getoonde facturen als CSV voor Excel of de boekhouder" style="color:var(--navy);border-color:var(--rule);">CSV exporteren</button>
       </span>
     </div>
     <div class="searchbar">
@@ -339,8 +342,24 @@
       <div id="restore-list" style="max-height:220px;overflow:auto;font-size:12px;"></div>
       <button class="btn ghost" id="btn-restore-close" style="margin-top:10px;color:var(--navy);border-color:var(--rule);">Sluiten</button>
     </div>
-    <table class="reg"><thead><tr><th>Datum</th><th>Nr.</th><th>Klant</th><th>Kenteken(s)</th><th>Voertuig(en)</th><th class="r" id="th-bedrag">Bedrag</th><th class="r" id="th-extra" style="display:none">BTW</th><th class="r">Actie</th></tr></thead><tbody id="reg-body"></tbody></table>
+    <table class="reg"><thead><tr><th data-sort="datum" title="Sorteren">Datum</th><th data-sort="nr" title="Sorteren">Nr.</th><th data-sort="klant" title="Sorteren">Klant</th><th>Kenteken(s)</th><th>Voertuig(en)</th><th class="r" id="th-bedrag" data-sort="bedrag" title="Sorteren">Bedrag</th><th class="r" id="th-extra" style="display:none">BTW</th><th class="r">Actie</th></tr></thead><tbody id="reg-body"></tbody></table>
     <div class="empty" id="reg-empty" style="display:none">Nog geen facturen opgeslagen.</div>
+  </div>
+</div>
+
+<div class="view" id="view-klant">
+  <div class="card">
+    <h2>Klanten</h2>
+    <div class="sub">Iedereen die op een factuur staat, met het aantal facturen en het totaal. Gegevens komen van de nieuwste factuur van die klant.</div>
+    <div class="searchbar" style="margin-bottom:14px;">
+      <input id="kq" placeholder="Zoek op naam, plaats, telefoon, e-mail of debiteurnummer">
+    </div>
+    <div id="klant-cards" class="stats" style="margin-bottom:18px;"></div>
+    <table class="reg">
+      <thead><tr><th>Klant</th><th>Plaats</th><th>Telefoon</th><th>E-mail</th><th class="r">Facturen</th><th>Laatste</th><th class="r">Totaal</th><th class="r">Actie</th></tr></thead>
+      <tbody id="klant-body"></tbody>
+    </table>
+    <div class="empty" id="klant-empty" style="display:none">Nog geen klanten. Ze verschijnen hier zodra je een factuur opslaat.</div>
   </div>
 </div>
 
@@ -390,6 +409,31 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ===== VERSIE =====
+   Het versienummer staat alleen HIER. Bij een nieuwe versie: VERSIE ophogen en
+   bovenaan HISTORIE een regel toevoegen. Het label in de navigatiebalk, de
+   paginatitel, het stempel in concepten en back-ups komen allemaal hieruit. */
+const VERSIE='1.27';
+/* Updategeschiedenis. Nieuwste bovenaan. */
+const HISTORIE=[
+ ['1.27','Register: sorteren op Datum, Nr., Klant en Bedrag, plus CSV-export van de getoonde periode voor de boekhouder. Nieuw tabblad Klanten met alle facturen per klant. Factuurnummer van een opgeslagen factuur staat op slot (dubbelklik om toch te wijzigen). Datum wordt gecontroleerd en genormaliseerd; een ongeldige datum blokkeert het opslaan. Gekoppeld Drive-bestand wordt bij terugkeren naar het tabblad opnieuw ingelezen als een ander apparaat het heeft gewijzigd. Extra kosten (o.a. het afleverpakket) tellen nu ook mee in de interne registerweergave, de BTW-kolom en de maandstaven, gelijk aan de factuur zelf. Versienummer staat nog maar op \u00e9\u00e9n plek, bovenaan het script. Lettertype met terugvalopties zonder internetverbinding.'],
+ ['1.26','Back-up exporteren neemt nu ook de voorraad mee; importeren herkent het nieuwe bundelformaat en oude back-ups met alleen facturen. Waarschuwing bij het sluiten van het tabblad als er niet-opgeslagen wijzigingen zijn. Interne opschoning bij het koppelen van de back-upmap.'],
+ ['1.25','Datum, tijd en URL die de browser zelf bovenaan de afdruk zette zijn weg. De paginamarge staat op nul; de witruimte komt nu uit de factuur zelf.'],
+ ['1.24','Naam in de balk linksboven is nu "KAAP Factuur Generator". De factuur zelf blijft op naam van KAAP Auto House B.V.'],
+ ['1.23','Versielabel is aanklikbaar en toont deze updategeschiedenis.'],
+ ['1.22','Op papier grotere letters: specificatie en voertuiggegevens 10pt, totaalbedrag 13,5pt. Op het scherm ongewijzigd.'],
+ ['1.21','Geen automatische verkleining meer bij printen. Past het niet op een A4, dan volgt een tweede pagina met marges, herhaalde tabelkop en nette paginabreuken.'],
+ ['1.20','Lettertype op de factuur 14 tot 23 procent groter.'],
+ ['1.19','Nog maar een knop "Nieuwe factuur"; het tabblad heet nu "Factuur". RDW-kentekenopvraging ook op de factuur, bij verkoop- en inruilvoertuigen. RDW is leidend, daarna pas jij handmatig aan.'],
+ ['1.18','Voorraad gaat mee in het gekoppelde Drive-bestand en in de back-ups. Nieuw bewaarbeleid: de 15 nieuwste plus de laatste van elke dag, 60 dagen terug.'],
+ ['1.17','Concept krijgt een versiestempel. Repareert dat het afleverpakket verdween na herstel van een ouder concept.'],
+ ['1.16','Automatisch opslaan van het factuurformulier bij elke wijziging. Versielabel in de balk. Zoeken op chassisnummer en RDW-opvraging in de voorraad. Verkocht toont een groene vink.'],
+ ['1.15','Verkoopstatus wordt afgeleid uit het register op chassisnummer. Factuur verwijderen of crediteren zet de auto automatisch terug in voorraad.'],
+ ['1.14','Afleverpakket van 695 euro automatisch als kostenregel bij elk verkoopvoertuig.'],
+ ['1.13','Postcodeveld, betaaltermijn naar 5 dagen, telefoonnummer met spatie per twee cijfers, inkoopverklaring met handtekeningregels bij een marge-inruil.'],
+ ['1.12','Voorraadtab, automatische back-ups naar een Drive-map, extra kostenregels per voertuig volgens het BTW-regime van de auto.']
+];
+
 const BTW=0.21, KEY='kaap_facturen_v2', MAX=5;
 const $=id=>document.getElementById(id);
 /* lokale cache (offline mirror van cloud, of enige opslag in lokale modus) */
@@ -413,6 +457,7 @@ function ontleed(data){
    Mobiel/Safari: valt terug op de knoppen Back-up exporteren/importeren. */
 const FSA = ('showOpenFilePicker' in window);
 let fileHandle=null, writing=false, writeQueued=false;
+let bundelTijd=0;            // tijdstempel van de bundel die we het laatst schreven of lazen
 
 // handle bewaren tussen sessies via IndexedDB
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('kaap_fs',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
@@ -434,27 +479,55 @@ async function fileWrite(){
   if(writing){writeQueued=true;return;}
   writing=true;
   try{
+    const b=bundel();
     const w=await fileHandle.createWritable();
-    await w.write(JSON.stringify(bundel(),null,2));
+    await w.write(JSON.stringify(b,null,2));
     await w.close();
+    bundelTijd=b.tijd;
     const t=new Date();setLinkStatus('Gekoppeld · laatst opgeslagen '+t.toLocaleTimeString('nl-NL'),true);
   }catch(e){setLinkStatus('Kon niet schrijven naar bestand ('+e.message+')',false);}
   writing=false;
   if(writeQueued){writeQueued=false;fileWrite();}
 }
 
-async function fileReadInto(){
-  if(!fileHandle)return;
+/* Leest het gekoppelde bestand in. Zonder argument (bij het opstarten) wordt de
+   inhoud altijd overgenomen. Met stil=true (bij terugkeren naar het tabblad)
+   alleen als het bestand een NIEUWER tijdstempel heeft dan wat wij zelf het
+   laatst schreven of lazen: dan heeft een ander apparaat het bijgewerkt.
+   Oude bestanden zonder tijdstempel worden bij stil=true met rust gelaten. */
+async function fileReadInto(stil){
+  if(!fileHandle)return false;
   try{
     const f=await fileHandle.getFile();const txt=await f.text();
-    if(txt.trim()){
-      const d=ontleed(JSON.parse(txt));
-      if(d.facturen)saveDBNoWrite(d.facturen);
-      if(d.voorraad)saveVoorNoWrite(d.voorraad);
-      renderReg($('q')?$('q').value:'');
+    if(!txt.trim())return false;
+    const raw=JSON.parse(txt);
+    const d=ontleed(raw);
+    if(!d.facturen)return false;
+    const tijd=(raw&&!Array.isArray(raw)&&+raw.tijd)||0;
+    if(stil && (!tijd || tijd<=bundelTijd))return false;
+    if(tijd)bundelTijd=tijd;
+    saveDBNoWrite(d.facturen);
+    if(d.voorraad)saveVoorNoWrite(d.voorraad);
+    renderReg($('q')?$('q').value:'');
+    if(stil){
+      vulJaarKeuze();
+      if($('view-voor').classList.contains('active'))renderVoorraad();
+      if($('view-klant').classList.contains('active'))renderKlanten();
+      toast('Register bijgewerkt vanuit Drive (gewijzigd op een ander apparaat)');
     }
-  }catch(e){/* leeg of nieuw bestand */}
+    return true;
+  }catch(e){return false;/* leeg of nieuw bestand */}
 }
+let laatsteDriveCheck=0;
+async function controleerDriveBestand(){
+  if(!FSA||!fileHandle||writing)return;
+  if(Date.now()-laatsteDriveCheck<5000)return;     // niet bij elke muisklik
+  laatsteDriveCheck=Date.now();
+  try{ if((await fileHandle.queryPermission({mode:'readwrite'}))!=='granted')return; }catch(e){return;}
+  await fileReadInto(true);
+}
+window.addEventListener('focus',controleerDriveBestand);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')controleerDriveBestand();});
 function saveDBNoWrite(l){localStorage.setItem(KEY,JSON.stringify(l));}
 function saveVoorNoWrite(l){localStorage.setItem(VKEY,JSON.stringify(l));}
 
@@ -519,7 +592,7 @@ async function chooseBackupFolder(){
     await idbSet('backupDir',dir);
     setBackupStatus('Back-upmap gekoppeld — er worden automatisch kopieën bewaard',true);
     toast('Back-upmap gekoppeld');
-    await writeBackup(loadDB(),true); // meteen een eerste back-up
+    await writeBackup(true); // meteen een eerste back-up
   }catch(e){if(e.name!=='AbortError')toast('Map kiezen mislukt: '+e.message);}
 }
 
@@ -671,6 +744,21 @@ function bindUpper(el){
 
 // Houdt bij of er niet-opgeslagen wijzigingen zijn (voorkomt onnodige popups)
 let vuil=false;
+/* Factuurnummer op slot zodra de factuur in het register staat (na opslaan of
+   openen). Zo ontstaat er niet per ongeluk een tweede factuur met een ander
+   nummer en een gat in de reeks. Bewust wijzigen kan met een dubbelklik. */
+let nrVergrendeld=false;
+function zetNrSlot(aan){
+  nrVergrendeld=!!aan; const el=$('f_nr'); if(!el)return;
+  el.readOnly=nrVergrendeld;
+  el.title=nrVergrendeld?'Nummer van een opgeslagen factuur. Dubbelklik om het toch te wijzigen.':'';
+  el.style.cursor=nrVergrendeld?'not-allowed':'';
+  el.style.borderBottomStyle=nrVergrendeld?'dotted':'';
+}
+$('f_nr').addEventListener('dblclick',()=>{
+  if(!nrVergrendeld)return;
+  if(confirm('Dit factuurnummer hoort bij een opgeslagen factuur.\n\nWijzig je het, dan komt er bij opslaan een TWEEDE factuur in het register en blijft de oude staan. Wil je een kopie, gebruik dan Dupliceren.\n\nNummer toch vrijgeven?'))zetNrSlot(false);
+});
 function markVuil(){vuil=true;}
 function markSchoon(){vuil=false;}
 
@@ -957,7 +1045,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $('view-'+t.dataset.view).classList.add('active');
-  if(t.dataset.view==='reg'){vulJaarKeuze();setRegMode(regMode);checkExtReminder();}if(t.dataset.view==='stat')renderStats();if(t.dataset.view==='voor')setVoorFilter(voorFilter);
+  if(t.dataset.view==='reg'){vulJaarKeuze();setRegMode(regMode);checkExtReminder();}if(t.dataset.view==='stat')renderStats();if(t.dataset.view==='voor')setVoorFilter(voorFilter);if(t.dataset.view==='klant')renderKlanten();
 });
 
 /* ================= AUTOMATISCH CONCEPT OPSLAAN =================
@@ -967,24 +1055,6 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
    voorraad en de statistieken vervuilen. Bij het openen van de app wordt het
    concept teruggezet, zodat je verder kunt waar je gebleven was.
    Het concept blijft binnen deze browser en gaat niet mee in de Drive-sync. */
-/* Updategeschiedenis. Nieuwste bovenaan. Bij een nieuwe versie hier een regel
-   toevoegen, plus VERSIE hieronder en de comment bovenaan het bestand. */
-const HISTORIE=[
- ['1.25','Datum, tijd en URL die de browser zelf bovenaan de afdruk zette zijn weg. De paginamarge staat op nul; de witruimte komt nu uit de factuur zelf.'],
- ['1.24','Naam in de balk linksboven is nu "KAAP Factuur Generator". De factuur zelf blijft op naam van KAAP Auto House B.V.'],
- ['1.23','Versielabel is aanklikbaar en toont deze updategeschiedenis.'],
- ['1.22','Op papier grotere letters: specificatie en voertuiggegevens 10pt, totaalbedrag 13,5pt. Op het scherm ongewijzigd.'],
- ['1.21','Geen automatische verkleining meer bij printen. Past het niet op een A4, dan volgt een tweede pagina met marges, herhaalde tabelkop en nette paginabreuken.'],
- ['1.20','Lettertype op de factuur 14 tot 23 procent groter.'],
- ['1.19','Nog maar een knop "Nieuwe factuur"; het tabblad heet nu "Factuur". RDW-kentekenopvraging ook op de factuur, bij verkoop- en inruilvoertuigen. RDW is leidend, daarna pas jij handmatig aan.'],
- ['1.18','Voorraad gaat mee in het gekoppelde Drive-bestand en in de back-ups. Nieuw bewaarbeleid: de 15 nieuwste plus de laatste van elke dag, 60 dagen terug.'],
- ['1.17','Concept krijgt een versiestempel. Repareert dat het afleverpakket verdween na herstel van een ouder concept.'],
- ['1.16','Automatisch opslaan van het factuurformulier bij elke wijziging. Versielabel in de balk. Zoeken op chassisnummer en RDW-opvraging in de voorraad. Verkocht toont een groene vink.'],
- ['1.15','Verkoopstatus wordt afgeleid uit het register op chassisnummer. Factuur verwijderen of crediteren zet de auto automatisch terug in voorraad.'],
- ['1.14','Afleverpakket van 695 euro automatisch als kostenregel bij elk verkoopvoertuig.'],
- ['1.13','Postcodeveld, betaaltermijn naar 5 dagen, telefoonnummer met spatie per twee cijfers, inkoopverklaring met handtekeningregels bij een marge-inruil.'],
- ['1.12','Voorraadtab, automatische back-ups naar een Drive-map, extra kostenregels per voertuig volgens het BTW-regime van de auto.']
-];
 function toonHistorie(){
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(27,40,65,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;';
@@ -1003,11 +1073,6 @@ function toonHistorie(){
   document.addEventListener('keydown',function esc(e){if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc);}});
 }
 
-/* Versienummer op EEN plek. Bij een nieuwe versie alleen deze regel aanpassen
-   (en de HTML-comment bovenaan het bestand). Het label staat in de navigatiebalk
-   en verdwijnt vanzelf bij het printen, want de nav wordt dan verborgen. */
-const VERSIE='1.25';
-
 const CKEY='kaap_concept_v1';
 let conceptActief=false, conceptTimer=null;
 
@@ -1018,7 +1083,7 @@ function huidigeStaat(){
            plaats:$('k_plaats').value,tel:$('k_tel').value,mail:$('k_mail').value,deb:$('g_deb').value},
     type:$('g_type').value, term:$('g_term').value,
     sales:saleItems, inruil:inruilItems,
-    admin:adminMode, vuil:vuil, app:VERSIE, tijd:Date.now()};
+    admin:adminMode, vuil:vuil, nrSlot:nrVergrendeld, app:VERSIE, tijd:Date.now()};
 }
 function zetStaat(st){
   if(!st)return false;
@@ -1036,6 +1101,7 @@ function zetStaat(st){
   renderSales();renderInruil();
   setDocMode(st.admin?'boek':'verkoop');
   vuil=!!st.vuil;
+  zetNrSlot(!!st.nrSlot);
   return true;
 }
 /* Een concept van een oudere versie kan velden missen die later zijn toegevoegd.
@@ -1085,11 +1151,13 @@ function fillForm(f){
   if(!inruilItems.length)inruilItems=[blankInruil()];
   renderSales();renderInruil();recalc();
   markSchoon();
+  zetNrSlot(true);
 }
 
 $('dv-verkoop').onclick=()=>setDocMode('verkoop');
 $('dv-boek').onclick=()=>setDocMode('boek');
 $('btn-save').onclick=()=>{
+  if(!controleerDatum()){toast('Niet opgeslagen: de factuurdatum "'+$('f_datum').value+'" is ongeldig. Gebruik dd-mm-jjjj.');$('f_datum').focus();return;}
   const list=loadDB();const rec=collect();
   const idx=list.findIndex(x=>x.nr===rec.nr);
   if(idx>=0){
@@ -1104,6 +1172,7 @@ $('btn-save').onclick=()=>{
   } else { list.push(rec);toast('Factuur '+rec.nr+' opgeslagen'); }
   saveDB(list);
   markSchoon();
+  zetNrSlot(true);
   if(typeof syncVoorraad==='function')syncVoorraad();
 };
 /* Maakt alleen de invoervelden leeg. Factuurnummer en datum blijven staan. */
@@ -1112,6 +1181,7 @@ function leegFormulier(){
   ['k_naam','k_adres','k_pc','k_plaats','k_tel','k_mail','g_deb'].forEach(i=>$(i).value='');
   $('g_type').value='Gebruikte auto — particulier';$('g_term').value='5 dagen';$('pay_term').textContent='5';
   saleItems=[blankSale()];inruilItems=[blankInruil()];renderSales();renderInruil();recalc();
+  zetNrSlot(false);
 }
 /* Waarschuwt alleen als er daadwerkelijk niet-opgeslagen wijzigingen zijn. */
 function magWeg(){return !vuil || confirm('Er zijn niet-opgeslagen wijzigingen.\n\nDoorgaan en het formulier legen?');}
@@ -1218,20 +1288,25 @@ function merken(f){return (f.sales||[]).map(x=>x.merk).filter(Boolean);}
 /* ===== Registerweergave: Verkoop (klant) of Boekhouding (administratie) ===== */
 let regMode='verkoop';
 function invoiceFigures(f){
-  // herberekent vanuit de opgeslagen voertuigen, zodat beide standen kloppen
-  let klantTot=0, boekTot=0, btwAfdracht=0, restbpmTot=0;
+  // herberekent vanuit de opgeslagen voertuigen, zodat beide standen kloppen.
+  // Sinds v1.27 tellen de extra kostenregels (o.a. het afleverpakket) hier mee,
+  // precies zoals op de factuur zelf (recalc). Daarvoor ontbraken ze in de
+  // interne registerweergave en in de BTW-kolom.
+  let klantTot=0, boekTot=0, btwAfdracht=0, restbpmTot=0, exclTot=0, kostenTot=0;
   (f.sales||[]).forEach(s=>{
-    const c=saleCalc(s);
-    klantTot+=c.total;
-    boekTot+=(c.total-c.restbpm);
-    btwAfdracht+=c.btw;
+    const c=saleCalc(s), kc=kostenCalc(s);
+    klantTot+=c.total+kc.incl;
+    boekTot+=(c.total-c.restbpm)+kc.incl;
+    btwAfdracht+=c.btw+kc.btw;
     restbpmTot+=c.restbpm;
+    exclTot+=c.excl+kc.excl;
+    kostenTot+=kc.bruto;
   });
   // Inruil verlaagt wél wat de klant betaalt, maar NIET je omzet/BTW-grondslag.
   // De inruilauto is een aparte inkoop en staat los van de af te dragen BTW.
-  let inruilTot=0;
-  (f.inruil||[]).forEach(it=>{const c=inruilCalc(it);klantTot-=c.credit;inruilTot+=c.credit;});
-  return {klantTot,boekTot,btwAfdracht,restbpmTot,inruilTot};
+  let inruilTot=0, inruilBtw=0;
+  (f.inruil||[]).forEach(it=>{const c=inruilCalc(it);klantTot-=c.credit;inruilTot+=c.credit;inruilBtw+=c.btw;});
+  return {klantTot,boekTot,btwAfdracht,restbpmTot,inruilTot,inruilBtw,exclTot,kostenTot};
 }
 function setRegMode(m){
   regMode=m;
@@ -1257,12 +1332,33 @@ function volgendNummer(){
   return String(max+1);
 }
 function vandaag(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();}
+/* Datum herkennen en netjes maken: 5-9-26, 05/09/2026 en 2026-09-05 worden
+   allemaal 05-09-2026. Onbestaande datums (31-02-2026) geven null. */
+function normaliseerDatum(s){
+  const t=String(s||'').trim();
+  let d,mo,y,m=t.match(/^(\d{1,2})[-\/. ](\d{1,2})[-\/. ](\d{2}|\d{4})$/);
+  if(m){d=+m[1];mo=+m[2];y=+m[3];if(m[3].length===2)y+=2000;}
+  else{m=t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);if(!m)return null;y=+m[1];mo=+m[2];d=+m[3];}
+  if(mo<1||mo>12||d<1||y<2000||y>2099)return null;
+  const dt=new Date(y,mo-1,d); if(dt.getDate()!==d||dt.getMonth()!==mo-1)return null;
+  return String(d).padStart(2,'0')+'-'+String(mo).padStart(2,'0')+'-'+y;
+}
+/* Controleert het datumveld van de factuur; zet het genormaliseerd terug of
+   kleurt het rood. Geeft true als de datum bruikbaar is. */
+function controleerDatum(){
+  const el=$('f_datum'); if(!el)return true;
+  const n=normaliseerDatum(el.value);
+  if(n){el.value=n;el.style.borderBottomColor='';el.style.color='';return true;}
+  el.style.borderBottomColor='#E06B6B';el.style.color='#F3B0B0';return false;
+}
+$('f_datum').addEventListener('blur',()=>{if(!controleerDatum())toast('Datum niet herkend. Gebruik dd-mm-jjjj, bijvoorbeeld '+vandaag()+'.');});
 
 /* ===== 2. Factuur dupliceren ===== */
 function dupliceerFactuur(){
   if(!confirm('Deze factuur dupliceren naar een nieuw factuurnummer?\n\nAlle gegevens worden gekopieerd; het nummer en de datum worden vernieuwd.'))return;
   $('f_nr').value=volgendNummer();
   $('f_datum').value=vandaag();
+  zetNrSlot(false);
   setDocMode('verkoop');
   toast('Gedupliceerd — nieuw nummer '+$('f_nr').value);
 }
@@ -1279,6 +1375,7 @@ function maakCreditfactuur(){
   $('g_type').value='Creditfactuur bij factuur '+bronNr;
   $('f_nr').value=nieuwNr;
   $('f_datum').value=vandaag();
+  zetNrSlot(false);
   setDocMode('verkoop');
   renderSales();renderInruil();recalc();
   toast('Creditfactuur '+$('f_nr').value+' aangemaakt');
@@ -1312,37 +1409,49 @@ function inPeriode(f){
   return d.maand===deel;
 }
 
+/* ===== Register: sorteren op kolom ===== Klik op Datum, Nr., Klant of Bedrag.
+   Nog een keer klikken draait de richting om. Zonder keuze: nieuwste eerst. */
+let regSort={key:'',dir:-1};
+function datumSleutel(s){const m=String(s||'').split('-');return m.length===3?(+m[2])*10000+(+m[1])*100+(+m[0]):0;}
+function regBedrag(f,fig){return regMode==='boek'?fig.boekTot:((f.amounts&&f.amounts.total!=null)?f.amounts.total:fig.klantTot);}
+function zoekTekst(f){return [f.klant.naam,f.klant.plaats,f.nr,...kentekens(f),...merken(f),...(f.inruil||[]).map(x=>x.kenteken)].join(' ').toLowerCase();}
+/* De facturen die het register nu toont: periode, zoekterm en sortering toegepast. */
+function getoondeFacturen(filter){
+  const q=(filter||'').toLowerCase().trim();
+  const list=loadDB().slice().sort((a,b)=>b.id-a.id).filter(f=>inPeriode(f)&&(!q||zoekTekst(f).includes(q)));
+  if(regSort.key){
+    const k=regSort.key, d=regSort.dir;
+    const val=f=>k==='datum'?datumSleutel(f.datum)
+               :k==='nr'?(parseInt(String(f.nr).replace(/\D/g,''))||0)
+               :k==='klant'?String(f.klant.naam||'').toLowerCase()
+               :regBedrag(f,invoiceFigures(f));
+    list.sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*d;});
+  }
+  return list;
+}
 function renderReg(filter=''){
-  const list=loadDB().slice().sort((a,b)=>b.id-a.id);const q=(filter||'').toLowerCase().trim();
-  const body=$('reg-body');body.innerHTML='';$('reg-empty').style.display=list.length?'none':'block';
-  list.filter(f=>{
-    if(!inPeriode(f))return false;
-    if(!q)return true;
-    const hay=[f.klant.naam,f.klant.plaats,f.nr,...kentekens(f),...merken(f),...(f.inruil||[]).map(x=>x.kenteken)].join(' ').toLowerCase();
-    return hay.includes(q);
-  }).forEach(f=>{
+  const shown=getoondeFacturen(filter);
+  const body=$('reg-body');body.innerHTML='';$('reg-empty').style.display=loadDB().length?'none':'block';
+  shown.forEach(f=>{
     const kt=kentekens(f);const mk=merken(f);
     const fig=invoiceFigures(f);
-    const bedrag = regMode==='boek' ? fig.boekTot : (f.amounts&&f.amounts.total!=null?f.amounts.total:fig.klantTot);
+    const bedrag=regBedrag(f,fig);
     const extra = regMode==='boek' ? `<td class="r" style="color:var(--gold);font-weight:500">${fmt(fig.btwAfdracht)}</td>` : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`<td class="mono">${f.datum}</td><td class="mono">${f.nr}</td><td>${f.klant.naam}<br><small style="color:var(--grey)">${f.klant.plaats||''}</small></td><td>${kt.length?kt.map(k=>`<span class="kenteken">${k}</span>`).join(''):'—'}</td><td>${mk.join(', ')||'—'}${(f.sales&&f.sales.length>1)?` <small style="color:var(--grey)">(${f.sales.length}×)</small>`:''}</td><td class="r">${fmt(bedrag)}</td>${extra}<td class="r"><button class="act" data-open="${f.id}">Openen</button><button class="act del" data-del="${f.id}">✕</button></td>`;
     body.appendChild(tr);
   });
   const th=$('th-extra'); if(th)th.style.display = regMode==='boek' ? '' : 'none';
-  const thb=$('th-bedrag'); if(thb)thb.textContent = regMode==='boek' ? 'Omzet excl. rest-BPM' : 'Bedrag';
-  // totaalregel onderaan
-  const shown=list.filter(f=>{
-    if(!inPeriode(f))return false;
-    if(!q)return true;
-    const hay=[f.klant.naam,f.klant.plaats,f.nr,...kentekens(f),...merken(f),...(f.inruil||[]).map(x=>x.kenteken)].join(' ').toLowerCase();
-    return hay.includes(q);
+  // kolomkoppen: basistekst + sorteerpijl
+  document.querySelectorAll('#view-reg table.reg th[data-sort]').forEach(h=>{
+    if(!h.dataset.label)h.dataset.label=h.textContent.trim();
+    const base = h.id==='th-bedrag' ? (regMode==='boek' ? 'Omzet excl. rest-BPM' : 'Bedrag') : h.dataset.label;
+    h.textContent = base + (regSort.key===h.dataset.sort ? (regSort.dir>0?' ▲':' ▼') : '');
   });
+  // totaalregel onderaan
   if(shown.length){
     let sBedrag=0,sBtw=0;
-    shown.forEach(f=>{const g=invoiceFigures(f);
-      sBedrag += regMode==='boek' ? g.boekTot : ((f.amounts&&f.amounts.total!=null)?f.amounts.total:g.klantTot);
-      sBtw += g.btwAfdracht;});
+    shown.forEach(f=>{const g=invoiceFigures(f);sBedrag+=regBedrag(f,g);sBtw+=g.btwAfdracht;});
     const tot=document.createElement('tr');
     tot.style.cssText='background:var(--navy);color:#fff;';
     const extraCol = regMode==='boek' ? `<td class="r" style="color:var(--gold);font-weight:600;padding:11px 10px">${fmt(sBtw)}</td>` : '';
@@ -1357,8 +1466,50 @@ function renderReg(filter=''){
       document.querySelector('.tab[data-view="gen"]').click();
       toast('Factuur '+f.nr+(adminMode?' geladen (intern)':' geladen'));
     }});
-  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('Verwijderen uit register?'))return;saveDB(loadDB().filter(x=>x.id!=b.dataset.del));if(typeof syncVoorraad==='function')syncVoorraad();renderReg($('q').value);toast('Verwijderd \u2014 voorraad bijgewerkt');});
+  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('Verwijderen uit register?'))return;saveDB(loadDB().filter(x=>x.id!=b.dataset.del));if(typeof syncVoorraad==='function')syncVoorraad();renderReg($('q').value);toast('Verwijderd — voorraad bijgewerkt');});
 }
+document.querySelectorAll('#view-reg table.reg th[data-sort]').forEach(h=>h.onclick=()=>{
+  const k=h.dataset.sort;
+  if(regSort.key===k)regSort.dir=-regSort.dir; else regSort={key:k,dir:k==='klant'?1:-1};
+  renderReg($('q').value);
+});
+
+/* ===== CSV-export van het register =====
+   Exporteert precies wat het register nu toont (periode + zoekterm + volgorde).
+   Puntkomma als scheidingsteken en decimale komma, zodat Excel in het
+   Nederlands het bestand direct goed opent. De bedragen zijn dezelfde als op
+   de factuur: bedrag klant (inruil afgetrokken), interne omzet (na rest-BPM,
+   inruil niet afgetrokken), grondslag excl. BTW, af te dragen BTW, rest-BPM,
+   extra kosten, inruil en de voorbelasting op een BTW-inruil. Bij een
+   margeauto is "excl. BTW" de volledige vergoeding: daar staat geen BTW op. */
+function csvVeld(v){const t=String(v==null?'':v);return /[;"\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;}
+function csvBedrag(n){return (Math.round((+n||0)*100)/100).toFixed(2).replace('.',',');}
+function regimeVan(f){const r=[];(f.sales||[]).forEach(s=>{const x=s.regime==='marge'?'Marge':'BTW';if(!r.includes(x))r.push(x);});return r.join(' + ');}
+function registerCsv(filter){
+  const shown=getoondeFacturen(filter);
+  const kop=['Factuurnr','Datum','Klant','Plaats','Kenteken(s)','Voertuig(en)','Regime','Bedrag klant','Omzet intern (na rest-BPM)','Excl. BTW','BTW af te dragen','Rest-BPM','Extra kosten','Inruil','BTW inruil (voorbelasting)'];
+  const rijen=[kop.join(';')];
+  const som={klant:0,boek:0,excl:0,btw:0,bpm:0,kosten:0,inruil:0,inruilBtw:0};
+  shown.forEach(f=>{
+    const g=invoiceFigures(f);
+    const klant=(f.amounts&&f.amounts.total!=null)?f.amounts.total:g.klantTot;
+    som.klant+=klant;som.boek+=g.boekTot;som.excl+=g.exclTot;som.btw+=g.btwAfdracht;som.bpm+=g.restbpmTot;som.kosten+=g.kostenTot;som.inruil+=g.inruilTot;som.inruilBtw+=g.inruilBtw;
+    rijen.push([f.nr,f.datum,f.klant.naam,f.klant.plaats||'',kentekens(f).join(' '),merken(f).join(' | '),regimeVan(f),
+      csvBedrag(klant),csvBedrag(g.boekTot),csvBedrag(g.exclTot),csvBedrag(g.btwAfdracht),csvBedrag(g.restbpmTot),csvBedrag(g.kostenTot),csvBedrag(g.inruilTot),csvBedrag(g.inruilBtw)].map(csvVeld).join(';'));
+  });
+  rijen.push(['TOTAAL','','','','','',shown.length+' facturen',csvBedrag(som.klant),csvBedrag(som.boek),csvBedrag(som.excl),csvBedrag(som.btw),csvBedrag(som.bpm),csvBedrag(som.kosten),csvBedrag(som.inruil),csvBedrag(som.inruilBtw)].map(csvVeld).join(';'));
+  return {csv:'﻿'+rijen.join('\r\n')+'\r\n', aantal:shown.length};
+}
+function exportRegisterCsv(){
+  const r=registerCsv($('q')?$('q').value:'');
+  if(!r.aantal){toast('Niets te exporteren in deze selectie.');return;}
+  const jaar=$('per-jaar')?$('per-jaar').value:'', deel=$('per-deel')?$('per-deel').value:'';
+  const naam='KAAP_register_'+(jaar||'alle_jaren')+(deel?'_'+deel:'')+'.csv';
+  const b=new Blob([r.csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=naam;a.click();
+  toast('CSV gedownload: '+r.aantal+' facturen');
+}
+$('btn-csv').onclick=exportRegisterCsv;
 $('q').addEventListener('input',e=>renderReg(e.target.value));
 $('btn-voor-add').onclick=()=>bewerkAuto(null);
 $('vf-alles').onclick=()=>setVoorFilter('alles');
@@ -1372,11 +1523,58 @@ $('per-deel').onchange=()=>renderReg($('q').value);
 $('rv-verkoop').onclick=()=>setRegMode('verkoop');
 $('rv-boek').onclick=()=>setRegMode('boek');
 
+/* ===== KLANTEN ===== Afgeleid uit het register: iedere unieke klantnaam
+   (hoofdletterongevoelig) met aantal facturen, laatste datum en totaal van
+   wat de klant betaalde. Contactgegevens komen van de nieuwste factuur. */
+function klantenLijst(){
+  const by={};
+  loadDB().slice().sort((a,b)=>a.id-b.id).forEach(f=>{
+    const k=f.klant||{};const key=(k.naam||'').toLowerCase().trim(); if(!key)return;
+    const g=invoiceFigures(f); const bedrag=(f.amounts&&f.amounts.total!=null)?f.amounts.total:g.klantTot;
+    const e=by[key]||(by[key]={naam:'',adres:'',pc:'',plaats:'',tel:'',mail:'',deb:'',n:0,totaal:0,laatste:'',laatsteKey:0,nrs:[]});
+    e.n++;e.totaal+=bedrag;e.nrs.push(f.nr);
+    ['naam','adres','pc','plaats','tel','mail','deb'].forEach(x=>{if(k[x])e[x]=k[x];});   // nieuwste gegevens winnen
+    const dk=datumSleutel(f.datum); if(dk>=e.laatsteKey){e.laatsteKey=dk;e.laatste=f.datum||'';}
+  });
+  return Object.values(by).sort((a,b)=>b.laatsteKey-a.laatsteKey||a.naam.localeCompare(b.naam,'nl'));
+}
+function renderKlanten(){
+  const q=($('kq')?$('kq').value:'').toLowerCase().trim();
+  const body=$('klant-body'); if(!body)return; body.innerHTML='';
+  const alle=klantenLijst();
+  const zicht=alle.filter(k=>!q||[k.naam,k.plaats,k.tel,k.mail,k.deb].join(' ').toLowerCase().includes(q));
+  $('klant-empty').style.display=alle.length?'none':'block';
+  $('klant-cards').innerHTML=`<div class="stat"><div class="n">${alle.length}</div><div class="l">Klanten</div></div>`
+    +`<div class="stat"><div class="n">${alle.filter(k=>k.n>1).length}</div><div class="l">Terugkerend (2+ facturen)</div></div>`
+    +`<div class="stat"><div class="n">${zicht.length}</div><div class="l">In deze selectie</div></div>`;
+  zicht.forEach((k,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><b style="font-weight:500">${k.naam}</b>${k.deb?`<br><small style="color:var(--grey)">deb. ${k.deb}</small>`:''}</td>`
+      +`<td>${[k.pc,k.plaats].filter(Boolean).join(' ')||'—'}</td><td class="mono">${k.tel||'—'}</td><td>${k.mail||'—'}</td>`
+      +`<td class="r mono">${k.n}</td><td class="mono">${k.laatste||'—'}</td><td class="r">${fmt(k.totaal)}</td>`
+      +`<td class="r"><button class="act" data-kreg="${i}">Facturen</button><button class="act" data-knew="${i}">+ Factuur</button></td>`;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('[data-kreg]').forEach(b=>b.onclick=()=>{
+    const k=zicht[+b.dataset.kreg]; $('q').value=k.naam;
+    document.querySelector('.tab[data-view="reg"]').click(); renderReg(k.naam);
+  });
+  body.querySelectorAll('[data-knew]').forEach(b=>b.onclick=()=>{
+    const k=zicht[+b.dataset.knew]; if(!magWeg())return;
+    leegFormulier(); $('f_nr').value=volgendNummer(); $('f_datum').value=vandaag(); fillKlant(k); markSchoon();
+    document.querySelector('.tab[data-view="gen"]').click(); recalc();
+    toast('Nieuwe factuur '+$('f_nr').value+' voor '+k.naam);
+  });
+}
+$('kq').addEventListener('input',renderKlanten);
+
 /* ===== Herinnering externe back-up (elke 30 dagen) ===== */
 const EXTKEY='kaap_last_ext_backup';
 const EXT_DAGEN=30;
+/* Sinds v1.26 in het bundelformaat (facturen + voorraad), net als het
+   gekoppelde Drive-bestand en de automatische back-ups. */
 function extDoExport(){
-  const d=JSON.stringify(loadDB(),null,2);
+  const d=JSON.stringify(bundel(),null,2);
   const b=new Blob([d],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);
   a.download='KAAP_facturen_backup_'+new Date().toISOString().slice(0,10)+'.json';
@@ -1409,7 +1607,34 @@ $('ext-do').onclick=extDoExport;
 $('ext-done').onclick=extMarkDone;
 $('ext-later').onclick=extSnooze;
 $('btn-import').onclick=()=>$('file-import').click();
-$('file-import').onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(!Array.isArray(imp))throw 0;const cur=loadDB();const by={};cur.forEach(f=>by[f.nr]=f);imp.forEach(f=>by[f.nr]=f);saveDB(Object.values(by));renderReg();toast('Geïmporteerd ('+imp.length+')');}catch(err){toast('Ongeldig bestand');}};r.readAsText(file);};
+/* Back-up importeren. Herkent het bundelformaat (facturen + voorraad, sinds
+   v1.18) en het oude formaat met alleen een lijst facturen. Bij een gelijk
+   factuurnummer of dezelfde auto wint wat er in het bestand staat; dat was al
+   zo en dat blijft zo. Geeft het aantal ingelezen facturen en auto's terug. */
+function importeerBackup(txt){
+  const d=ontleed(JSON.parse(txt));
+  if(!d.facturen)throw new Error('Ongeldig bestand');
+  const by={};loadDB().forEach(f=>by[f.nr]=f);d.facturen.forEach(f=>by[f.nr]=f);
+  if(d.voorraad){
+    const uit=loadVoor();
+    d.voorraad.forEach(a=>{
+      const i=uit.findIndex(x=>String(x.id)===String(a.id)||zelfdeAuto(x,a));
+      if(i>=0)uit[i]=a; else uit.push(a);
+    });
+    saveVoorNoWrite(uit);          // eerst, zodat saveDB beide datasets wegschrijft
+  }
+  saveDB(Object.values(by));
+  return {facturen:d.facturen.length, voorraad:d.voorraad?d.voorraad.length:null};
+}
+$('file-import').onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{
+  try{
+    const n=importeerBackup(r.result);
+    renderReg($('q')?$('q').value:'');
+    if(typeof renderVoorraad==='function' && $('voor-body'))renderVoorraad();
+    toast('Ge\u00efmporteerd: '+n.facturen+' facturen'+(n.voorraad==null?' (oude back-up zonder voorraad)':', '+n.voorraad+' auto\'s'));
+  }catch(err){toast('Ongeldig bestand');}
+  e.target.value='';               // hetzelfde bestand kan daarna opnieuw gekozen worden
+};r.readAsText(file);};
 
 
 /* ================= VOORRAADBEHEER =================
@@ -1779,7 +2004,7 @@ function renderStats(){
   const gem=n?omzet/n:0;
   $('stat-cards').innerHTML=`<div class="stat"><div class="n">${n}</div><div class="l">Facturen</div></div><div class="stat"><div class="n">${cars}</div><div class="l">Verkochte voertuigen</div></div><div class="stat"><div class="n">${fmt(omzet)}</div><div class="l">Omzet (verkooptotaal)</div></div><div class="stat"><div class="n">${fmt(gem)}</div><div class="l">Gemiddeld per factuur</div></div><div class="stat"><div class="n">${fmt(btwTot)}</div><div class="l">BTW (indicatief)</div></div>`;
   const months={};
-  list.forEach(f=>{const m=(f.datum||'').split('-').slice(1).reverse().join('-');if(m){const tot=(f.sales||[]).reduce((a,v)=>a+saleCalc(v).total,0);months[m]=(months[m]||0)+tot;}});
+  list.forEach(f=>{const m=(f.datum||'').split('-').slice(1).reverse().join('-');if(m){const tot=(f.sales||[]).reduce((a,v)=>a+saleCalc(v).total+kostenCalc(v).bruto,0);months[m]=(months[m]||0)+tot;}});
   const keys=Object.keys(months).sort();const max=Math.max(1,...Object.values(months));
   $('stat-bars').innerHTML=keys.length?keys.map(k=>`<div class="bar-row"><span class="lbl">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(months[k]/max*100)}%">${fmt(months[k])}</div></div></div>`).join(''):'<div class="empty">Nog geen data.</div>';
 }
@@ -1820,6 +2045,10 @@ markSchoon();
 })();
 /* Bij tabblad sluiten, wegklikken of minimaliseren meteen wegschrijven */
 window.addEventListener('pagehide',bewaarConceptNu);
+/* Tabblad sluiten of wegnavigeren met niet-opgeslagen wijzigingen: de browser
+   vraagt om bevestiging. Het concept blijft sowieso bewaard; dit voorkomt dat
+   een geprinte maar niet opgeslagen factuur ongemerkt uit beeld raakt. */
+window.addEventListener('beforeunload',e=>{if(!vuil)return;e.preventDefault();e.returnValue='';});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')bewaarConceptNu();});
 
 restoreLink();restoreBackupDir();checkExtReminder();
