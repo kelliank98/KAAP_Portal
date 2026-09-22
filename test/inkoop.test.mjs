@@ -185,6 +185,32 @@ describe('Kostprijs', () => {
   });
 });
 
+describe('Marge (v1.37)', () => {
+  test('BTW-auto: 21% over de verkoop, marge = verkoop excl. − kostprijs', () => {
+    const kp = {totaal: 56908};
+    const mg = w.margeVoor({verkoop: 79950, btw: 'btw', prijs: 60000}, kp);
+    assert.ok(Math.abs(mg.btw - (79950 - 79950 / 1.21)) < 0.01);
+    assert.ok(Math.abs(mg.marge - (79950 / 1.21 - 56908)) < 0.01);   // ≈ 9.166
+    assert.ok(Math.abs(mg.pct - mg.marge / 56908 * 100) < 0.01);
+  });
+  test('margeauto: BTW alleen over verkoop − inkoop (margeregeling)', () => {
+    const mg = w.margeVoor({verkoop: 70000, btw: 'marge', prijs: 60000}, {totaal: 66488});
+    assert.ok(Math.abs(mg.btw - 10000 * 21 / 121) < 0.01);            // 1.735,54
+    assert.ok(Math.abs(mg.marge - (70000 - 10000 * 21 / 121 - 66488)) < 0.01);
+  });
+  test('zonder verkoopprijs of zonder kostprijs: geen marge', () => {
+    assert.equal(w.margeVoor({verkoop: null, btw: 'btw', prijs: 60000}, {totaal: 1}), null);
+    assert.equal(w.margeVoor({verkoop: 70000, btw: 'btw', prijs: 60000}, {totaal: null}), null);
+  });
+  test('kleur op de doelmarge', () => {
+    G('S').instellingen.doelmarge = 3000;
+    assert.equal(w.margeKleur(3000), 'gekocht');
+    assert.equal(w.margeKleur(2999), 'bod');
+    assert.equal(w.margeKleur(-1), 'afgewezen');
+    assert.equal(w.margeKleur(null), '');
+  });
+});
+
 // ---------------------------------------------------------------- Zoeklinks
 function profiel(extra){
   const sites = {}; for (const k of Object.keys(G('SITES'))) sites[k] = true;
@@ -435,9 +461,16 @@ describe('UI en opslag', () => {
     const uit = d.querySelector('#bpmOut').textContent;
     assert.ok(uit.includes('5.838'), 'te betalen BPM 5.838 in beeld: ' + uit.slice(0, 200));
     assert.ok(uit.includes('17.918'), 'bruto 17.918 in beeld');
+    zet('k_verkoop', '79950');
+    const met = d.querySelector('#bpmOut').textContent;
+    assert.ok(met.includes('Marge'), 'margeblok zichtbaar');
+    assert.ok(met.includes('9.166'), 'marge ≈ 9.166 in beeld: ' + met.slice(-300));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
     d.querySelector('#btnBewaarKand').click();
     assert.equal(d.querySelectorAll('#kandTabel tbody tr').length, 1);
-    assert.equal(JSON.parse(w.localStorage.getItem('kaap_inkoop_v1')).kandidaten.length, 1);
+    assert.ok(d.querySelector('#kandTabel tbody tr').textContent.includes('9.166'), 'marge in de tabel');
+    const k = JSON.parse(w.localStorage.getItem('kaap_inkoop_v1')).kandidaten;
+    assert.equal(k.length, 1);
+    assert.equal(k[0].verkoop, 79950);
   });
 
   test('export van profiles.json bevat de links en de API-URL voor de ophaler', () => {

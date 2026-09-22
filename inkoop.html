@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.36</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.37</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -272,6 +272,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Zoekprofiel</span><select id="k_profiel"><option value="">(geen)</option></select></label>
           <label class="f"><span>Vraagprijs</span><input type="number" id="k_prijs" step="500" placeholder="62500"></label>
           <label class="f"><span>BTW-status</span><select id="k_btw"><option value="btw">BTW-auto (MwSt. ausweisbar)</option><option value="marge">Marge (differenzbesteuert)</option></select></label>
+          <label class="f"><span>Verwachte verkoopprijs NL (incl. BTW)</span><input type="number" id="k_verkoop" step="500" placeholder="79950"></label>
           <label class="f"><span>Kilometerstand</span><input type="number" id="k_km" step="1000" placeholder="85000"></label>
           <label class="f"><span>Eerste toelating</span><input type="date" id="k_det"></label>
           <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
@@ -297,7 +298,7 @@ details summary{cursor:pointer;font-weight:500}
       </div>
       <div class="card">
         <div class="row between"><h3>Kandidaten</h3><div class="row"><select id="filtStatus"><option value="">Alle statussen</option><option value="nieuw">Nieuw</option><option value="bekeken">Bekeken</option><option value="bod">Bod gedaan</option><option value="gekocht">Gekocht</option><option value="afgewezen">Afgewezen</option></select></div></div>
-        <div style="overflow:auto"><table class="t" id="kandTabel"><thead><tr><th>Auto</th><th>Land</th><th class="r">Vraagprijs</th><th class="r">BPM</th><th class="r">Kostprijs</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+        <div style="overflow:auto"><table class="t" id="kandTabel"><thead><tr><th>Auto</th><th>Land</th><th class="r">Vraagprijs</th><th class="r">BPM</th><th class="r">Kostprijs</th><th class="r">Marge</th><th>Status</th></tr></thead><tbody></tbody></table></div>
         <div id="kandLeeg" class="empty">Nog geen kandidaten.</div>
       </div>
     </div>
@@ -317,7 +318,9 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Transport NL</span><input type="number" id="s_tr_NL" step="50"></label>
           <label class="f"><span>Importkosten</span><input type="number" id="s_import" step="25"></label>
           <label class="f"><span>Dagen tot keuring</span><input type="number" id="s_keuring" step="1"></label>
+          <label class="f"><span>Doelmarge per auto (€)</span><input type="number" id="s_doelmarge" step="250"></label>
         </div>
+        <p class="help">De doelmarge kleurt de marge bij kandidaten: groen erboven, oranje eronder, rood bij verlies.</p>
         <div class="row mt"><button class="btn" id="btnBewaarInst">Instellingen bewaren</button></div>
       </div>
       <div class="card">
@@ -396,13 +399,13 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.36
+   KAAP Inkoop Radar  v1.37
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.36';
+const APP_VERSIE = '1.37';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -515,6 +518,7 @@ function laad(){
   if (s.instellingen.resultsUrl === undefined) s.instellingen.resultsUrl = '';
   if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   if (s.instellingen.proxyKey === undefined) s.instellingen.proxyKey = '';
+  if (s.instellingen.doelmarge === undefined) s.instellingen.doelmarge = 3000;
   return s;
 }
 function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
@@ -667,6 +671,23 @@ function kostprijs(k, bpm){
   const bpmBedrag = land === 'NL' ? 0 : (bpm && !bpm.fout ? bpm.netto : null);
   const totaal = (bpmBedrag==null) ? null : netto + transport + imp + bpmBedrag;
   return {netto, transport, imp, bpm:bpmBedrag, totaal};
+}
+// ---------- Marge ----------
+// Verkoop in Nederland. BTW-auto: 21% over de hele verkoopprijs. Margeauto: BTW alleen over
+// de winstmarge (verkoop − inkoopprijs van de auto), volgens de margeregeling.
+// Marge = verkoop − af te dragen BTW − kostprijs (inkoop excl., transport, import, BPM).
+function margeVoor(k, kp){
+  const verkoop = +k.verkoop || 0;
+  if (!verkoop || !kp || kp.totaal == null) return null;
+  const btw = k.btw === 'btw' ? verkoop - verkoop / 1.21 : Math.max(0, verkoop - (+k.prijs || 0)) * 21 / 121;
+  const marge = verkoop - btw - kp.totaal;
+  return {verkoop, btw, marge, pct: kp.totaal ? marge / kp.totaal * 100 : null};
+}
+// Kleur ten opzichte van de doelmarge uit Instellingen.
+function margeKleur(marge){
+  if (marge == null) return '';
+  if (marge < 0) return 'afgewezen';
+  return marge >= (+S.instellingen.doelmarge || 0) ? 'gekocht' : 'bod';
 }
 
 // ---------- Hulpfuncties links ----------
@@ -1079,18 +1100,18 @@ let kandId = null;
 function leesKandForm(){
   return {
     id: kandId, oms: cap($('#k_oms').value), kenteken: cap($('#k_kenteken').value), url: cap($('#k_url').value), land: $('#k_land').value, profiel: $('#k_profiel').value,
-    prijs: +$('#k_prijs').value || null, btw: $('#k_btw').value, km: +$('#k_km').value || null, det: $('#k_det').value || '',
+    prijs: +$('#k_prijs').value || null, btw: $('#k_btw').value, verkoop: +$('#k_verkoop').value || null, km: +$('#k_km').value || null, det: $('#k_det').value || '',
     brandstof: $('#k_brandstof').value, phev: $('#k_phev').value === '1', co2w: $('#k_co2w').value === '' ? null : +$('#k_co2w').value,
     co2n: $('#k_co2n').value === '' ? null : +$('#k_co2n').value, keuring: $('#k_keuring').value || '', status: $('#k_status').value, notitie: cap($('#k_notitie').value),
   };
 }
 function vulKandForm(k){
   kandId = k ? k.id : null;
-  k = k || {oms:'',kenteken:'',url:'',land:'DE',profiel:'',prijs:null,btw:'btw',km:null,det:'',brandstof:'benzine',phev:false,co2w:null,co2n:null,keuring:'',status:'nieuw',notitie:''};
+  k = k || {oms:'',kenteken:'',url:'',land:'DE',profiel:'',prijs:null,btw:'btw',verkoop:null,km:null,det:'',brandstof:'benzine',phev:false,co2w:null,co2n:null,keuring:'',status:'nieuw',notitie:''};
   $('#kandTitle').textContent = k.id ? 'Kandidaat bewerken' : 'Kandidaat / BPM-indicatie';
   $('#k_oms').value = k.oms||''; $('#k_kenteken').value = k.kenteken||''; $('#k_url').value = k.url||''; $('#k_land').value = k.land||'DE';
   vulProfielSelect(); $('#k_profiel').value = k.profiel||'';
-  $('#k_prijs').value = k.prijs||''; $('#k_btw').value = k.btw||'btw'; $('#k_km').value = k.km||''; $('#k_det').value = k.det||'';
+  $('#k_prijs').value = k.prijs||''; $('#k_btw').value = k.btw||'btw'; $('#k_verkoop').value = k.verkoop||''; $('#k_km').value = k.km||''; $('#k_det').value = k.det||'';
   $('#k_brandstof').value = k.brandstof||'benzine'; $('#k_phev').value = k.phev ? '1':'0';
   $('#k_co2w').value = k.co2w==null?'':k.co2w; $('#k_co2n').value = k.co2n==null?'':k.co2n;
   $('#k_keuring').value = k.keuring || isoPlus(new Date(), +S.instellingen.keuringDagen||14);
@@ -1141,6 +1162,18 @@ function renderBpm(){
     <dt>BPM</dt><dd>${kp.bpm==null ? '–' : eur(kp.bpm)}</dd>
     <dt><b>Kostprijs excl. BTW</b></dt><dd><b>${(k.prijs && kp.totaal!=null) ? eur(kp.totaal) : '–'}</b></dd></dl>`;
   if (k.btw === 'btw' && k.land !== 'NL') h += `<div class="help" style="margin-top:8px">Koop je netto (intracommunautaire levering, 0% buitenlandse BTW), vul dan de netto prijs in en zet BTW-status op marge: dan wordt niets afgetrokken.</div>`;
+  // marge
+  const mg = k.prijs ? margeVoor(k, kp) : null;
+  if (k.verkoop){
+    const doel = +S.instellingen.doelmarge || 0;
+    h += `<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <dl style="margin-top:0"><dt>Verkoopprijs NL (incl. BTW)</dt><dd>${eur(k.verkoop)}</dd>
+      <dt>BTW af te dragen ${k.btw==='btw' ? '(21% over de verkoop)' : '(margeregeling: over verkoop − inkoop)'}</dt><dd>${mg ? '− ' + eur(mg.btw) : '–'}</dd>
+      <dt><b>Marge</b></dt><dd><b>${mg ? eur(mg.marge) : '–'}</b>${mg ? ` <span class="tag ${margeKleur(mg.marge)}">${mg.pct != null ? Math.round(mg.pct) + '%' : ''}</span>` : ''}</dd></dl>
+      <div class="help" style="margin-top:6px">${mg ? (mg.marge >= doel ? `Boven de doelmarge van ${eur(doel)}.` : mg.marge >= 0 ? `Onder de doelmarge van ${eur(doel)}: nog ${eur(doel - mg.marge)} te kort.` : 'Verlies.') : 'Vul vraagprijs en CO2 in voor de marge.'}</div>`;
+  } else {
+    h += `<div class="help" style="margin-top:8px">Vul een verwachte verkoopprijs in voor de marge.</div>`;
+  }
   el.innerHTML = h;
 }
 function renderKandTabel(){
@@ -1149,10 +1182,10 @@ function renderKandTabel(){
   const rows = S.kandidaten.filter(k => !f || k.status === f).slice().sort((a,b)=> (b.created||0)-(a.created||0));
   $('#kandLeeg').style.display = rows.length ? 'none' : '';
   rows.forEach(k => {
-    const r = bpmVoor(k); const kp = kostprijs(k, r);
+    const r = bpmVoor(k); const kp = kostprijs(k, r); const mg = k.prijs ? margeVoor(k, kp) : null;
     const tr = document.createElement('tr'); tr.className = 'clk' + (k.id===kandId ? ' on':'');
     tr.innerHTML = `<td><b>${esc(k.oms||'(zonder omschrijving)')}</b><br><small class="muted">${k.km? num(k.km)+' km · ':''}${k.det? 'DET '+k.det.split('-').reverse().join('-')+' · ':''}${k.co2w? k.co2w+' g ·':''} <span class="tag ${k.btw}">${k.btw==='btw'?'BTW':'marge'}</span>${k.url? ` · <a href="${esc(k.url)}" target="_blank" rel="noopener">advertentie</a>`:''}</small></td>
-      <td>${esc(k.land)}</td><td class="r">${eur(k.prijs)}</td><td class="r">${k.land==='NL' ? '0' : (r.fout ? '–' : eur(r.netto))}</td><td class="r">${(k.prijs && kp.totaal!=null) ? eur(kp.totaal) : '–'}</td><td><span class="tag ${esc(k.status)}">${esc(k.status)}</span></td>`;
+      <td>${esc(k.land)}</td><td class="r">${eur(k.prijs)}</td><td class="r">${k.land==='NL' ? '0' : (r.fout ? '–' : eur(r.netto))}</td><td class="r">${(k.prijs && kp.totaal!=null) ? eur(kp.totaal) : '–'}</td><td class="r">${mg ? `<span class="tag ${margeKleur(mg.marge)}" title="${mg.pct != null ? Math.round(mg.pct) + '% van de kostprijs' : ''}">${eur(mg.marge)}</span>` : '–'}</td><td><span class="tag ${esc(k.status)}">${esc(k.status)}</span></td>`;
     tr.addEventListener('click', (e) => { if (e.target.tagName === 'A') return; vulKandForm(k); window.scrollTo({top:0,behavior:'smooth'}); });
     tb.appendChild(tr);
   });
@@ -1162,7 +1195,7 @@ function renderKandTabel(){
 function renderInstellingen(){
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => $('#s_tr_'+l).value = i.transport[l] ?? '');
-  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen;
+  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen; $('#s_doelmarge').value = i.doelmarge;
   renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:siteLabel(k)})), Object.keys(i.sites).filter(k=>i.sites[k]));
   // make ids
   const tb = $('#makeIdTabel tbody'); tb.innerHTML = '';
@@ -1785,7 +1818,7 @@ $('#btnLeer').addEventListener('click', () => {
 });
 
 // kandidaat events
-['k_oms','k_url','k_prijs','k_km','k_det','k_co2w','k_co2n','k_keuring','k_notitie'].forEach(id => $('#'+id).addEventListener('input', renderBpm));
+['k_oms','k_url','k_prijs','k_verkoop','k_km','k_det','k_co2w','k_co2n','k_keuring','k_notitie'].forEach(id => $('#'+id).addEventListener('input', renderBpm));
 ['k_land','k_btw','k_brandstof','k_phev','k_status','k_profiel'].forEach(id => $('#'+id).addEventListener('change', renderBpm));
 $('#btnKenteken').addEventListener('click', async () => {
   const k = cap($('#k_kenteken').value);
@@ -1833,7 +1866,7 @@ $('#filtStatus').addEventListener('change', renderKandTabel);
 $('#btnBewaarInst').addEventListener('click', () => {
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => i.transport[l] = +$('#s_tr_'+l).value || 0);
-  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14;
+  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14; i.doelmarge = +$('#s_doelmarge').value || 0;
   bewaar(); renderBpm(); renderKandTabel(); toast('Instellingen bewaard');
 });
 $('#btnMakeIdAdd').addEventListener('click', () => { const n = cap($('#mk_naam').value), id = +$('#mk_id').value; if (!n || !id){ toast('Merk en ID invullen'); return; } S.instellingen.makeIds[n] = id; bewaar(); $('#mk_naam').value=''; $('#mk_id').value=''; renderInstellingen(); vulMerkenlijst(); renderLinks(); });
@@ -1877,7 +1910,8 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
-  ['1.36', 'Proxy afgeschermd: de Cloudflare Worker (v1.01) laat alleen de app op GitHub Pages toe, of een verzoek met de sleutel uit Instellingen. Per site staat in Instellingen wanneer live zoeken voor het laatst lukte en wat de laatste fout was; een parserfout zegt nu of de pagina-opbouw is gewijzigd. Alles wissen downloadt eerst een reservekopie.'],
+  ['1.37', 'Marge per kandidaat: vul de verwachte verkoopprijs in Nederland in en je ziet de af te dragen BTW (21% bij een BTW-auto, margeregeling bij een margeauto) en wat je overhoudt. De kandidatenlijst krijgt een kolom Marge, gekleurd op de doelmarge uit Instellingen.'],
+  ['1.36','Proxy afgeschermd: de Cloudflare Worker (v1.01) laat alleen de app op GitHub Pages toe, of een verzoek met de sleutel uit Instellingen. Per site staat in Instellingen wanneer live zoeken voor het laatst lukte en wat de laatste fout was; een parserfout zegt nu of de pagina-opbouw is gewijzigd. Alles wissen downloadt eerst een reservekopie.'],
   ['1.35','Geautomatiseerde test toegevoegd (Node + jsdom): 41 controles op BPM-referentiegevallen, afschrijving, kostprijs, zoeklinks per site en opslag. Dode code opgeruimd, geen gedragswijziging. README bijgewerkt.'],
   ['1.34', 'BTW en marge zijn twee vinkjes geworden. Niets aanvinken betekent allebei; \u00e9\u00e9n vinkje filtert.'],
   ['1.33', 'BTW of marge: de eerste keuze heet nu Geen voorkeur in plaats van Beide.'],
