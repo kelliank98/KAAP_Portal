@@ -185,6 +185,33 @@ describe('Kostprijs', () => {
   });
 });
 
+describe('Koerslijst-afschrijving (v1.38)', () => {
+  const basis = {brandstof:'benzine', phev:false, co2w:187, co2n:null, det:'2021-03-15', keuring:'2026-10-06'};
+  test('zonder percentage: alleen forfaitair, kostprijs gebruikt het forfaitaire bedrag', () => {
+    const r = w.bpmVoor(Object.assign({}, basis, {afs:null}));
+    assert.equal(r.netto, 5838);
+    assert.equal(r.nettoKoers, undefined);
+    assert.equal(G('bpmTeBetalen')(r), 5838);
+  });
+  test('met 75%: tweede uitkomst op dezelfde bruto, forfaitair blijft staan', () => {
+    const r = w.bpmVoor(Object.assign({}, basis, {afs:75}));
+    assert.equal(r.bruto, 17918);
+    assert.equal(r.netto, 5838);                    // forfaitair onveranderd
+    assert.equal(r.nettoKoers, Math.round(17918 * 0.25));   // 4480 (4479,5 rondt af naar boven)
+    assert.equal(G('bpmTeBetalen')(r), 4480);
+    const kp = w.kostprijs({prijs:60000, land:'DE', btw:'btw'}, r);
+    assert.equal(kp.bpm, 4480);
+  });
+  test('ongeldig percentage wordt genegeerd', () => {
+    assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:120})).nettoKoers, undefined);
+    assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:-5})).nettoKoers, undefined);
+  });
+  test('bij een BPM-fout geen bedrag', () => {
+    assert.equal(G('bpmTeBetalen')({fout:'x'}), null);
+    assert.equal(G('bpmTeBetalen')(null), null);
+  });
+});
+
 describe('Marge (v1.37)', () => {
   test('BTW-auto: 21% over de verkoop, marge = verkoop excl. − kostprijs', () => {
     const kp = {totaal: 56908};
