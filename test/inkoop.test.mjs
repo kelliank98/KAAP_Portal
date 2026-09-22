@@ -185,6 +185,50 @@ describe('Kostprijs', () => {
   });
 });
 
+describe('Prijsbenchmark (v1.39)', () => {
+  const items = [
+    {price: 60000, ez: '2021-03'}, {price: 62000, ez: '2021-05'}, {price: 65000, ez: '2021-01'}, {price: 70000, ez: '2021-09'},
+    {price: 45000, ez: '2021-02'},   // −27% onder de mediaan van 2021
+    {price: 40000, ez: '2019-06'},   // 2019: maar één auto, geen oordeel
+    {price: 50000, ez: null},        // zonder bouwjaar telt niet mee
+  ];
+  test('index per model en bouwjaar, gesorteerd', () => {
+    const idx = w.prijsIndex([{model: 'X5', items}]);
+    assert.deepEqual(plain(idx['x5|2021']), [45000, 60000, 62000, 65000, 70000]);
+    assert.deepEqual(plain(idx['x5|2019']), [40000]);
+    assert.equal(Object.keys(idx).length, 2);
+  });
+  test('mediaan (oneven aantal) en drempel van 15%', () => {
+    G('S').instellingen.scherpPct = 15;
+    const idx = w.prijsIndex([{model: 'X5', items}]);
+    const s = w.scherpPrijs(items[4], 'X5', idx);
+    assert.equal(s.mediaan, 62000);
+    assert.equal(s.pct, 27);
+    assert.equal(s.n, 5);
+    assert.equal(w.scherpPrijs(items[0], 'X5', idx), null);   // 60000 is maar 3% onder de mediaan
+    assert.equal(w.scherpPrijs(items[5], 'X5', idx), null);   // 2019: te weinig auto's
+    assert.equal(w.scherpPrijs(items[4], 'X3', idx), null);   // ander model: geen index
+  });
+  test('mediaan bij even aantal is het gemiddelde van de middelste twee', () => {
+    const idx = w.prijsIndex([{model: 'X5', items: items.slice(0, 4).concat([{price: 30000, ez: '2021-01'}, {price: 30000, ez: '2021-01'}])}]);
+    // gesorteerd: 30000, 30000, 60000, 62000, 65000, 70000 -> mediaan 61000
+    assert.equal(w.scherpPrijs({price: 30000, ez: '2021-01'}, 'X5', idx).mediaan, 61000);
+  });
+  test('drempel uit Instellingen wordt gebruikt', () => {
+    const idx = w.prijsIndex([{model: 'X5', items}]);
+    G('S').instellingen.scherpPct = 30;
+    assert.equal(w.scherpPrijs(items[4], 'X5', idx), null);
+    G('S').instellingen.scherpPct = 15;
+  });
+  test('resultaatkaart toont het label', () => {
+    const idx = w.prijsIndex([{model: 'X5', items}]);
+    const kaart = w.resKaart({title: 'BMW X5', url: 'https://x.test/1', price: 45000, ez: '2021-02', fuel: 'benzine'}, 'DE', false, null, {}, {model: 'X5', prijsIdx: idx});
+    assert.ok(kaart.textContent.includes('scherp: −27% t.o.v. mediaan 2021'), kaart.textContent);
+    const gewoon = w.resKaart({title: 'BMW X5', url: 'https://x.test/2', price: 62000, ez: '2021-02', fuel: 'benzine'}, 'DE', false, null, {}, {model: 'X5', prijsIdx: idx});
+    assert.ok(!gewoon.textContent.includes('scherp'));
+  });
+});
+
 describe('Koerslijst-afschrijving (v1.38)', () => {
   const basis = {brandstof:'benzine', phev:false, co2w:187, co2n:null, det:'2021-03-15', keuring:'2026-10-06'};
   test('zonder percentage: alleen forfaitair, kostprijs gebruikt het forfaitaire bedrag', () => {

@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.38</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.39</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -320,8 +320,9 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Importkosten</span><input type="number" id="s_import" step="25"></label>
           <label class="f"><span>Dagen tot keuring</span><input type="number" id="s_keuring" step="1"></label>
           <label class="f"><span>Doelmarge per auto (€)</span><input type="number" id="s_doelmarge" step="250"></label>
+          <label class="f"><span>Scherp geprijsd vanaf (% onder mediaan)</span><input type="number" id="s_scherp" step="1" min="1" max="90"></label>
         </div>
-        <p class="help">De doelmarge kleurt de marge bij kandidaten: groen erboven, oranje eronder, rood bij verlies.</p>
+        <p class="help">De doelmarge kleurt de marge bij kandidaten: groen erboven, oranje eronder, rood bij verlies. "Scherp geprijsd" markeert advertenties die dit percentage of meer onder de mediaanprijs van hetzelfde model en bouwjaar in de zoekopdracht liggen (minimaal drie auto's).</p>
         <div class="row mt"><button class="btn" id="btnBewaarInst">Instellingen bewaren</button></div>
       </div>
       <div class="card">
@@ -400,13 +401,13 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.38
+   KAAP Inkoop Radar  v1.39
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.38';
+const APP_VERSIE = '1.39';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -520,6 +521,7 @@ function laad(){
   if (s.instellingen.proxy === undefined) s.instellingen.proxy = STANDAARD_PROXY;
   if (s.instellingen.proxyKey === undefined) s.instellingen.proxyKey = '';
   if (s.instellingen.doelmarge === undefined) s.instellingen.doelmarge = 3000;
+  if (s.instellingen.scherpPct === undefined) s.instellingen.scherpPct = 15;
   return s;
 }
 function bewaar(){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
@@ -1212,7 +1214,7 @@ function renderKandTabel(){
 function renderInstellingen(){
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => $('#s_tr_'+l).value = i.transport[l] ?? '');
-  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen; $('#s_doelmarge').value = i.doelmarge;
+  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen; $('#s_doelmarge').value = i.doelmarge; $('#s_scherp').value = i.scherpPct;
   renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:siteLabel(k)})), Object.keys(i.sites).filter(k=>i.sites[k]));
   // make ids
   const tb = $('#makeIdTabel tbody'); tb.innerHTML = '';
@@ -1301,9 +1303,32 @@ function bpmBereik(it, land, idx){
   return {min, max, laag, hoog, n: g.length};
 }
 
-function resKaart(it, land, isNew, prevPrijs, idx){
+// ---------- Prijsbenchmark: mediaan per model en bouwjaar binnen de zoekopdracht ----------
+// Vindt de auto's die opvallend onder de markt staan; die zijn snel weg.
+function prijsIndex(groepen){   // groepen: [{model, items}]
+  const idx = {};
+  groepen.forEach(g => (g.items || []).forEach(it => {
+    if (!it.price || !it.ez) return;
+    const k = normTekst(g.model || '') + '|' + String(it.ez).slice(0, 4);
+    (idx[k] = idx[k] || []).push(+it.price);
+  }));
+  for (const k in idx) idx[k].sort((a, b) => a - b);
+  return idx;
+}
+function scherpPrijs(it, model, idx){
+  if (!it.price || !it.ez || !idx) return null;
+  const jaar = String(it.ez).slice(0, 4);
+  const v = idx[normTekst(model || '') + '|' + jaar];
+  if (!v || v.length < 3) return null;
+  const mediaan = v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+  const pct = Math.round((1 - it.price / mediaan) * 100);
+  return pct >= (+S.instellingen.scherpPct || 15) ? {pct, mediaan, n: v.length, jaar} : null;
+}
+
+function resKaart(it, land, isNew, prevPrijs, idx, ctx){
   const bpm = bpmVoorItem(it, land);
   const band = bpm ? null : bpmBereik(it, land, idx);
+  const scherp = ctx ? scherpPrijs(it, ctx.model, ctx.prijsIdx) : null;
   const r = document.createElement('div'); r.className = 'res';
   const dagenOnline = (() => {
     const g = it.geplaatst;
@@ -1320,7 +1345,7 @@ function resKaart(it, land, isNew, prevPrijs, idx){
     it.btw === true ? '<span class="tag btw">BTW</span>' : (it.btw === false ? '<span class="tag">Marge</span>' : '')].filter(Boolean).join(' · ');
   r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, land});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
-    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
+    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}${scherp ? `<span class="tag marge" title="Mediaan van ${scherp.n} auto's van dit model uit ${scherp.jaar} in deze zoekopdracht: ${eur(scherp.mediaan)}">scherp: −${scherp.pct}% t.o.v. mediaan ${scherp.jaar}</span> ` : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div></div>
     <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}${land && land !== 'NL' && !bpm ? '<br><button class="btn sec sm naarkand" style="margin-top:4px">Zelf uitrekenen</button>' : ''}</div>`;
   return r;
 }
@@ -1567,6 +1592,7 @@ function renderLive(){
   });
   const alle = LIVE.sites.flatMap(x => x.items);
   const idx = co2Index(alle);
+  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, items: voegSamen(g.delen)})));
   const totaal = [...groepen.values()].reduce((n, g) => n + voegSamen(g.delen).length, 0);
   meta.innerHTML = `Live gezocht op ${groepen.size} blok${groepen.size===1?'':'ken'} voor <b>${esc(LIVE.naam)}</b> — ${klaar}/${LIVE.sites.length} zoekopdrachten klaar, ${totaal} resultaten. Niets bewaard.`;
   el.innerHTML = '';
@@ -1582,7 +1608,7 @@ function renderLive(){
       + (g.ongecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(g.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const TOON = 60;
-    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx)));
+    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx, {model: g.model, prijsIdx})));
     if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond. Scherper filteren of op de site kijken.</div>`);
     if (!g.bezig && !items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
@@ -1668,6 +1694,7 @@ function renderResultaten(){
   });
   const alleItems = Object.values(pr.sites || {}).flatMap(s => s.items || []);
   const idx = co2Index(alleItems);
+  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, items: voegSamen(g.delen)})));
   groepen.forEach(g => {
     const items = voegSamen(g.delen);
     totaal += items.length;
@@ -1678,7 +1705,7 @@ function renderResultaten(){
       (g.warns.length ? `<div class="note warn" style="margin-top:6px">${esc(g.warns[0])}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const TOON = 60;
-    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx)));
+    items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx, {model: g.model, prijsIdx})));
     if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond.</div>`);
     if (!items.length && !g.fouten.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
@@ -1883,8 +1910,8 @@ $('#filtStatus').addEventListener('change', renderKandTabel);
 $('#btnBewaarInst').addEventListener('click', () => {
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => i.transport[l] = +$('#s_tr_'+l).value || 0);
-  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14; i.doelmarge = +$('#s_doelmarge').value || 0;
-  bewaar(); renderBpm(); renderKandTabel(); toast('Instellingen bewaard');
+  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14; i.doelmarge = +$('#s_doelmarge').value || 0; i.scherpPct = +$('#s_scherp').value || 15;
+  bewaar(); renderBpm(); renderKandTabel(); if (LIVE) renderLive(); else renderResultaten(); toast('Instellingen bewaard');
 });
 $('#btnMakeIdAdd').addEventListener('click', () => { const n = cap($('#mk_naam').value), id = +$('#mk_id').value; if (!n || !id){ toast('Merk en ID invullen'); return; } S.instellingen.makeIds[n] = id; bewaar(); $('#mk_naam').value=''; $('#mk_id').value=''; renderInstellingen(); vulMerkenlijst(); renderLinks(); });
 $('#btnExport').addEventListener('click', () => {
@@ -1927,7 +1954,8 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
-  ['1.38', 'Afschrijving uit een koerslijst of taxatierapport kan naast de forfaitaire tabel worden ingevuld; beide uitkomsten staan onder elkaar en de koerslijst-uitkomst gaat de kostprijs in. Tabellen en forfaitaire berekening zijn ongewijzigd.'],
+  ['1.39', 'Scherp geprijsd: advertenties die 15% of meer (instelbaar) onder de mediaanprijs van hetzelfde model en bouwjaar in de zoekopdracht liggen, krijgen een label met het percentage en de mediaan. Vanaf drie vergelijkbare auto’s.'],
+  ['1.38','Afschrijving uit een koerslijst of taxatierapport kan naast de forfaitaire tabel worden ingevuld; beide uitkomsten staan onder elkaar en de koerslijst-uitkomst gaat de kostprijs in. Tabellen en forfaitaire berekening zijn ongewijzigd.'],
   ['1.37','Marge per kandidaat: vul de verwachte verkoopprijs in Nederland in en je ziet de af te dragen BTW (21% bij een BTW-auto, margeregeling bij een margeauto) en wat je overhoudt. De kandidatenlijst krijgt een kolom Marge, gekleurd op de doelmarge uit Instellingen.'],
   ['1.36','Proxy afgeschermd: de Cloudflare Worker (v1.01) laat alleen de app op GitHub Pages toe, of een verzoek met de sleutel uit Instellingen. Per site staat in Instellingen wanneer live zoeken voor het laatst lukte en wat de laatste fout was; een parserfout zegt nu of de pagina-opbouw is gewijzigd. Alles wissen downloadt eerst een reservekopie.'],
   ['1.35','Geautomatiseerde test toegevoegd (Node + jsdom): 41 controles op BPM-referentiegevallen, afschrijving, kostprijs, zoeklinks per site en opslag. Dode code opgeruimd, geen gedragswijziging. README bijgewerkt.'],
