@@ -1,12 +1,16 @@
 #!/usr/bin/env node
-/*  KAAP weekcontrole  v1.00
+/*  KAAP weekcontrole  v1.01
     Kijkt of elke site nog te bereiken is, of de parsers nog kloppen en of de
     proxy nog werkt. Schrijft STATUS.md en zet exitcode 1 bij een storing,
     zodat de workflow de mail/WhatsApp kan sturen.
-    Gebruik: node tools/kaap-check.mjs [proxy-url]
+    Gebruik: node tools/kaap-check.mjs [proxy-url] [proxy-sleutel]
+    De sleutel mag ook als omgevingsvariabele PROXY_KEY; sinds proxy v1.01 is hij nodig
+    voor verzoeken die niet vanaf de app op GitHub Pages komen.
 */
 
 const PROXY = process.argv[2] || 'https://kaap-proxy.kelliankaap.workers.dev/';
+const PROXY_KEY = process.argv[3] || process.env.PROXY_KEY || '';
+const viaProxyUrl = (url) => PROXY + '?url=' + encodeURIComponent(url) + (PROXY_KEY ? '&k=' + encodeURIComponent(PROXY_KEY) : '');
 const UA_DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 const UA_MOBIEL = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
@@ -44,7 +48,7 @@ for (const test of TESTEN) {
   const direct = await haal(test.url, test.ua || UA_DESKTOP);
   const aantalDirect = direct.status === 200 ? test.check(direct.tekst) : null;
 
-  const viaProxy = await haal(PROXY + '?url=' + encodeURIComponent(test.url), test.ua || UA_DESKTOP);
+  const viaProxy = await haal(viaProxyUrl(test.url), test.ua || UA_DESKTOP);
   const aantalProxy = viaProxy.status === 200 ? test.check(viaProxy.tekst) : null;
 
   const okDirect = !!aantalDirect;

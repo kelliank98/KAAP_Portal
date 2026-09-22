@@ -44,6 +44,8 @@ jobs:
         if: steps.klok.outputs.draaien == 'ja'
         id: check
         continue-on-error: true
+        env:
+          PROXY_KEY: ${{ secrets.PROXY_KEY }}   # zelfde waarde als PROXY_KEY in Cloudflare
         run: node tools/kaap-check.mjs "https://kaap-proxy.kelliankaap.workers.dev/"
 
       - name: Storing samenvatten in het overzicht
