@@ -314,8 +314,10 @@ describe('Zoeklinks per site', () => {
     assert.equal(q.get('fr'), '2020:');
     assert.equal(q.get('ml'), ':100000');
     assert.equal(q.get('p'), '50000:90000');
+    assert.equal(q.get('pw'), '200:');   // kW, live nagemeten 22-09-2026
     assert.deepEqual(q.getAll('fe'), ['SPORT_PACKAGE']);
     assert.equal(q.get('vat'), null);
+    assert.equal(params(linkVan(w.bouwLinks(profiel({kw:null})), 'mobile').url).get('pw'), null);
   });
 
   test('mobile.de: BTW-filter vat=1, marge vat=0, dealer st=DEALER', () => {
@@ -389,9 +391,11 @@ describe('Zoeklinks per site', () => {
     assert.ok(linkVan(links, 'twodehands').apiUrl.startsWith('https://www.2dehands.be/lrp/api/search?'));
   });
 
-  test('Kleinanzeigen: prijs in pad, model als zoekwoord, merk/jaar/km/automaat als attributen', () => {
+  test('Kleinanzeigen: prijs in pad, model als zoekwoord, merk/jaar/km/PS/automaat als attributen', () => {
     const l = linkVan(links, 'kleinanzeigen');
-    assert.equal(l.url, 'https://www.kleinanzeigen.de/s-autos/preis:50000:90000/x5-m-sportpaket/k0c216+autos.marke_s:bmw+autos.ez_i:2020,+autos.km_i:,100000+autos.getriebe_s:automatik');
+    // 200 kW = 272 PS; live nagemeten 22-09-2026
+    assert.equal(l.url, 'https://www.kleinanzeigen.de/s-autos/preis:50000:90000/x5-m-sportpaket/k0c216+autos.marke_s:bmw+autos.ez_i:2020,+autos.km_i:,100000+autos.power_i:272,+autos.getriebe_s:automatik');
+    assert.ok(!linkVan(w.bouwLinks(profiel({kw:null})), 'kleinanzeigen').url.includes('power_i'));
   });
 
   test('Kleinanzeigen: Duitse modelnaam gaat voor, één brandstof wordt meegestuurd, twee niet', () => {

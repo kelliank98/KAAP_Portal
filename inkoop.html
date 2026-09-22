@@ -165,7 +165,7 @@ details summary{cursor:pointer;font-weight:500}
 <body>
 <header>
   <div class="hwrap">
-    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.39</span></div>
+    <div class="brand"><h1>KAAP Inkoop Radar</h1><span>v1.40</span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten &amp; BPM</button>
@@ -250,7 +250,7 @@ details summary{cursor:pointer;font-weight:500}
           <span>Zoekwoord</span><span>Zoekt in de titel. Marktplaats ziet "M Sport" en "M-Sport" als verschillend.</span>
           <span>Sportpakket-vinkje</span><span>Vangt minder dan het zoekwoord. Gebruik als extra.</span>
           <span>Opties</span><span>2 à 3 markers filteren kale auto's eruit. Meer = meer missers.</span>
-          <span>Prijs min. + kW min.</span><span>Ondergrens op wat een goed uitgevoerde auto minimaal kost.</span>
+          <span>Prijs min. + kW min.</span><span>Ondergrens op wat een goed uitgevoerde auto minimaal kost. kW werkt op AutoScout24, mobile.de en Kleinanzeigen (daar omgerekend naar PS).</span>
         </div>
       </div>
     </div>
@@ -401,13 +401,13 @@ details summary{cursor:pointer;font-weight:500}
 </div></div>
 <script>
 /* =======================================================================
-   KAAP Inkoop Radar  v1.39
+   KAAP Inkoop Radar  v1.40
    Bron tarieven: Belastingdienst, Bpm-tarieven (vanaf 1993) en
    "Bpm berekenen voor een personenauto" (tabel 2026), afschrijving:
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.39';
+const APP_VERSIE = '1.40';
 const STORE_KEY = 'kaap_inkoop_v1';
 // Standaardproxy van KAAP, zodat de app meteen werkt zonder instellen.
 // Eigen proxy? Vul hem in bij Instellingen; die overschrijft deze.
@@ -754,6 +754,7 @@ function bouwLink(s, p, v, c){
     if (p.bjvan || p.bjtot) q.set('fr', yr(p.bjvan, p.bjtot));
     if (p.km) q.set('ml', ':' + p.km);
     if (p.pmin || p.pmax) q.set('p', yr(p.pmin, p.pmax));
+    if (p.kw) q.set('pw', p.kw + ':');   // vermogen in kW, live nagemeten 22-09-2026: pw=200: geeft "ab 200 kW (272 PS)"
     q.set('tr','AUTOMATIC_GEAR');
     if (p.aanbieder === 'dealer') q.set('st','DEALER');
     else if (p.aanbieder === 'particulier') q.set('st','FSBO');   // mobile.de noemt particulier FSBO
@@ -848,6 +849,9 @@ function bouwLink(s, p, v, c){
     const attrs = [`autos.marke_s:${slug(p.merk).replace(/-/g,'_')}`];
     if (p.bjvan || p.bjtot) attrs.push(`autos.ez_i:${p.bjvan||''},${p.bjtot||''}`);
     if (p.km) attrs.push(`autos.km_i:,${p.km}`);
+    // Kleinanzeigen rekent in PS. Live nagemeten 22-09-2026: de site zelf bouwt autos.power_i:272, ;
+    // 500 PS gaf 72 in plaats van 1.240 X5's, dus het filter werkt.
+    if (p.kw) attrs.push(`autos.power_i:${Math.round(p.kw * 1.35962)},`);
     attrs.push('autos.getriebe_s:automatik');
     const fuels = [...new Set(c.br.map(b => b.ka).filter(Boolean))];
     if (fuels.length === 1) attrs.push(`autos.fuel_s:${fuels[0]}`);
@@ -1954,7 +1958,8 @@ $('#s_sites').addEventListener('chipchange', () => { const on = chipValues($('#s
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
-  ['1.39', 'Scherp geprijsd: advertenties die 15% of meer (instelbaar) onder de mediaanprijs van hetzelfde model en bouwjaar in de zoekopdracht liggen, krijgen een label met het percentage en de mediaan. Vanaf drie vergelijkbare auto’s.'],
+  ['1.40', 'kW minimum werkt nu ook op mobile.de (pw=) en Kleinanzeigen (autos.power_i, omgerekend naar PS). Beide parameters live nagemeten op 22-09-2026.'],
+  ['1.39','Scherp geprijsd: advertenties die 15% of meer (instelbaar) onder de mediaanprijs van hetzelfde model en bouwjaar in de zoekopdracht liggen, krijgen een label met het percentage en de mediaan. Vanaf drie vergelijkbare auto’s.'],
   ['1.38','Afschrijving uit een koerslijst of taxatierapport kan naast de forfaitaire tabel worden ingevuld; beide uitkomsten staan onder elkaar en de koerslijst-uitkomst gaat de kostprijs in. Tabellen en forfaitaire berekening zijn ongewijzigd.'],
   ['1.37','Marge per kandidaat: vul de verwachte verkoopprijs in Nederland in en je ziet de af te dragen BTW (21% bij een BTW-auto, margeregeling bij een margeauto) en wat je overhoudt. De kandidatenlijst krijgt een kolom Marge, gekleurd op de doelmarge uit Instellingen.'],
   ['1.36','Proxy afgeschermd: de Cloudflare Worker (v1.01) laat alleen de app op GitHub Pages toe, of een verzoek met de sleutel uit Instellingen. Per site staat in Instellingen wanneer live zoeken voor het laatst lukte en wat de laatste fout was; een parserfout zegt nu of de pagina-opbouw is gewijzigd. Alles wissen downloadt eerst een reservekopie.'],
