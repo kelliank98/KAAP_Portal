@@ -290,6 +290,17 @@ describe('Koerslijst-afschrijving (v1.38)', () => {
     assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:120})).nettoKoers, undefined);
     assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:-5})).nettoKoers, undefined);
   });
+  test('legenda onder het balkje noemt het gebruikte percentage', () => {
+    const zet = (id, v, ev) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', {bubbles:true})); };
+    d.querySelector('#btnNieuwKand').click();
+    zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
+    assert.match(d.querySelector('#bpmOut .legend').textContent, /afschrijving 67\.42%/);
+    zet('k_afs', '72');
+    const leg = d.querySelector('#bpmOut .legend').textContent;
+    assert.match(leg, /te betalen 28%/);
+    assert.match(leg, /afschrijving koerslijst 72%/);
+    d.querySelector('#btnNieuwKand').click();
+  });
   test('bij een BPM-fout geen bedrag', () => {
     assert.equal(G('bpmTeBetalen')({fout:'x'}), null);
     assert.equal(G('bpmTeBetalen')(null), null);
@@ -520,10 +531,42 @@ describe('Proxy en parserstatus', () => {
   });
 });
 
+// ---------------------------------------------------------------- Donker thema (v1.43)
+describe('Donker thema zoals KAAP Studio', () => {
+  test('kleuren en kleurschema van Studio staan in :root', () => {
+    const css = d.querySelector('style').textContent;
+    assert.match(css, /color-scheme:dark/);
+    for (const [naam, waarde] of [['--bg','#0a0c10'], ['--card','#141821'], ['--line','#252c3a'], ['--text','#eef1f6'], ['--sel','#6b93ff']])
+      assert.ok(css.includes(`${naam}:${waarde}`), `${naam} = ${waarde}`);
+    assert.equal(d.querySelector('meta[name=theme-color]').content, '#0a0c10');
+  });
+  test('geen externe stylesheet meer (Google Fonts weg), alles in één bestand', () => {
+    assert.equal(d.querySelectorAll('link[rel=stylesheet], link[rel=preconnect]').length, 0);
+  });
+  test('kop met ingebouwd KAAP-logo, merknaam en versie', () => {
+    const img = d.querySelector('header.top .brand img');
+    assert.ok(img.getAttribute('src').startsWith('data:image/png;base64,'), 'logo zit in het bestand');
+    assert.equal(img.alt, 'KAAP Auto House');
+    assert.equal(d.querySelector('.brand span').textContent, 'Inkoop Radar');
+    assert.ok(d.querySelector('.top-r #ophaalStatus'), 'statusbolletje in de kop');
+  });
+  test('klik op het versienummer opent de wijzigingsgeschiedenis', () => {
+    d.querySelector('#ver').click();
+    assert.ok(d.querySelector('#histVenster').classList.contains('on'));
+    assert.ok(d.querySelector('#histLijst').textContent.includes('v' + G('APP_VERSIE')));
+    d.querySelector('#histSluit').click();
+  });
+  test('geen losse lichte kleuren meer in de app (bladwijzer op de externe site uitgezonderd)', () => {
+    const script = [...d.querySelectorAll('script')].map(x => x.textContent).join('');
+    const zonderBladwijzer = script.replace(/const histCode = `[\s\S]*?`;/, '');
+    assert.ok(!/#D9D2C8|#F3F0EB|#FFFFFF/i.test(zonderBladwijzer + d.body.innerHTML.replace(/<script[\s\S]*<\/script>/, '')));
+  });
+});
+
 // ---------------------------------------------------------------- UI
 describe('UI en opslag', () => {
   test('versienummer staat op drie plekken en is overal gelijk', () => {
-    const kop = d.querySelector('.brand span').textContent.trim();
+    const kop = d.querySelector('#ver').textContent.trim();
     assert.equal(kop, 'v' + G('APP_VERSIE'));
     assert.equal(G('VERSIES')[0][0], G('APP_VERSIE'));
     assert.equal(d.title, 'KAAP Inkoop Radar');
