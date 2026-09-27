@@ -3,7 +3,7 @@
   "private": true,
   "description": "Test voor de KAAP Inkoop Radar (inkoop.html). De app zelf heeft geen dependencies; jsdom is alleen voor de test.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test \"test/*.test.mjs\""
   },
   "devDependencies": {
     "jsdom": "^30.1.1"
