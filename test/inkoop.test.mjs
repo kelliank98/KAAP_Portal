@@ -18,6 +18,7 @@ import { dirname, resolve } from 'node:path';
 import { JSDOM, VirtualConsole } from 'jsdom';
 
 const hier = dirname(fileURLToPath(import.meta.url));
+const fixture = (naam) => readFileSync(resolve(hier, 'fixtures', naam), 'utf8');
 const bestand = process.env.INKOOP_HTML || resolve(hier, '..', 'inkoop.html');
 const html = readFileSync(bestand, 'utf8');
 
@@ -217,7 +218,7 @@ describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
   test('bladwijzers sturen hun versie mee; een oudere bladwijzer geeft een melding', () => {
     const bv = G('BLADWIJZER_VERSIE');
     assert.ok(bv >= 2);
-    for (const id of ['bookmarklet', 'tellerlet', 'histlet']) assert.ok(d.querySelector('#' + id).getAttribute('href').includes('&bv=' + bv), id);
+    assert.ok(d.querySelector('#histlet').getAttribute('href').includes('&bv=' + bv), 'prijshistorie-bladwijzer stuurt zijn versie mee');
     assert.equal(w.bladwijzerVerouderd(new w.URLSearchParams('add=1&bv=' + bv)), '');
     assert.match(w.bladwijzerVerouderd(new w.URLSearchParams('add=1')), /verouderd \(versie 1/);
     assert.match(w.bladwijzerVerouderd(new w.URLSearchParams('add=1&bv=1')), /verouderd/);
@@ -458,9 +459,10 @@ describe('Zoeklinks per site', () => {
     assert.match(l2.note, /Meerdere brandstoffen/);
   });
 
-  test('Gaspedaal: merk/model in het pad, jaar/km/prijs als parameters, status warn', () => {
+  test('Gaspedaal: merk/model en automaat in het pad, jaar/km/prijs als parameters, status warn', () => {
     const l = linkVan(links, 'gaspedaal'); const u = new w.URL(l.url);
-    assert.equal(u.origin + u.pathname, 'https://www.gaspedaal.nl/bmw/x5');
+    assert.equal(u.origin + u.pathname, 'https://www.gaspedaal.nl/bmw/x5/automatisch');   // live nagemeten 03-10-2026
+    assert.equal(new w.URL(linkVan(w.bouwLinks(profiel({model: ''})), 'gaspedaal').url).pathname, '/bmw/automatisch');
     assert.equal(u.searchParams.get('bmin'), '2020'); assert.equal(u.searchParams.get('kmax'), '100000');
     assert.equal(u.searchParams.get('pmin'), '50000'); assert.equal(u.searchParams.get('pmax'), '90000');
     assert.equal(u.searchParams.get('srt'), 'dt-d');
@@ -648,11 +650,11 @@ describe('UI en opslag', () => {
     });
   });
 
-  test('bookmarklets zijn gevuld met de app-URL', () => {
-    for (const id of ['bookmarklet', 'tellerlet', 'histlet']){
-      const href = d.querySelector('#' + id).getAttribute('href');
-      assert.ok(href.startsWith('javascript:'), id);
-      assert.ok(href.includes('https://kaap.test/inkoop.html'), id + ' bevat app-URL');
-    }
+  test('alleen de prijshistorie-bladwijzer bestaat nog en is gevuld met de app-URL', () => {
+    const href = d.querySelector('#histlet').getAttribute('href');
+    assert.ok(href.startsWith('javascript:'));
+    assert.ok(href.includes('https://kaap.test/inkoop.html'), 'bevat de app-URL');
+    assert.equal(d.querySelector('#bookmarklet'), null, 'KAAP kandidaat is vervallen');
+    assert.equal(d.querySelector('#tellerlet'), null, 'KAAP teller is vervallen');
   });
 });

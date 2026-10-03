@@ -1,0 +1,43 @@
+KAAP Inkoop Radar hulp - extensie voor Chrome
+=============================================
+
+Wat hij doet
+------------
+mobile.de en Gaspedaal laten zich alleen door een echte browser lezen. Deze extensie
+opent, als de KAAP Inkoop Radar erom vraagt, zo'n pagina in een tabblad op de
+achtergrond, geeft de inhoud door aan de app en sluit het tabblad weer.
+
+- Hij luistert alleen naar de KAAP Inkoop Radar (kelliank98.github.io/KAAP_Portal).
+- Hij opent alleen mobile.de en gaspedaal.nl.
+- Hij stuurt nergens anders iets heen en bewaart niets.
+- De leescode zit in de app. Verandert een site zijn pagina, dan wordt de app
+  bijgewerkt en hoef je deze map niet opnieuw te laden.
+
+Installeren (eenmalig, ongeveer een minuut)
+-------------------------------------------
+1. Zet deze map (kaap-extensie) op een vaste plek, bijvoorbeeld in Documenten.
+   Verplaats of verwijder hem daarna niet: de browser laadt hem steeds vanaf die plek.
+2. Open in Chrome:  chrome://extensions      (in Brave:  brave://extensions)
+3. Zet rechtsboven "Ontwikkelaarsmodus" aan (Engels: Developer mode).
+4. Klik op "Uitgepakte extensie laden" (Engels: Load unpacked) en kies deze map.
+5. Herlaad het tabblad van de KAAP Inkoop Radar. In de kop staat nu "extensie".
+
+Gebruik
+-------
+Klik in de app op Zoeken. mobile.de en Gaspedaal staan nu tussen de resultaten.
+Tijdens het laden zie je kort een tabblad komen en gaan; dat is de extensie.
+
+Als het niet werkt
+------------------
+- De app zegt dat de extensie ontbreekt: kijk op de extensiepagina of hij aan staat
+  en herlaad het tabblad van de app.
+  De extensie werkt alleen met de app op kelliank98.github.io/KAAP_Portal, niet met een
+  bestand dat je vanaf je eigen schijf opent.
+- mobile.de of Gaspedaal geeft niets terug of toont een controlepagina: open die site
+  een keer zelf in een gewoon tabblad (cookievenster wegklikken) en zoek daarna opnieuw.
+  De extensie lost zo'n controle niet zelf op en gaat er niet omheen.
+- Na een nieuwe versie van deze map: klik op de extensiepagina op het ronde pijltje
+  bij "KAAP Inkoop Radar hulp" en herlaad het tabblad van de app.
+
+Gebouwd voor en getest in Chrome. Brave en Edge gebruiken dezelfde techniek, maar zijn
+met deze versie niet getest. Werkt niet in Safari of Firefox, en niet op telefoon of tablet.

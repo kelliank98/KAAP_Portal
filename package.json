@@ -1,9 +1,10 @@
 {
   "name": "kaap-inkoop-radar",
   "private": true,
-  "description": "Test voor de KAAP Inkoop Radar (inkoop.html). De app zelf heeft geen dependencies; jsdom is alleen voor de test.",
+  "description": "Tests voor de KAAP Inkoop Radar (inkoop.html) en de KAAP-extensie. De app zelf heeft geen dependencies; jsdom is alleen voor de test.",
   "scripts": {
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:browser": "node test/e2e-extensie.mjs"
   },
   "devDependencies": {
     "jsdom": "^30.1.1"
