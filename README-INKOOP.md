@@ -34,17 +34,17 @@ Donker thema met dezelfde kleuren, kaarten en knoppen als KAAP Studio, en het KA
 
 ## Stand van zaken (03-10-2026)
 
-Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. Nog niet gedaan: de proxy afschermen (zie de stappen hieronder) en de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
+Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. De proxy is sinds 03-10-2026 afgeschermd (zie hieronder). Nog niet gedaan: de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
 
-**Proxy afschermen (de oude, open Worker draaide op 03-10-2026 nog):**
+**Proxy (afgeschermd sinds 03-10-2026):**
 
-De nieuwe Worker (`tools/kaap-proxy.js`, v1.02) antwoordt alleen aan de app op GitHub Pages of aan een verzoek met de sleutel, en haalt alleen de autosites uit zijn lijst op. Voor de basis zijn geen sleutels nodig:
+In Cloudflare draait `tools/kaap-proxy.js` v1.02 als Worker `kaap-proxy`. Hij antwoordt alleen aan de app op GitHub Pages of aan een verzoek met de sleutel, en haalt alleen de autosites uit zijn lijst op. Nagemeten van buitenaf op 03-10-2026: zonder herkomst 401, vanaf de app 200, een andere website 401, een site buiten de lijst 403. De app en de weekcontrole (v1.02) werken zonder sleutel; er is geen `PROXY_KEY` ingesteld.
+
+Nieuwe proxy-code plaatsen is alleen nodig als `tools/kaap-proxy.js` wijzigt:
 
 1. Kopieer de code: open `tools/kaap-proxy.js` op GitHub en klik op het kopieer-pictogram (*Copy raw file*).
 2. Cloudflare: *Workers & Pages* > `kaap-proxy` > **Edit code**. Selecteer alles, plak de nieuwe code eroverheen en klik **Deploy**.
 3. Controleer in de app: *Instellingen* > **Proxy testen**. Goed is "Proxy werkt".
-
-De app merkt hier niets van. Ook de weekcontrole (v1.02) werkt zonder sleutel: die vraagt de proxy op zoals de app dat doet.
 
 **Extra slot (optioneel).** Een browser kan zijn herkomst niet vervalsen, een programma wel. Wie de code in deze openbare repo leest, kan de herkomst van de app dus nabootsen en de proxy toch gebruiken, zij het alleen voor de autosites uit de lijst. Wil je dat uitsluiten:
 
@@ -54,7 +54,7 @@ De app merkt hier niets van. Ook de weekcontrole (v1.02) werkt zonder sleutel: d
 
 De sleutel staat dan alleen in jouw browser, in Cloudflare en in GitHub. Hij komt niet in `profiles.json`; wel in de volledige reservekopie (*Exporteer JSON*), dus zet die niet in de repo. Draai je de app lokaal (niet vanaf GitHub Pages), dan heb je de sleutel ook nodig.
 
-Terugdraaien kan altijd: in Cloudflare bij de Worker onder *Deployments* een eerdere versie terugzetten.
+Terugdraaien kan in Cloudflare bij de Worker onder *Deployments*. Let op: de versies van 13-09-2026 zijn de oude, open proxy; zet die niet terug.
 
 ## KAAP-extensie: mobile.de en Gaspedaal in de app
 
