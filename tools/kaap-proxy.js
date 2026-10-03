@@ -1,16 +1,23 @@
-// KAAP proxy v1.01 (Cloudflare Worker)
+// KAAP proxy v1.02 (Cloudflare Worker)
 // Haalt een pagina op namens de Inkoop Radar, zodat de browser niet tegen CORS aanloopt.
 //
-// Toegang (nieuw in v1.01): de Worker antwoordt alleen aan
+// Toegang: de Worker antwoordt alleen aan
 //   1. de app op een toegestane herkomst (standaard https://kelliank98.github.io), of
 //   2. een verzoek met de juiste sleutel: ?k=<PROXY_KEY>
-// Zonder een van beide: 401. Zo kan niemand die het bestand vindt jouw quotum opmaken.
+// Zonder een van beide: 401. En alleen de autosites uit de lijst hieronder worden opgehaald.
 //
-// Variabelen in Cloudflare (Settings > Variables):
-//   PROXY_KEY        zelf gekozen sleutel; vul dezelfde waarde in bij Instellingen > Proxy-sleutel
-//                    en als secret PROXY_KEY in GitHub (voor de weekcontrole).
-//   TOEGESTAAN       optioneel, komma-lijst van herkomsten die zonder sleutel mogen,
-//                    standaard https://kelliank98.github.io
+// Let op: een browser kan zijn herkomst niet vervalsen, een programma wel. Regel 1 houdt dus
+// andere websites en toevallige bezoekers tegen, maar niet iemand die deze code leest en de
+// herkomst nabootst. Wil je dat ook uitsluiten, zet dan SLEUTEL_VERPLICHT aan (nieuw in v1.02):
+// dan heeft ook de app de sleutel nodig (Instellingen > Proxy-sleutel).
+//
+// Variabelen in Cloudflare (Settings > Variables and Secrets):
+//   PROXY_KEY          zelf gekozen sleutel (type Secret). Dezelfde waarde komt als secret PROXY_KEY
+//                      in GitHub (voor de weekcontrole) en, bij SLEUTEL_VERPLICHT of lokaal gebruik,
+//                      in de app bij Instellingen > Proxy-sleutel.
+//   SLEUTEL_VERPLICHT  optioneel: "ja" = de sleutel is altijd nodig, ook vanaf de toegestane herkomst.
+//   TOEGESTAAN         optioneel, komma-lijst van herkomsten (voor de sleutelvrije toegang en voor CORS),
+//                      standaard https://kelliank98.github.io
 //   BETAALD_KEY / BETAALD_URL / BETAALD_HOSTS   optioneel, betaalde IP's (zie onder).
 
 export default {
@@ -33,7 +40,9 @@ export default {
     const params = new URL(request.url).searchParams;
     const sleutel = params.get("k") || "";
     const sleutelOk = !!(env && env.PROXY_KEY) && sleutel === env.PROXY_KEY;
-    if (!toegestaan.includes(herkomst) && !sleutelOk) {
+    const verplicht = /^(1|ja|true|aan)$/i.test(String((env && env.SLEUTEL_VERPLICHT) || "").trim());
+    const herkomstOk = toegestaan.includes(herkomst) && !verplicht;
+    if (!herkomstOk && !sleutelOk) {
       const reden = (env && env.PROXY_KEY) ? "sleutel ontbreekt of klopt niet" : "PROXY_KEY is nog niet ingesteld in Cloudflare";
       return new Response("Geen toegang: " + reden, { status: 401, headers: cors });
     }

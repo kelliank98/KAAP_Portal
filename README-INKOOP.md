@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.47
+# KAAP Inkoop Radar v1.48
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -17,11 +17,11 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `profiles.json` | je zoekprofielen, geëxporteerd uit de app | hoofdmap |
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
 | `tools/inkoop-fetch.mjs` | de ophaler (Node 20, geen pakketten) | `tools/` |
-| `tools/kaap-proxy.js` | Cloudflare Worker (v1.01) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
+| `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
 | `tools/kaap-check.mjs` | weekcontrole van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.47_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.48_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -34,16 +34,26 @@ Donker thema met dezelfde kleuren, kaarten en knoppen als KAAP Studio, en het KA
 
 ## Stand van zaken (03-10-2026)
 
-Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. Nog niet gedaan: de proxy afschermen (de oude, open Worker draait nog) en de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
+Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. Nog niet gedaan: de proxy afschermen (zie de stappen hieronder) en de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
 
-**Proxy afschermen (staat open sinds v1.36):**
+**Proxy afschermen (de oude, open Worker draaide op 03-10-2026 nog):**
 
-1. Cloudflare: de nieuwe `tools/kaap-proxy.js` in de Worker plakken en deployen.
-2. Cloudflare: *Settings > Variables* een variabele `PROXY_KEY` aanmaken met een zelfgekozen sleutel (een lang wachtwoord).
-3. GitHub: *Settings > Secrets and variables > Actions* een secret `PROXY_KEY` met dezelfde waarde, anders faalt de kolom "App (via proxy)" van de weekcontrole.
-4. In de app op GitHub Pages hoeft niets: die wordt op herkomst toegelaten. Draai je de app lokaal, vul dan de sleutel in bij *Instellingen > Proxy-sleutel*.
+De nieuwe Worker (`tools/kaap-proxy.js`, v1.02) antwoordt alleen aan de app op GitHub Pages of aan een verzoek met de sleutel, en haalt alleen de autosites uit zijn lijst op.
 
-Zolang stap 1 en 2 niet zijn gedaan, werkt de oude Worker gewoon door (zonder afscherming).
+1. Kopieer de code: open `tools/kaap-proxy.js` op GitHub en klik op het kopieer-pictogram (*Copy raw file*).
+2. Cloudflare: *Workers & Pages* > `kaap-proxy` > **Edit code**. Selecteer alles, plak de nieuwe code eroverheen en klik **Deploy**. Vanaf nu is de proxy dicht voor iedereen behalve de app; de app zelf merkt er niets van.
+3. Cloudflare: bij dezelfde Worker *Settings* > *Variables and Secrets* > **Add**. Type **Secret**, naam `PROXY_KEY`, waarde een zelfgekozen lange sleutel (een wachtwoord dat je nergens anders gebruikt). Klik **Deploy**.
+4. GitHub: repo *Settings* > *Secrets and variables* > *Actions* > **New repository secret**, naam `PROXY_KEY`, dezelfde waarde. Zonder deze stap meldt de weekcontrole op zondag een storing in de kolom "App (via proxy)".
+5. Controleer in de app: *Instellingen* > **Proxy testen**. Goed is "Proxy werkt".
+
+**Extra slot (optioneel).** Een browser kan zijn herkomst niet vervalsen, een programma wel. Wie de code in deze openbare repo leest, kan de herkomst van de app dus nabootsen en de proxy toch gebruiken, zij het alleen voor de autosites uit de lijst. Wil je dat uitsluiten:
+
+1. Cloudflare: voeg bij *Variables and Secrets* een variabele `SLEUTEL_VERPLICHT` toe (type Text) met de waarde `ja`, en klik **Deploy**.
+2. App: *Instellingen* > *Proxy-sleutel*: vul dezelfde sleutel in en klik **Proxy testen**. Dit doe je één keer per browser.
+
+De sleutel staat dan alleen in jouw browser, in Cloudflare en in GitHub. Hij komt niet in `profiles.json`; wel in de volledige reservekopie (*Exporteer JSON*), dus zet die niet in de repo.
+
+Terugdraaien kan altijd: in Cloudflare bij de Worker onder *Deployments* een eerdere versie terugzetten.
 
 ## KAAP-extensie: mobile.de en Gaspedaal in de app
 
@@ -79,7 +89,7 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - Een link die je ergens anders vandaan hebt: plak hem bij *Link van de advertentie* in het kandidaatformulier en klik **Gegevens ophalen**.
 - Werkt voor AutoScout24 DE/NL/BE (ook Smyle), Marktplaats, 2dehands, 2ememain en Kleinanzeigen via de proxy, en voor mobile.de via de extensie. Voor andere sites (ook de doorstuurlinks van Gaspedaal) neemt de app alleen over wat op de kaart staat.
 - Wat de advertentie niet noemt, blijft leeg of blijft staan zoals jij het invulde. Is de advertentie weg, dan zegt de app dat.
-- De bladwijzers *KAAP kandidaat* en *KAAP teller* zijn vervallen (v1.45): ze gaven bij de controle op echte advertenties vaak een verkeerde prijs of een verkeerd aantal door. Verwijder ze uit je bladwijzerbalk.
+- De bladwijzers *KAAP kandidaat* en *KAAP teller* zijn vervallen (v1.45): ze gaven bij de controle op echte advertenties vaak een verkeerde prijs of een verkeerd aantal door. Verwijder ze uit je bladwijzerbalk (rechtsklik > *Delete*); ze staan alleen daar. De aantallen die de teller ooit in de app bewaarde, ruimt de app zelf op (v1.48).
 
 ## Testen
 
@@ -90,12 +100,12 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 150 punten:
+De tests draaien zonder netwerk en controleren 157 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat* en het gelijk houden van twee tabbladen.
 - `test/extensie.test.mjs` test de achtergrond van de extensie met een nagebootste Chrome: rechten in het manifest, welke adressen mogen, wachten, opgeven bij een controlepagina, tijdslimiet, hoogstens drie tabbladen.
-- `test/proxy.test.mjs` test de toegangscontrole van de Worker.
+- `test/proxy.test.mjs` test de toegangscontrole van de Worker, ook met `SLEUTEL_VERPLICHT`.
 
 Een ander bestand testen: `INKOOP_HTML=pad/naar/bestand.html node --test`.
 

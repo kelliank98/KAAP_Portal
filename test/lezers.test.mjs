@@ -629,6 +629,28 @@ describe('Vervallen bladwijzers KAAP teller en KAAP kandidaat', () => {
 });
 
 // ---------------------------------------------------------------- tabbladen
+describe('Opruimen van de vervallen bladwijzers', () => {
+  test('bewaarde aantallen van KAAP teller verdwijnen uit de opslag; de rest blijft staan', () => {
+    const profiel = { id: 'p1', naam: 'X5', merk: 'BMW', model: 'X5', bjvan: 2022, bjtot: null, km: null, kw: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '',
+      carr: [], brandstof: [], opties: [], uitv: '', uitvDe: '', modelDe: '', uitvNiet: '', sites: { mobile: true } };
+    const oud = { profielen: [profiel], kandidaten: [{ id: 'k1', oms: 'BMW X5', land: 'DE' }], tellers: { s1abc: { n: 516, d: 1 } }, instellingen: { doelmarge: 4000 } };
+    const { w, G } = laadApp({ opslag: JSON.stringify(oud) });
+    assert.equal(G('S').tellers, undefined);
+    const bewaard = JSON.parse(w.localStorage.getItem(SLEUTEL));
+    assert.equal('tellers' in bewaard, false, 'ook de bewaarde kopie is opgeruimd, zonder dat je iets hoeft te doen');
+    assert.equal(bewaard.profielen.length, 1); assert.equal(bewaard.kandidaten[0].oms, 'BMW X5'); assert.equal(bewaard.instellingen.doelmarge, 4000);
+  });
+  test('zonder oude aantallen schrijft de app bij het laden niets weg', () => {
+    const { w } = laadApp();
+    assert.equal(w.localStorage.getItem(SLEUTEL), null);
+  });
+  test('de app biedt de vervallen bladwijzers nergens meer aan', () => {
+    const { d } = laadApp();
+    assert.equal(d.querySelector('#bookmarklet'), null); assert.equal(d.querySelector('#tellerlet'), null);
+    assert.deepEqual([...d.querySelectorAll('a[draggable="true"]')].map(a => a.textContent), ['KAAP prijshistorie']);
+  });
+});
+
 describe('Twee tabbladen overschrijven elkaar niet', () => {
   test('wat een ander tabblad bewaart, wordt overgenomen en blijft staan als dit tabblad verder werkt', () => {
     const { w, d } = laadApp();
