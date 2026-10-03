@@ -122,6 +122,8 @@ describe('Leescode zoekpagina mobile.de', () => {
   test('modelnummer uit de modellijst, niet uit een andere keuzelijst', () => {
     assert.equal(r.modelId('X5'), '49');
     assert.equal(r.modelId(' x5 m '), '53');
+    assert.equal(r.modelId('m5'), '46', 'ook uit een andere reeks');
+    assert.equal(r.modelId('X-Reihe (Alle)'), null, 'een hele reeks heeft geen modelnummer');
     assert.equal(r.modelId('500'), null, 'de prijsoptie "500 €" is geen model');
     assert.equal(r.modelId('Bestaat Niet'), null);
     assert.equal(r.modelId(''), null);
@@ -138,11 +140,83 @@ describe('Leescode zoekpagina mobile.de', () => {
     assert.equal(r2.count, 1231);
     assert.equal(r2.items[2].price, 61750); assert.equal(r2.items[2].km, 56900); assert.equal(r2.items[2].ez, '2023-05'); assert.equal(r2.items[2].fuel, 'diesel'); assert.equal(r2.items[2].kw, 210);
   });
+  test('weinig treffers: de vergelijkbare auto\'s waarmee mobile.de de pagina aanvult tellen niet mee', () => {
+    const r2 = w.parseerMobileZoek(fixture('mobile-zoek-weinig.html'));
+    assert.equal(r2.count, 1);
+    assert.deepEqual(plain(r2.items.map(i => i.id)), ['400000011'], 'de vier kaarten onder "Ähnliche Fahrzeuge" doen niet mee');
+    assert.equal(r2.items[0].title, 'BMW X5 xDrive45e -SUV M Sport'); assert.equal(r2.items[0].price, 29900);
+    assert.equal(r2.items[0].km, 148000); assert.equal(r2.items[0].ez, '2022-03'); assert.equal(r2.items[0].btw, true);
+    // ook als de paginadata ontbreekt blijven die kaarten buiten beeld
+    const zonder = fixture('mobile-zoek-weinig.html').replace(/<script>self\.__next_f[\s\S]*?<\/script>/g, '');
+    assert.deepEqual(plain(w.parseerMobileZoek(zonder).items.map(i => i.id)), ['400000011']);
+  });
+  test('geen treffers: nul resultaten, ook al toont de pagina andere auto\'s', () => {
+    const r2 = w.parseerMobileZoek(fixture('mobile-zoek-nul.html'));
+    assert.equal(r2.count, 0); assert.equal(r2.items.length, 0);
+    assert.equal(r2.modelId('X5'), '49');
+  });
   test('controlepagina van de beveiliging: duidelijke melding in plaats van nul resultaten', () => {
     assert.throws(() => w.parseerMobileZoek(fixture('mobile-controle.html')), /controlepagina/);
   });
   test('onherkenbare pagina: melding dat de opbouw is gewijzigd', () => {
     assert.throws(() => w.parseerMobileZoek('<html><body><p>iets heel anders</p></body></html>'), /pagina-opbouw is gewijzigd/);
+  });
+});
+
+describe('Leescode zoekpagina Kleinanzeigen (nieuwe opbouw van 03-10-2026)', () => {
+  const { w } = laadApp();
+  test('aantal en advertenties; de TOP-advertentie die twee keer in de pagina staat telt één keer', () => {
+    const r = w.parseerKleinanzeigen(fixture('kleinanzeigen-zoek.html'));
+    assert.equal(r.count, 30);
+    assert.deepEqual(plain(r.items.map(i => i.id)), ['3000000001', '3000000002', '3000000003']);
+    assert.deepEqual(plain(r.items[0]), {
+      id: '3000000001', title: 'BMW X5 xDrive45e M Sport | Vollausstattung | 8-fach bereift', price: 51000, km: 59000, ez: '2022-09',
+      fuel: 'hybride', co2: null, img: 'https://img.kleinanzeigen.de/api/v1/prod-ads/images/aa/aa000000-0000-0000-0000-000000000001?rule=$_59.AUTO',
+      seller: null, btw: null, geplaatst: null, city: '21465 Reinbek',
+      url: 'https://www.kleinanzeigen.de/s-anzeige/bmw-x5-xdrive45e-m-sport-vollausstattung-8-fach-bereift/3000000001-216-1234',
+    });
+    assert.equal(r.items[1].geplaatst, 'Heute'); assert.equal(r.items[1].city, '89420 Höchstädt a.d. Donau');
+    assert.equal(r.items[1].price, 82990); assert.equal(r.items[1].ez, '2025-10');
+    assert.equal(r.items[2].title, 'BMW X5 50e M SPORT PRO.KOMFORT.S.LÜFTUNG.H/K.AHK.22"');
+  });
+  test('de prijs komt uit het prijsveld, niet uit een bedrag in de titel of omschrijving', () => {
+    const metBedrag = fixture('kleinanzeigen-zoek.html')
+      .replace('<p>Beschreibung für den Test gekürzt.</p><div><p>82.990 €</p>', '<p>Neupreis 117.000 € laut Liste, jetzt günstig.</p><div><p>82.990 € VB</p>')
+      .replace('<p>Beschreibung für den Test gekürzt.</p><div><p>82.890 €</p>', '<p>UPE 131.500 €, Preis auf Anfrage.</p><div><p> VB</p>');
+    const r = w.parseerKleinanzeigen(metBedrag);
+    assert.equal(r.items[1].price, 82990, 'niet de nieuwprijs uit de omschrijving');
+    assert.equal(r.items[2].price, null, 'alleen VB in het prijsveld: geen prijs, ook al noemt de omschrijving een bedrag');
+    assert.equal(r.items[0].price, 51000);
+  });
+  test('geen treffers is nul resultaten en geen fout', () => {
+    const r = w.parseerKleinanzeigen(fixture('kleinanzeigen-zoek-nul.html'));
+    assert.equal(r.count, 0); assert.equal(r.items.length, 0);
+  });
+  test('pagina zonder advertenties, teller of "niets gevonden" blijft een fout', () => {
+    assert.throws(() => w.parseerKleinanzeigen('<html><body><h1>Bitte bestätige, dass du kein Roboter bist</h1></body></html>'), /pagina-opbouw gewijzigd of geblokkeerd/);
+  });
+  test('de oude opbouw wordt nog steeds gelezen', () => {
+    const oud = '<html><body><h1>1 - 25 von 1.234 Ergebnisse</h1><ul><li class="ad-listitem"><article class="aditem" data-adid="111" data-href="/s-anzeige/bmw-x5/111-216-1">'
+      + '<div class="aditem-main--top--left"> 12345 Berlin </div><a class="ellipsis" href="/s-anzeige/bmw-x5/111-216-1">BMW X5 xDrive30d M Sport</a>'
+      + '<p class="aditem-main--middle--price-shipping--price">45.000 € VB</p><span>120.000 km</span><span>EZ 03/2020</span></article></li></ul></body></html>';
+    const r = w.parseerKleinanzeigen(oud);
+    assert.equal(r.count, 1234); assert.equal(r.items.length, 1);
+    assert.equal(r.items[0].title, 'BMW X5 xDrive30d M Sport'); assert.equal(r.items[0].price, 45000); assert.equal(r.items[0].km, 120000); assert.equal(r.items[0].ez, '2020-03');
+  });
+  test('zoeken in de app: nul treffers op Kleinanzeigen is "Geen resultaten" en geen rode fout', async () => {
+    const { w: w2, d, G } = laadApp({ fetch: (adres) => {
+      const doel = new URL(String(adres)).searchParams.get('url') || '';
+      if (!/kleinanzeigen\.de\/s-autos/.test(doel)) return Promise.reject(new Error('onverwacht adres in de test: ' + doel));
+      return Promise.resolve({ ok: true, status: 200, text: async () => fixture('kleinanzeigen-zoek-nul.html') });
+    } });
+    w2.eval("S.instellingen.proxy = 'https://proxy.test/'");
+    zet(w2, 'p_merk', 'BMW'); zet(w2, 'p_model', 'X5');
+    d.querySelectorAll('#p_sites input').forEach(i => { if (i.checked !== (i.value === 'kleinanzeigen')) i.click(); });
+    await w2.zoekLive();
+    const sites = G('LIVE').sites;
+    assert.deepEqual(plain(sites.map(x => [x.site, x.status, x.items.length, x.count])), [['kleinanzeigen', 'klaar', 0, 0]]);
+    assert.match(d.querySelector('#resLijst').textContent, /Geen resultaten/);
+    assert.doesNotMatch(d.querySelector('#resLijst').textContent, /mislukt|pagina-opbouw/);
   });
 });
 
@@ -355,6 +429,68 @@ describe('Zoeken met de KAAP-extensie', () => {
     assert.match(d.querySelector('#siteStatus').textContent, /mobile\.de.*fout/);
   });
 
+  // De pagina van modelnummer 49 (X5) zoals mobile.de hem geeft als er weinig of niets binnen de filters staat.
+  const metModelpagina = (naam) => (url) => /mobile\.de\/fahrzeuge\/search/.test(url) && /ms=3500%3B49%3B/.test(url) ? fixture(naam) : paginas(url);
+  async function zoekAlleenMobile(pagina, model = 'X5') {
+    const app = laadApp();
+    app.verzoeken = nepExtensie(app.w, pagina);
+    app.w.hulpPing(); await tik();
+    app.w.eval("S.instellingen.proxy = ''");
+    zet(app.w, 'p_merk', 'BMW'); zet(app.w, 'p_model', model);
+    app.d.querySelector('#p_sites input[value="gaspedaal"]').click();   // alleen mobile.de
+    await app.w.zoekLive();
+    app.mob = app.G('LIVE').sites[0];
+    app.tekst = app.d.querySelector('#resLijst').textContent;
+    return app;
+  }
+
+  test('weinig X5\'s binnen de filters: alleen de echte treffer, geen andere modellen (melding van 03-10-2026)', async () => {
+    const { mob, tekst, d, G } = await zoekAlleenMobile(metModelpagina('mobile-zoek-weinig.html'));
+    assert.equal(mob.status, 'klaar'); assert.equal(mob.count, 1);
+    assert.deepEqual(plain(mob.items.map(i => i.title)), ['BMW X5 xDrive45e -SUV M Sport']);
+    assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], '3500;49', 'de treffer is een X5: nummer bevestigd en bewaard');
+    assert.equal(d.querySelectorAll('#resLijst .res').length, 1);
+    assert.doesNotMatch(tekst, /BMW 330|BMW X3|BMW 740|BMW 320|BMW X6/, 'geen andere modellen in beeld');
+    assert.doesNotMatch(tekst, /komt niet in de titels voor/);
+    assert.match(tekst, /1 op de site, 1 getoond/);
+  });
+
+  test('geen enkele X5 binnen de filters: nul resultaten in plaats van de rest van het merk', async () => {
+    const { mob, tekst, d, G } = await zoekAlleenMobile(metModelpagina('mobile-zoek-nul.html'));
+    assert.equal(mob.status, 'klaar'); assert.equal(mob.items.length, 0); assert.equal(mob.count, 0);
+    assert.match(mob.url, /ms=3500%3B49%3B/, 'de knop Op de site gaat naar het model');
+    assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], undefined, 'zonder treffers valt het nummer niet te bevestigen, dus niet bewaard');
+    assert.equal(d.querySelectorAll('#resLijst .res').length, 0);
+    assert.match(tekst, /Geen resultaten/);
+    assert.doesNotMatch(tekst, /1\.231 op de site|komt niet in de titels voor/);
+  });
+
+  test('model dat mobile.de niet onder die naam kent: alleen wat het model in de titel heeft, met uitleg', async () => {
+    const zonderX5 = (url) => /mobile\.de\/fahrzeuge\/search/.test(url) ? fixture('mobile-zoek.html').replace('{\\"value\\":\\"49\\",\\"label\\":\\"X5\\"},', '') : paginas(url);
+    const { mob, tekst, verzoeken, G } = await zoekAlleenMobile(zonderX5);
+    assert.equal(mob.status, 'klaar');
+    assert.deepEqual(plain(mob.items.map(i => i.title)), ['BMW X5 xDrive50e M Sportpaket Pro*22 Zoll*Komfortsit'], 'van de merkpagina blijft alleen de X5-automaat over');
+    assert.equal(mob.count, null, 'het aantal van het hele merk wordt niet als aantal X5 getoond');
+    assert.match(mob.melding, /kent het model "X5" niet onder die naam/);
+    assert.match(tekst, /kent het model "X5" niet onder die naam.*Model-koppeling/);
+    assert.doesNotMatch(tekst, /1\.231 op de site|BMW 330|BMW X6/);
+    assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], undefined);
+    assert.equal(verzoeken.length, 1, 'alleen de merkpagina is opgehaald');
+
+    const x7 = await zoekAlleenMobile(paginas, 'X7');
+    assert.equal(x7.mob.items.length, 0, 'geen X7 in de titels: niets tonen, niet het hele merk');
+    assert.match(x7.mob.melding, /kent het model "X7" niet/);
+  });
+
+  test('pagina van het model is niet op te halen: alleen de X5 van de merkpagina, met uitleg', async () => {
+    const { mob, tekst, G } = await zoekAlleenMobile((url) => /ms=3500%3B49%3B/.test(url) ? fixture('mobile-controle.html') : paginas(url));
+    assert.equal(mob.status, 'klaar');
+    assert.equal(mob.items.length, 1); assert.match(mob.items[0].title, /X5/);
+    assert.match(mob.melding, /pagina van X5 op mobile\.de kon niet worden opgehaald/);
+    assert.match(tekst, /kon niet worden opgehaald/);
+    assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], undefined);
+  });
+
   test('klopt het gevonden modelnummer niet, dan bewaart de app het niet', async () => {
     const { w, G } = laadApp();
     nepExtensie(w, (url) => /mobile\.de\/fahrzeuge\/search/.test(url) ? fixture('mobile-zoek.html') : paginas(url));   // ook op nummer 49 gemengde modellen
@@ -364,7 +500,8 @@ describe('Zoeken met de KAAP-extensie', () => {
     await w.zoekLive();
     assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], undefined);
     assert.equal(G('LIVE').sites[0].status, 'klaar');
-    assert.equal(G('LIVE').sites[0].items.length, 1, 'merkbrede pagina, door de app zelf op X5 en automaat gefilterd');
+    assert.equal(G('LIVE').sites[0].items.length, 1, 'alleen de X5-automaat blijft over');
+    assert.match(G('LIVE').sites[0].melding, /vooral andere modellen/);
   });
 
   test('kW minimum wordt nagerekend bij sites die het vermogen meegeven', () => {

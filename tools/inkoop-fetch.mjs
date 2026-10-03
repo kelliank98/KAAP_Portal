@@ -295,7 +295,8 @@ async function fetchKleinanzeigen(l) {
       const km = (txt.match(/([\d\.]{4,9})\s*km\b/) || [])[1];
       const ez = (txt.match(/EZ\s*(\d{2})\/(\d{4})/) || []);
       const img = (blk.match(/"contentUrl":"([^"]+)"/) || blk.match(/<img[^>]+src="(https:\/\/img\.kleinanzeigen\.de[^"]+)"/) || [])[1];
-      const city = (blk.match(/info--location"[^>]*>\s*([^<]+?)\s*</) || blk.match(/aditem-main--top--left"[^>]*>\s*([^<]+?)\s*</) || [])[1];
+      // Derde patroon: de nieuwe opbouw van 03-10-2026 (pictogram locationOutline, daarna de plaats).
+      const city = (blk.match(/info--location"[^>]*>\s*([^<]+?)\s*</) || blk.match(/aditem-main--top--left"[^>]*>\s*([^<]+?)\s*</) || blk.match(/data-title="locationOutline"[\s\S]{0,3000}?<\/svg>\s*<span[^>]*>\s*([^<]+?)\s*</) || [])[1];
       title = unent(title);
       items.push({ id, title: (title || '').slice(0, 120), price: num(price), km: num(km), ez: ez[2] ? `${ez[2]}-${ez[1]}` : null,
         fuel: fuelFromTitle(title), co2: null, seller: null, city: city ? city.replace(/\s+/g, ' ').trim() : null,

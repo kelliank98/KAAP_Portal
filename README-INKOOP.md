@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.46
+# KAAP Inkoop Radar v1.47
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.46_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.47_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -34,7 +34,7 @@ Donker thema met dezelfde kleuren, kaarten en knoppen als KAAP Studio, en het KA
 
 ## Stand van zaken (03-10-2026)
 
-Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.46: de KAAP-extensie, de knop *Naar kandidaat* en het gelijk houden van twee tabbladen. Nog niet gedaan: de extensie installeren (zie hieronder), de proxy afschermen (de oude, open Worker draait nog) en de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
+Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/`, workflow elke 2 uur, schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. Nog niet gedaan: de proxy afschermen (de oude, open Worker draait nog) en de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
 
 **Proxy afschermen (staat open sinds v1.36):**
 
@@ -65,6 +65,8 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - Hoogstens drie achtergrondtabbladen tegelijk, elk hoogstens 45 seconden. Tabbladen worden altijd gesloten, ook bij een fout.
 - Toont mobile.de een controlepagina ("ben je een mens?"), dan wacht de extensie 12 seconden en meldt dat daarna eerlijk. Hij lost zo'n controle niet op en gaat er niet omheen. Open mobile.de dan één keer zelf via *Op de site* en zoek opnieuw.
 - mobile.de werkt met interne modelnummers. De app zoekt het nummer bij de eerste zoekopdracht zelf op in de pagina, controleert het met een tweede pagina (minstens 60% van de titels moet het model noemen) en bewaart het pas daarna als model-koppeling. Plakken hoeft dus niet meer.
+- Staat er binnen je filters weinig of niets van het model, dan vult mobile.de de pagina aan met "Ähnliche Fahrzeuge" van andere modellen. Die telt de app niet mee: je ziet alleen de echte treffers, of "Geen resultaten" (v1.47, live nagemeten op 03-10-2026).
+- Vindt de app het modelnummer niet (mobile.de schrijft het model anders, of de pagina van het model is niet op te halen), dan toont hij alleen de auto's die het model in de titel hebben en zegt hij dat erbij. Auto's van het hele merk verschijnen nooit als resultaat van een model.
 - Gaspedaal: de app leest de eerste pagina (100 nieuwste) en het totaal aantal. De links op de kaarten gaan naar de site waar de auto staat.
 
 **Beperkingen:** de extensie is gebouwd voor en getest in Chrome op de computer (versie 154). Brave en Edge gebruiken dezelfde techniek, maar zijn met deze versie niet getest. Hij werkt niet op telefoon of tablet en niet in Safari of Firefox. Chrome toont bij het opstarten soms de melding dat er extensies in ontwikkelaarsmodus actief zijn; die kun je wegklikken. De ophaler op GitHub (elke 2 uur) kan mobile.de en Gaspedaal niet lezen: deze twee komen alleen binnen als jij in de app op *Zoeken* klikt.
@@ -88,10 +90,10 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 138 punten:
+De tests draaien zonder netwerk en controleren 150 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
-- `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de en Gaspedaal, advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat* en het gelijk houden van twee tabbladen.
+- `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat* en het gelijk houden van twee tabbladen.
 - `test/extensie.test.mjs` test de achtergrond van de extensie met een nagebootste Chrome: rechten in het manifest, welke adressen mogen, wachten, opgeven bij een controlepagina, tijdslimiet, hoogstens drie tabbladen.
 - `test/proxy.test.mjs` test de toegangscontrole van de Worker.
 
@@ -121,7 +123,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 
 - **AutoScout24** gebruikt Engelse modelnamen. De app rekent om: *5 Serie* wordt `5-series`, *V-Klasse* wordt `v-class`, *RS 6* wordt `rs6`. Klopt het toch niet, dan meldt de ophaler "0 resultaten" met de naam die AutoScout24 zelf gebruikt, en plak je die model-URL één keer.
 - **Marktplaats, 2dehands, 2ememain**: de ophaler zoekt het model-id zelf op in de modellijst van de site. De app rekent elke advertentie zelf na op model, bouwjaar, km, prijs en automaat, omdat deze sites een deel van hun eigen filters negeren.
-- **Kleinanzeigen** zoekt het model als woord in de titel, want hun eigen modelveld is per merk anders gevuld en wordt bij een onbekende waarde stil genegeerd. Heet het model in Duitsland anders, vul dan *Model op Duitse sites* in: `5er` in plaats van `5 Serie`.
+- **Kleinanzeigen** heeft op 03-10-2026 een nieuwe pagina-opbouw gekregen; de app leest de oude en de nieuwe. Het zoekt het model als woord in de titel, want hun eigen modelveld is per merk anders gevuld en wordt bij een onbekende waarde stil genegeerd. Heet het model in Duitsland anders, vul dan *Model op Duitse sites* in: `5er` in plaats van `5 Serie`.
 - **mobile.de** werkt met interne modelnummers. Met de extensie zoekt de app het nummer zelf op en bewaart het. Zonder extensie plak je per model één keer de URL bij Model-koppeling. Merk-ID's staan in Instellingen.
 - **Gaspedaal** zet merk, model en automaat in het pad (`/bmw/x5/automatisch`, live nagemeten op 03-10-2026). Zoekwoord en brandstof rekent de app zelf na in de resultaten.
 
@@ -164,6 +166,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 ## Beperkingen die je moet kennen
 
 - Ophalen is scraping. Het breekt zodra een site zijn pagina verandert; de fout komt dan in het rood in de app te staan en de vorige resultaten blijven staan. Repareren kost een sessie. Weigert een site (403 of 429), dan probeert de app het na 2,5 seconde nog een keer; Kleinanzeigen blokkeert hele IP-reeksen tijdelijk en dat treft de proxy, niet jou.
+- De teller van Kleinanzeigen is ruimer dan wat de pagina toont (gemeten: "1 - 25 von 30" met 13 advertenties in de pagina); de app toont wat in de pagina staat.
 - Kleinanzeigen en AutoScout24: 60 nieuwste per zoekopdracht; Marktplaats/2dehands/2ememain: 50 nieuwste; Gaspedaal: 100 nieuwste; mobile.de: de eerste pagina. Voor alerts is dat ruim; voor marktanalyse niet.
 - mobile.de en Gaspedaal komen alleen binnen via de extensie, dus alleen in Chrome op de computer en alleen als je zelf zoekt. De e-mail bij nieuwe advertenties dekt deze twee niet.
 - BPM is een indicatie: gunstigste tarief tussen 2 maanden vóór eerste toelating en keuringsdatum, tabellen 2017 t/m 2026. De geschatte bandbreedte bij advertenties zonder CO2 is een bereik, nooit één bedrag: reserveer het hoogste.
