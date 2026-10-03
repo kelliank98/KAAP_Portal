@@ -18,7 +18,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
 | `tools/inkoop-fetch.mjs` | de ophaler (Node 20, geen pakketten) | `tools/` |
 | `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
-| `tools/kaap-check.mjs` | weekcontrole van sites, parsers en proxy | `tools/` |
+| `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
 | `KAAP-Inkoop-Radar-v1.48_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
@@ -38,20 +38,21 @@ Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools
 
 **Proxy afschermen (de oude, open Worker draaide op 03-10-2026 nog):**
 
-De nieuwe Worker (`tools/kaap-proxy.js`, v1.02) antwoordt alleen aan de app op GitHub Pages of aan een verzoek met de sleutel, en haalt alleen de autosites uit zijn lijst op.
+De nieuwe Worker (`tools/kaap-proxy.js`, v1.02) antwoordt alleen aan de app op GitHub Pages of aan een verzoek met de sleutel, en haalt alleen de autosites uit zijn lijst op. Voor de basis zijn geen sleutels nodig:
 
 1. Kopieer de code: open `tools/kaap-proxy.js` op GitHub en klik op het kopieer-pictogram (*Copy raw file*).
-2. Cloudflare: *Workers & Pages* > `kaap-proxy` > **Edit code**. Selecteer alles, plak de nieuwe code eroverheen en klik **Deploy**. Vanaf nu is de proxy dicht voor iedereen behalve de app; de app zelf merkt er niets van.
-3. Cloudflare: bij dezelfde Worker *Settings* > *Variables and Secrets* > **Add**. Type **Secret**, naam `PROXY_KEY`, waarde een zelfgekozen lange sleutel (een wachtwoord dat je nergens anders gebruikt). Klik **Deploy**.
-4. GitHub: repo *Settings* > *Secrets and variables* > *Actions* > **New repository secret**, naam `PROXY_KEY`, dezelfde waarde. Zonder deze stap meldt de weekcontrole op zondag een storing in de kolom "App (via proxy)".
-5. Controleer in de app: *Instellingen* > **Proxy testen**. Goed is "Proxy werkt".
+2. Cloudflare: *Workers & Pages* > `kaap-proxy` > **Edit code**. Selecteer alles, plak de nieuwe code eroverheen en klik **Deploy**.
+3. Controleer in de app: *Instellingen* > **Proxy testen**. Goed is "Proxy werkt".
+
+De app merkt hier niets van. Ook de weekcontrole (v1.02) werkt zonder sleutel: die vraagt de proxy op zoals de app dat doet.
 
 **Extra slot (optioneel).** Een browser kan zijn herkomst niet vervalsen, een programma wel. Wie de code in deze openbare repo leest, kan de herkomst van de app dus nabootsen en de proxy toch gebruiken, zij het alleen voor de autosites uit de lijst. Wil je dat uitsluiten:
 
-1. Cloudflare: voeg bij *Variables and Secrets* een variabele `SLEUTEL_VERPLICHT` toe (type Text) met de waarde `ja`, en klik **Deploy**.
+1. Cloudflare: bij de Worker *Settings* > *Variables and Secrets* > **Add**: type **Secret**, naam `PROXY_KEY`, waarde een zelfgekozen lange sleutel. Voeg daarna een variabele `SLEUTEL_VERPLICHT` toe (type Text) met de waarde `ja` en klik **Deploy**.
 2. App: *Instellingen* > *Proxy-sleutel*: vul dezelfde sleutel in en klik **Proxy testen**. Dit doe je één keer per browser.
+3. GitHub: repo *Settings* > *Secrets and variables* > *Actions* > **New repository secret**, naam `PROXY_KEY`, dezelfde waarde. Anders meldt de weekcontrole dat de proxy de sleutel vraagt.
 
-De sleutel staat dan alleen in jouw browser, in Cloudflare en in GitHub. Hij komt niet in `profiles.json`; wel in de volledige reservekopie (*Exporteer JSON*), dus zet die niet in de repo.
+De sleutel staat dan alleen in jouw browser, in Cloudflare en in GitHub. Hij komt niet in `profiles.json`; wel in de volledige reservekopie (*Exporteer JSON*), dus zet die niet in de repo. Draai je de app lokaal (niet vanaf GitHub Pages), dan heb je de sleutel ook nodig.
 
 Terugdraaien kan altijd: in Cloudflare bij de Worker onder *Deployments* een eerdere versie terugzetten.
 

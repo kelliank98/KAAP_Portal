@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-/*  KAAP weekcontrole  v1.01
+/*  KAAP weekcontrole  v1.02
     Kijkt of elke site nog te bereiken is, of de parsers nog kloppen en of de
     proxy nog werkt. Schrijft STATUS.md en zet exitcode 1 bij een storing,
     zodat de workflow de mail/WhatsApp kan sturen.
     Gebruik: node tools/kaap-check.mjs [proxy-url] [proxy-sleutel]
-    De sleutel mag ook als omgevingsvariabele PROXY_KEY; sinds proxy v1.01 is hij nodig
-    voor verzoeken die niet vanaf de app op GitHub Pages komen.
+    De kolom "App (via proxy)" vraagt de proxy op zoals de app dat doet: met de herkomst
+    van de app. Een sleutel (argument of omgevingsvariabele PROXY_KEY) is alleen nodig als
+    in Cloudflare SLEUTEL_VERPLICHT aan staat.
+    v1.02: herkomst van de app meegestuurd; teller van Kleinanzeigen ook in de nieuwe
+    pagina-opbouw van 03-10-2026 ("1 - 25 von 335 ...").
 */
 
 const PROXY = process.argv[2] || 'https://kaap-proxy.kelliankaap.workers.dev/';
@@ -14,11 +17,12 @@ const viaProxyUrl = (url) => PROXY + '?url=' + encodeURIComponent(url) + (PROXY_
 const UA_DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 const UA_MOBIEL = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
-const haal = async (url, ua = UA_DESKTOP) => {
+const APP_HERKOMST = 'https://kelliank98.github.io';   // de proxy laat deze herkomst toe (TOEGESTAAN in de Worker)
+const haal = async (url, ua = UA_DESKTOP, extra = {}) => {
   const c = new AbortController();
   const t = setTimeout(() => c.abort(), 25000);
   try {
-    const r = await fetch(url, {headers: {'User-Agent': ua, 'Accept-Language': 'nl,de;q=0.8'}, signal: c.signal});
+    const r = await fetch(url, {headers: Object.assign({'User-Agent': ua, 'Accept-Language': 'nl,de;q=0.8'}, extra), signal: c.signal});
     return {status: r.status, tekst: await r.text()};
   } catch (e) {
     return {status: 0, tekst: '', fout: String(e.name === 'AbortError' ? 'time-out' : e).slice(0, 60)};
@@ -38,7 +42,7 @@ const TESTEN = [
   {naam: '2dehands', url: 'https://www.2dehands.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&query=x5&limit=3',
    check: t => { try { return String(JSON.parse(t).totalResultCount); } catch (e) { return null; } }},
   {naam: 'Kleinanzeigen', url: 'https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/x5/k0c216+autos.marke_s:bmw',
-   ua: UA_MOBIEL, check: t => (t.match(/([\d.]+)\s*Ergebnisse/) || [])[1]},
+   ua: UA_MOBIEL, check: t => (t.match(/([\d.]+)\s*Ergebnisse/) || t.match(/von\s+([\d.]+)\s/) || [])[1]},   // oude en nieuwe opbouw
 ];
 
 const regels = [];
@@ -48,7 +52,8 @@ for (const test of TESTEN) {
   const direct = await haal(test.url, test.ua || UA_DESKTOP);
   const aantalDirect = direct.status === 200 ? test.check(direct.tekst) : null;
 
-  const viaProxy = await haal(viaProxyUrl(test.url), test.ua || UA_DESKTOP);
+  const viaProxy = await haal(viaProxyUrl(test.url), test.ua || UA_DESKTOP, {Origin: APP_HERKOMST});
+  if (viaProxy.status === 401) viaProxy.fout = 'proxy vraagt de sleutel: zet secret PROXY_KEY in GitHub';
   const aantalProxy = viaProxy.status === 200 ? test.check(viaProxy.tekst) : null;
 
   const okDirect = !!aantalDirect;
