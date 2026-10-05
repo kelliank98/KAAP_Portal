@@ -1,7 +1,7 @@
 # KAAP Portal
 Factuur & Register
 
-[→ App openen](https://kelliank98.github.io/KAAP_Portal/)
+[→ App openen](https://kelliank98.github.io/KAAP_Portal/factuur.html)
 Factuurgenerator met register, statistieken en automatische back-up.
 
 Inkoop & BPM-indicatie

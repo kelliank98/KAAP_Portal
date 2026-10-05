@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const FILE = process.argv[2];
 const html = fs.readFileSync(FILE, 'utf8');
@@ -29,11 +30,11 @@ function boot(seed = {}) {
   const src = html.match(/<script>([\s\S]*)<\/script>/)[1];
   // const/let op topniveau -> var, zodat de test erbij kan via window (gedrag verandert niet)
   w.eval(src
-    .replace(/\bconst (BTW|KEY|MAX|VERSIE|HISTORIE|CKEY|VKEY|EXTKEY|EXT_DAGEN|FSA|BACKUP_RECENT|BACKUP_DAGEN|BACKUP_INTERVAL|AFLEVERPAKKET_OMS|AFLEVERPAKKET_BEDRAG|UPPER_FIELDS|rdwMislukt|rdwGedaan|kentGetypt) ?=/g, 'var $1=')
-    .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck)=/g, 'var $1='));
+    .replace(/\bconst (BTW|KEY|MAX|VERSIE|HISTORIE|CKEY|VKEY|EXTKEY|EXT_DAGEN|FSA|BACKUP_RECENT|BACKUP_DAGEN|BACKUP_INTERVAL|AFLEVERPAKKET_OMS|AFLEVERPAKKET_BEDRAG|UPPER_FIELDS|rdwMislukt|rdwGedaan|kentGetypt|LOGOKEY|LOGO_MAX_B|LOGO_MAX_TEKENS|LOGO_STANDAARD) ?=/g, 'var $1=')
+    .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck|logoDialoogVerversen)=/g, 'var $1='));
   return w;
 }
-const VER = '1.28';
+const VER = '1.29';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -296,10 +297,113 @@ t('alleen KAAP vetgedrukt in de balk, tekst ongewijzigd', () => {
   eq(w.getComputedStyle(vet[0]).fontWeight, '700', 'KAAP');
   eq(w.getComputedStyle(b).fontWeight, '400', 'Factuur Generator');
 });
-t('logo op de factuur zelf ongewijzigd', () => {
-  if (!html.includes('font-weight="700" font-size="62" fill="#1B2841" letter-spacing="1">AUTO HOUSE</text>')) throw new Error('AUTO HOUSE gewijzigd');
-  if (!html.includes('font-weight="500" font-size="26" fill="#1B2841" letter-spacing="6">KAAP</text>')) throw new Error('KAAP in het factuurlogo gewijzigd');
+
+console.log('\n17. Logo op de factuur (v1.29)');
+const SVG1 = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><text y="50">EIGEN</text></svg>').toString('base64');
+const SVG2 = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><text y="50">ANDER</text></svg>').toString('base64');
+const wacht = ms => new Promise(r => setTimeout(r, ms));
+function stubAfbeelding(w, b, h, factor) {
+  w.__canvas = [];
+  w.Image = class { constructor() { this.naturalWidth = b; this.naturalHeight = h; } set src(v) { this._s = v; setTimeout(() => this.onload && this.onload(), 0); } get src() { return this._s; } };
+  w.HTMLCanvasElement.prototype.getContext = function () { return { drawImage() {} }; };
+  w.HTMLCanvasElement.prototype.toDataURL = function () { w.__canvas.push([this.width, this.height]); return 'data:image/png;base64,' + 'A'.repeat(Math.round(this.width * this.height * factor)); };
+}
+t('standaardlogo is het nieuwe KAAP-logo, ingebouwd; oude SVG-logo weg', () => {
+  const w = boot(); const img = w.document.getElementById('logo-img');
+  if (!/^data:image\/png;base64,/.test(img.getAttribute('src'))) throw new Error('geen ingebouwde PNG');
+  eq(img.getAttribute('src'), w.LOGO_STANDAARD); eq(img.dataset.eigen, ''); eq(img.getAttribute('alt'), 'KAAP Auto House B.V.');
+  if (html.includes('<svg class="logo"')) throw new Error('oud SVG-logo nog aanwezig');
 });
+t('eigen logo kiezen: getoond, bewaard met tijdstempel en mee in de bundel', () => {
+  const w = boot(); eq(w.zetLogo(SVG1), true);
+  const img = w.document.getElementById('logo-img'); eq(img.getAttribute('src'), SVG1); eq(img.dataset.eigen, '1');
+  const r = JSON.parse(w.localStorage.getItem('kaap_logo_v1')); eq(r.data, SVG1); if (!(r.tijd > 0)) throw new Error('geen tijd');
+  eq(w.bundel().logo.data, SVG1);
+});
+t('eigen logo blijft na herladen staan', () => {
+  const w = boot(); w.zetLogo(SVG1); const rec = JSON.parse(w.localStorage.getItem('kaap_logo_v1'));
+  const w2 = boot({ kaap_logo_v1: rec }); eq(w2.document.getElementById('logo-img').getAttribute('src'), SVG1);
+});
+t('standaardlogo terugzetten', () => {
+  const w = boot(); w.zetLogo(SVG1); w.zetLogo(null);
+  eq(w.document.getElementById('logo-img').getAttribute('src'), w.LOGO_STANDAARD); eq(w.bundel().logo.data, null);
+});
+t('nieuwste logo wint; terugzetten van een back-up neemt het logo van toen', () => {
+  const w = boot({ kaap_logo_v1: { data: SVG1, tijd: 5000 } });
+  eq(w.neemLogoOver({ data: SVG2, tijd: 4000 }), false, 'ouder'); eq(w.loadLogo(), SVG1);
+  eq(w.neemLogoOver({ data: SVG2, tijd: 6000 }), true, 'nieuwer'); eq(w.loadLogo(), SVG2);
+  eq(w.neemLogoOver({ data: SVG1, tijd: 5 }, true), true, 'terugzetten'); eq(w.loadLogo(), SVG1);
+});
+t('export en import nemen het logo mee; oudere export of oude back-up zet een logo niet weg', () => {
+  const a = boot({ kaap_logo_v1: { data: SVG1, tijd: 5000 } }); a.extDoExport();
+  const b = boot(); eq(b.importeerBackup(a.__export).logo, true); eq(b.loadLogo(), SVG1);
+  const c = boot({ kaap_logo_v1: { data: SVG2, tijd: 9000 } }); eq(c.importeerBackup(a.__export).logo, false); eq(c.loadLogo(), SVG2);
+  const d = boot({ kaap_logo_v1: { data: SVG2, tijd: 10 } }); d.importeerBackup(JSON.stringify([factuur(1001, [sale()], [])])); eq(d.loadLogo(), SVG2);
+});
+t('Drive-bestand van een ander apparaat met een nieuwer logo wordt overgenomen', async () => {
+  const w = boot({ kaap_logo_v1: { data: SVG1, tijd: 5000 } }); w.bundelTijd = 1000;
+  w.fileHandle = nepHandle({ formaat: 2, tijd: 5000, facturen: [], voorraad: [], logo: { data: SVG2, tijd: 7000 } });
+  eq(await w.fileReadInto(true), true); eq(w.loadLogo(), SVG2); eq(w.document.getElementById('logo-img').getAttribute('src'), SVG2);
+});
+t('onveilige of kapotte logo-data wordt geweigerd', () => {
+  const w = boot();
+  eq(w.geldigLogoData('javascript:alert(1)'), false); eq(w.geldigLogoData('data:text/html;base64,PGgxPg=='), false);
+  eq(w.geldigLogoData('data:image/png;base64,' + 'A'.repeat(1600000)), false); eq(w.geldigLogoData(SVG1), true);
+  eq(w.logoUitBundel({ facturen: [], logo: { data: 'data:text/html,<script>', tijd: 9 } }), undefined);
+  eq(w.logoUitBundel([]), undefined); eq(w.logoUitBundel({ facturen: [] }), undefined);
+  w.localStorage.setItem('kaap_logo_v1', '{kapot'); eq(w.leesLogoRecord(), null);
+  const w3 = boot({ kaap_logo_v1: { data: 'data:text/html,x', tijd: 1 } }); eq(w3.document.getElementById('logo-img').getAttribute('src'), w3.LOGO_STANDAARD);
+});
+t('groot rasterlogo wordt verkleind tot max. 1200 x 600 en als PNG bewaard', async () => {
+  const w = boot(); stubAfbeelding(w, 4000, 1000, 0.01);
+  const d = await w.verwerkLogoBestand(new w.File([new Uint8Array([137, 80, 78, 71])], 'logo.jpg', { type: 'image/jpeg' }));
+  if (!d.startsWith('data:image/png;base64,')) throw new Error('geen PNG'); eq(JSON.stringify(w.__canvas), '[[1200,300]]');
+});
+t('blijft het logo te groot, dan wordt verder verkleind', async () => {
+  const w = boot(); stubAfbeelding(w, 1200, 400, 4);
+  await w.verwerkLogoBestand(new w.File([new Uint8Array([1])], 'logo.png', { type: 'image/png' }));
+  eq(JSON.stringify(w.__canvas), '[[1200,400],[900,300]]');
+});
+t('SVG blijft SVG; verkeerd bestandstype wordt geweigerd', async () => {
+  const w = boot(); stubAfbeelding(w, 300, 100, 0.01);
+  const d = await w.verwerkLogoBestand(new w.File(['<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"></svg>'], 'logo.svg', { type: 'image/svg+xml' }));
+  if (!d.startsWith('data:image/svg+xml')) throw new Error('geen SVG: ' + d.slice(0, 30)); eq(w.__canvas.length, 0, 'geen canvas voor SVG');
+  let fout = ''; try { await w.verwerkLogoBestand(new w.File(['x'], 'logo.txt', { type: 'text/plain' })); } catch (e) { fout = e.message; }
+  eq(fout, 'kies een PNG, JPG, WebP of SVG.');
+});
+t('bestand kiezen via het venster zet het logo op de factuur', async () => {
+  const w = boot(); stubAfbeelding(w, 600, 200, 0.01);
+  w.document.getElementById('logo-wrap').click();
+  const inp = w.document.getElementById('logo-file');
+  Object.defineProperty(inp, 'files', { configurable: true, value: [new w.File([new Uint8Array([1])], 'nieuw.png', { type: 'image/png' })] });
+  inp.dispatchEvent(new w.Event('change')); await wacht(60);
+  if (!String(w.loadLogo()).startsWith('data:image/png')) throw new Error('logo niet gezet');
+  eq(w.document.getElementById('logo-img').getAttribute('src'), w.loadLogo());
+  eq(w.document.querySelector('#logo-dialoog #logo-soort').textContent, 'eigen logo');
+});
+t('klik op het logo opent het keuzevenster; Esc sluit; terugzetten alleen bij een eigen logo', () => {
+  const w = boot(); w.document.getElementById('logo-wrap').click();
+  const ov = w.document.getElementById('logo-dialoog'); if (!ov) throw new Error('venster niet open');
+  eq(ov.querySelector('#logo-reset').style.display, 'none'); eq(ov.querySelector('#logo-soort').textContent, 'standaardlogo KAAP Auto House');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' })); eq(w.document.getElementById('logo-dialoog'), null);
+  w.zetLogo(SVG1); w.document.getElementById('logo-wrap').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
+  eq(w.document.getElementById('logo-dialoog').querySelector('#logo-reset').style.display, '');
+});
+t('hint en stippelrand rond het logo komen niet op papier', () => {
+  const print = html.slice(html.indexOf('@media print{'), html.indexOf('@media(max-width:640px)'));
+  if (!print.includes('.logo-wrap{outline:none!important;cursor:auto!important;} .logo-wrap::after{display:none!important;}')) throw new Error('printregel mist');
+});
+
+const naast = path.join(path.dirname(FILE), 'index.html');
+if (path.basename(FILE) === 'factuur.html' && fs.existsSync(naast)) {
+  console.log('\n18. Doorsturen vanaf het oude adres (v1.29)');
+  t('index.html stuurt door naar factuur.html, met behoud van ?zoek en #anker', () => {
+    const r = fs.readFileSync(naast, 'utf8');
+    if (!r.includes("location.replace('factuur.html'+location.search+location.hash)")) throw new Error('script-doorsturing mist');
+    if (!r.includes('<meta http-equiv="refresh" content="0; url=factuur.html">')) throw new Error('meta-refresh mist');
+    if (r.length > 3000) throw new Error('doorstuurpagina is geen app-kopie');
+  });
+}
 
 await runAll();
 console.log(`\n${pass} geslaagd, ${fail} mislukt`);

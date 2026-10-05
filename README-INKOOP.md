@@ -8,7 +8,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 
 | Bestand | Doel | Waar plaatsen |
 | --- | --- | --- |
-| `inkoop.html` | de app | hoofdmap van de repo (naast `index.html`, dat is de Factuur Generator) |
+| `inkoop.html` | de app | hoofdmap van de repo (naast `factuur.html`, dat is de Factuur Generator) |
 | `kaap-extensie/` | de KAAP-extensie voor Chrome (v1.2.0): haalt mobile.de en Gaspedaal op voor de app, vult de zoekvelden in AutotelexPRO in en neemt het BPM-bedrag over | een vaste map op je computer, laden via `chrome://extensions` |
 | `test/inkoop.test.mjs`, `test/lezers.test.mjs`, `test/extensie.test.mjs`, `test/proxy.test.mjs` | geautomatiseerde tests van app, paginalezers, extensie en proxy | `test/` |
 | `test/fixtures/` | bewaarde voorbeeldpagina's van de sites, waar de tests tegen draaien | `test/fixtures/` |
