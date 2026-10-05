@@ -719,3 +719,65 @@ describe('UI en opslag', () => {
     assert.equal(d.querySelector('#tellerlet'), null, 'KAAP teller is vervallen');
   });
 });
+
+describe('Zoekopdrachten per site onder de resultaten, inklapbaar (v1.57)', () => {
+  // Eigen exemplaar van de app, eventueel met een bewaarde weergavevoorkeur.
+  function laadMetUi(ui){
+    const dom = new JSDOM(html, {
+      url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: new VirtualConsole(),
+      beforeParse(win){
+        win.fetch = () => Promise.reject(new Error('geen netwerk in test'));
+        win.scrollTo = () => {}; win.HTMLElement.prototype.scrollIntoView = function(){};
+        if (ui) win.localStorage.setItem('kaap_inkoop_ui', ui);
+      },
+    });
+    return dom.window;
+  }
+  // Het toggle-event komt als losse taak; wacht er echt op. De app luistert eerder, dus heeft dan al bewaard.
+  const klap = (el, open) => { const p = new Promise(r => el.addEventListener('toggle', r, { once: true })); el.open = open; return p; };
+  const zet = (win, id, v) => { const e = win.document.querySelector('#' + id); e.value = v; e.dispatchEvent(new win.Event('input', {bubbles:true})); };
+
+  test('staat onder Gevonden resultaten, als inklapbaar blok dat standaard dicht is', () => {
+    const win = laadMetUi(), doc = win.document;
+    const res = doc.querySelector('#resCard'), kaart = doc.querySelector('#linkKaart');
+    assert.ok(res.compareDocumentPosition(kaart) & win.Node.DOCUMENT_POSITION_FOLLOWING, 'zoekopdrachten komen na de resultaten');
+    assert.equal(res.parentElement, kaart.parentElement, 'in dezelfde kolom');
+    assert.equal(kaart.tagName, 'DETAILS');
+    assert.equal(kaart.open, false, 'standaard dicht');
+    assert.match(kaart.querySelector(':scope > summary').textContent, /Zoekopdrachten per site/);
+    for (const id of ['linkLijst', 'btnOpenAlle', 'popupWaarschuwing', 'leerSite', 'btnLeer']) assert.ok(kaart.querySelector('#' + id), id + ' zit in het blok');
+    assert.equal(doc.querySelector('#tab-profielen').contains(kaart), true, 'op de tab Zoeken');
+    assert.ok(!html.includes('links hierboven'), 'geen tekst meer die naar links boven de resultaten wijst');
+  });
+
+  test('aantal links naast de titel, ook als het blok dicht is', () => {
+    const win = laadMetUi(), doc = win.document;
+    assert.equal(doc.querySelector('#tel_links').textContent, '', 'zonder merk geen aantal');
+    zet(win, 'p_merk', 'BMW'); zet(win, 'p_model', 'X5');
+    const n = Number(doc.querySelector('#tel_links').textContent);
+    assert.ok(n >= 5, 'aantal links: ' + n);
+    assert.equal(doc.querySelector('#btnOpenAlle').textContent, `Open alle (${n})`);
+    assert.ok(doc.querySelectorAll('#linkLijst .lnk').length >= 5, 'de links staan klaar in het dichte blok');
+  });
+
+  test('open of dicht wordt onthouden in deze browser, los van de gegevens', async () => {
+    const win = laadMetUi(), doc = win.document;
+    await klap(doc.querySelector('#linkKaart'), true);
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { zoeklinksOpen: true });
+    assert.equal(win.localStorage.getItem('kaap_inkoop_v1'), null, 'open/dicht komt niet in de gegevens of de reservekopie');
+    assert.equal(laadMetUi('{"zoeklinksOpen":true}').document.querySelector('#linkKaart').open, true, 'open na herladen');
+    await klap(doc.querySelector('#linkKaart'), false);
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { zoeklinksOpen: false });
+    assert.equal(laadMetUi('kapot{').document.querySelector('#linkKaart').open, false, 'onleesbare voorkeur: gewoon dicht');
+  });
+
+  test('Zoeken zonder proxy en zonder extensie klapt het blok open, want dan zijn de links de weg', () => {
+    const win = laadMetUi(), doc = win.document;
+    win.eval("S.instellingen.proxy = ''");
+    zet(win, 'p_merk', 'BMW'); zet(win, 'p_model', 'X5');
+    doc.querySelector('#btnZoekNu').click();
+    assert.equal(doc.querySelector('#linkKaart').open, true);
+    assert.match(doc.querySelector('#toast').textContent, /Klik per site op Open/);
+  });
+});
+
