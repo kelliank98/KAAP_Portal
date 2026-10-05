@@ -295,7 +295,7 @@ describe('Koerslijst-afschrijving (v1.38)', () => {
     const zet = (id, v, ev) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', {bubbles:true})); };
     d.querySelector('#btnNieuwKand').click();
     zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
-    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)€\s5\.838/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(forfaitair\)€\s5\.838/);
     assert.equal(d.querySelector('#bpmOut .legend'), null, 'geen uitgebreide berekening meer');
     assert.doesNotMatch(d.querySelector('#bpmOut').textContent, /Bruto BPM|Dieseltoeslag|Vergeleken tarieven/);
     zet('k_afs', '72');
@@ -324,10 +324,10 @@ describe('BPM volgens Autotelex (v1.50)', () => {
   test('formulier, uitleg, lijst en bewaren', () => {
     d.querySelector('#btnNieuwKand').click();
     zet('k_oms', 'BMW X5 Autotelex-test'); zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
-    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(forfaitair\)/);
     zet('k_bpmatx', '4321');
     const uit = d.querySelector('#bpmOut').textContent;
-    assert.match(uit, /BPM volgens Autotelex€\s4\.321/); assert.match(uit, /Indicatie van de app: €\s[\d.]+\./);
+    assert.match(uit, /BPM \(Autotelex\)€\s4\.321/); assert.match(uit, /Indicatie van de app: €\s[\d.]+/);
     d.querySelector('#btnBewaarKand').click();
     const k = G('S').kandidaten.find(x => x.oms === 'BMW X5 Autotelex-test');
     assert.equal(k.bpmAtx, 4321);
@@ -335,7 +335,7 @@ describe('BPM volgens Autotelex (v1.50)', () => {
     const rij = [...d.querySelectorAll('#kandTabel tbody tr')].find(tr => /Autotelex-test/.test(tr.textContent));
     assert.match(rij.children[3].textContent, /4\.321\s?A/);
     zet('k_bpmatx', '');
-    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)/, 'leeg: weer de indicatie van de app');
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(forfaitair\)/, 'leeg: weer de indicatie van de app');
     G('S').kandidaten = G('S').kandidaten.filter(x => x.id !== k.id);
     d.querySelector('#btnNieuwKand').click();
   });
@@ -361,8 +361,10 @@ describe('Marge (v1.37)', () => {
   test('kleur op de doelmarge: een percentage van de kostprijs, standaard 20%', () => {
     assert.equal(G('S').instellingen.doelmargePct, 20);
     assert.equal(G('S').instellingen.doelmarge, undefined, 'het oude bedrag in euro\'s is weg');
-    assert.equal(w.margeKleur({marge: 10000, pct: 20}), 'gekocht');
-    assert.equal(w.margeKleur({marge: 9999, pct: 19.99}), 'bod');
+    assert.equal(w.margeKleur({marge: 10000, pct: 20}), 'gekocht', 'doelmarge gehaald: groen');
+    assert.equal(w.margeKleur({marge: 9999, pct: 19.99}), 'bod', 'onder de doelmarge: oranje');
+    assert.equal(w.margeKleur({marge: 5000, pct: 10}), 'bod', 'tot 10%: oranje');
+    assert.equal(w.margeKleur({marge: 4999, pct: 9.99}), 'afgewezen', 'onder 10%: rood');
     assert.equal(w.margeKleur({marge: -1, pct: -0.01}), 'afgewezen');
     assert.equal(w.margeKleur(null), '');
     G('S').instellingen.doelmargePct = 15;
@@ -670,7 +672,18 @@ describe('UI en opslag', () => {
     zet('k_verkoop', '79950');
     const met = d.querySelector('#bpmOut').textContent;
     assert.match(met, /^Marge/, 'de marge staat bovenaan');
-    assert.ok(d.querySelector('#bpmOut .big').textContent.includes('9.166'), 'marge ≈ 9.166 groot bovenaan: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
+    assert.equal(d.querySelector('#bpmOut .pct').textContent, '16%', 'percentage groot bovenaan');   // 9.166 / 56.908
+    assert.ok(d.querySelector('#bpmOut .pct').classList.contains('bod'), '16% is onder de doelmarge van 20% maar boven 10%: oranje');
+    assert.ok(d.querySelector('#bpmOut .bedrag').textContent.includes('9.166'), 'bedrag eronder: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
+    const regels = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
+    assert.deepEqual(regels, ['Inkoop', 'Vraagprijs (DE)€ 60.000', 'BTW 19% eraf− € 9.580', 'Inkoop excl. BTW€ 50.420', 'Kosten', 'Transport DE€ 400',
+      'Import, RDW, kenteken€ 250', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.908', 'Verkoop', 'Verkoopprijs NL€ 79.950', 'BTW 21% eraf− € 13.876',
+      'Verkoop excl. BTW€ 66.074', 'Marge€ 9.166 · 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
+    zet('k_btw', 'marge', 'change');
+    const marge = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
+    assert.ok(marge.includes('Geen BTW-aftrek€ 0') && marge.includes('Inkoop€ 60.000'), 'margeauto: geen BTW eraf bij inkoop');
+    assert.ok(marge.some(x => /^BTW over de marge− €/.test(x)) && marge.some(x => /^Verkoop na BTW€/.test(x)), 'margeauto: BTW over de marge');
+    zet('k_btw', 'btw', 'change');
     d.querySelector('#btnBewaarKand').click();
     assert.equal(d.querySelectorAll('#kandTabel tbody tr').length, 1);
     assert.ok(d.querySelector('#kandTabel tbody tr').textContent.includes('9.166'), 'marge in de tabel');
