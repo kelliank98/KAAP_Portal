@@ -8,15 +8,19 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
+import { JSDOM } from 'jsdom';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const map = resolve(hier, '..', 'kaap-extensie');
 const bron = readFileSync(resolve(map, 'achtergrond.js'), 'utf8');
 const manifest = JSON.parse(readFileSync(resolve(map, 'manifest.json'), 'utf8'));
+const atxBron = readFileSync(resolve(map, 'autotelex.js'), 'utf8');
+const fixture = (naam) => readFileSync(resolve(hier, 'fixtures', naam), 'utf8');
+const plain = (x) => JSON.parse(JSON.stringify(x));   // objecten uit de vm hebben een eigen Object-prototype
 
 // pagina(tab, klok) geeft terug wat executeScript in dat tabblad zou lezen, of gooit een fout.
 function start(pagina) {
-  const tabs = new Map(); const log = { gemaakt: [], gesloten: [], maxTegelijk: 0 };
+  const tabs = new Map(); const log = { gemaakt: [], gesloten: [], maxTegelijk: 0, verzonden: [] }; const sessie = {}; let appDicht = false;
   let volgnr = 1, klok = 1_000_000, luisteraar = null;
   const chrome = {
     runtime: { id: 'kaap-ext', getManifest: () => manifest, onMessage: { addListener: (f) => { luisteraar = f; } } },
@@ -25,7 +29,9 @@ function start(pagina) {
       update: async () => ({}),
       get: async (id) => { if (!tabs.has(id)) throw new Error('No tab with id ' + id); return { id, status: 'complete' }; },
       remove: async (id) => { log.gesloten.push(id); tabs.delete(id); },
+      sendMessage: async (tabId, msg) => { if (appDicht) throw new Error('Could not establish connection. Receiving end does not exist.'); log.verzonden.push({ tabId, msg }); },
     },
+    storage: { session: { get: async (k) => ({ [k]: sessie[k] }), set: async (o) => { Object.assign(sessie, o); } } },
     scripting: {
       executeScript: async (opties) => {
         assert.equal(opties.injectImmediately, true, 'leest zonder op plaatjes en advertenties te wachten');
@@ -41,16 +47,19 @@ function start(pagina) {
     const later = luisteraar(bericht, afzender, ok);
     if (later !== true) setTimeout(() => ok(undefined), 20);   // geen antwoord beloofd
   });
-  return { stuur, log, tabs, nu: () => klok };
+  return { stuur, log, tabs, sessie, nu: () => klok, verder: (ms) => { klok += ms; }, appDicht: () => { appDicht = true; } };
 }
 const vol = (html, staat = 'interactive') => ({ html, url: 'https://suchen.mobile.de/x', titel: 'Titel', staat });
 
 describe('KAAP-extensie: manifest', () => {
   test('alleen de rechten die nodig zijn', () => {
     assert.equal(manifest.manifest_version, 3);
-    assert.deepEqual(manifest.permissions, ['scripting']);
-    assert.deepEqual(manifest.host_permissions, ['https://*.mobile.de/*', 'https://*.gaspedaal.nl/*']);
+    assert.deepEqual(manifest.permissions, ['scripting', 'storage'], 'storage: de lopende Autotelex-aanvraag overleeft een herstart van de service worker');
+    assert.deepEqual(manifest.host_permissions, ['https://*.mobile.de/*', 'https://*.gaspedaal.nl/*'], 'op de achtergrond opent hij alleen mobile.de en Gaspedaal');
+    assert.equal(manifest.content_scripts.length, 2);
     assert.deepEqual(manifest.content_scripts[0].matches, ['https://kelliank98.github.io/KAAP_Portal/*'], 'de brug draait alleen in de app op GitHub Pages, nergens anders');
+    assert.deepEqual(manifest.content_scripts[1].matches, ['https://www.autotelexpro.nl/*']);
+    assert.deepEqual(manifest.content_scripts[1].js, ['autotelex.js']);
     assert.ok(!JSON.stringify(manifest).includes('<all_urls>'));
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   });
@@ -150,3 +159,88 @@ describe('KAAP-extensie: pagina ophalen', () => {
     assert.equal(e.tabs.size, 0);
   });
 });
+
+describe('KAAP-extensie: BPM uit AutotelexPRO (1.1.0)', () => {
+  const vanApp = { id: 'kaap-ext', tab: { id: 7 } };
+  const vanAtx = { id: 'kaap-ext', url: 'https://www.autotelexpro.nl/Vehicle/Vehicle_Details.aspx', tab: { id: 9, url: 'https://www.autotelexpro.nl/Vehicle/Vehicle_Details.aspx' } };
+  const g = { bedrag: 20291, basis: 'afschrijvingstabel', afschrijvingstabel: 20291, koerslijst: 22808, taxatierapport: null, uitvoering: 'BMW X6 - M50i High Executive', toelating: '13-06-2022' };
+
+  test('de app vraagt erom: AutotelexPRO opent in een gewoon tabblad en de aanvraag wordt onthouden', async () => {
+    const e = start(() => vol(''));
+    const r = await e.stuur({ type: 'atx-start', id: 'a1' }, vanApp);
+    assert.equal(r.ok, true);
+    assert.deepEqual(plain(e.log.gemaakt.at(-1)), { url: 'https://www.autotelexpro.nl/Default.aspx', active: true });
+    assert.equal(e.sessie.atx.id, 'a1'); assert.equal(e.sessie.atx.appTab, 7);
+    assert.equal(await e.stuur({ type: 'atx-start', id: 'a2' }, { id: 'kaap-ext' }), undefined, 'zonder tabblad van de app: niets');
+  });
+  test('het bedrag gaat naar het tabblad van de app dat erom vroeg', async () => {
+    const e = start(() => vol(''));
+    await e.stuur({ type: 'atx-start', id: 'a1' }, vanApp);
+    const r = await e.stuur({ type: 'atx-bpm', gegevens: g }, vanAtx);
+    assert.equal(r.overgenomen, true);
+    assert.deepEqual(plain(e.log.verzonden), [{ tabId: 7, msg: { type: 'atx-bpm', id: 'a1', gegevens: g } }]);
+  });
+  test('geen aanvraag, een aanvraag van meer dan een half uur oud, of de app is dicht: niets overgenomen', async () => {
+    const e = start(() => vol(''));
+    assert.equal((await e.stuur({ type: 'atx-bpm', gegevens: g }, vanAtx)).overgenomen, false, 'zonder aanvraag');
+    await e.stuur({ type: 'atx-start', id: 'a1' }, vanApp);
+    e.verder(31 * 60 * 1000);
+    assert.equal((await e.stuur({ type: 'atx-bpm', gegevens: g }, vanAtx)).overgenomen, false, 'te oud');
+    await e.stuur({ type: 'atx-start', id: 'a2' }, vanApp);
+    e.appDicht();
+    const r = await e.stuur({ type: 'atx-bpm', gegevens: g }, vanAtx);
+    assert.equal(r.overgenomen, false); assert.match(r.fout, /tabblad van de app is dicht/);
+    assert.equal(e.log.verzonden.length, 0);
+  });
+  test('alleen van AutotelexPRO en alleen met een geldig bedrag', async () => {
+    const e = start(() => vol(''));
+    await e.stuur({ type: 'atx-start', id: 'a1' }, vanApp);
+    assert.equal(await e.stuur({ type: 'atx-bpm', gegevens: g }, { id: 'kaap-ext', url: 'https://example.com/Vehicle/Vehicle_Details.aspx' }), undefined);
+    assert.equal(await e.stuur({ type: 'atx-bpm', gegevens: { bedrag: '20291' } }, vanAtx), undefined);
+    assert.equal(await e.stuur({ type: 'atx-bpm', gegevens: g }, { id: 'andere-extensie', url: vanAtx.url }), undefined);
+    assert.equal(e.log.verzonden.length, 0);
+  });
+});
+
+describe('KAAP-extensie: lezen op de voertuigpagina van AutotelexPRO (autotelex.js)', () => {
+  const tik = (ms = 15) => new Promise(r => setTimeout(r, ms));
+  function draai(html, url = 'https://www.autotelexpro.nl/Vehicle/Vehicle_Details.aspx', antwoord = { ok: true, overgenomen: true }) {
+    const dom = new JSDOM(html, { url, runScripts: 'outside-only' });
+    const w = dom.window; const verzonden = [];
+    w.chrome = { runtime: { sendMessage: (m) => { verzonden.push(m); return Promise.resolve(antwoord); } } };
+    w.eval(atxBron);
+    return { w, verzonden };
+  }
+  test('leest de Rest-BPM-bedragen, de uitvoering en de eerste toelating; het voordeligste volgens Autotelex gaat mee', async () => {
+    const { w, verzonden } = draai(fixture('autotelex-bpm.html'));
+    assert.equal(verzonden.length, 1);
+    assert.deepEqual(JSON.parse(JSON.stringify(verzonden[0])), { type: 'atx-bpm', gegevens: { bedrag: 20291, basis: 'afschrijvingstabel', afschrijvingstabel: 20291, koerslijst: 22808, taxatierapport: null, uitvoering: 'BMW X6 - M50i High Executive', toelating: '13-06-2022' } });
+    await tik();
+    assert.match(w.document.getElementById('kaap-atx-melding').textContent, /Overgenomen in de KAAP Inkoop Radar: € 20\.291 \(afschrijvingstabel\)/);
+  });
+  test('alleen op de voertuigpagina, en geen melding als de app er niet om vroeg', async () => {
+    assert.equal(draai(fixture('autotelex-bpm.html'), 'https://www.autotelexpro.nl/Default.aspx').verzonden.length, 0);
+    const { w } = draai(fixture('autotelex-bpm.html'), undefined, { ok: true, overgenomen: false });
+    await tik();
+    assert.equal(w.document.getElementById('kaap-atx-melding'), null);
+  });
+  test('onbekende code bij "voordeligste": het laagste bedrag', () => {
+    const html = fixture('autotelex-bpm.html').replace('value="C"', 'value="?"').replace('€ 22808', '€ 18900');
+    const { verzonden } = draai(html);
+    assert.equal(verzonden[0].gegevens.bedrag, 18900); assert.equal(verzonden[0].gegevens.basis, 'koerslijst');
+  });
+  test('dezelfde berekening één keer doorgeven; een nieuwe berekening opnieuw', async () => {
+    const { w, verzonden } = draai(fixture('autotelex-bpm.html'));
+    w.document.body.appendChild(w.document.createElement('p'));
+    await tik(500);
+    assert.equal(verzonden.length, 1, 'zelfde bedragen: niet opnieuw');
+    w.document.getElementById('ctl00_cp_ucVD_tcVehicleDetails_tpnlIE_ucVD_IE_lblBPMPartitionTable').textContent = '€ 19500';
+    await tik(500);
+    assert.equal(verzonden.length, 2); assert.equal(verzonden[1].gegevens.bedrag, 19500);
+  });
+  test('zonder bedragen op de pagina: niets', () => {
+    const html = fixture('autotelex-bpm.html').replace('€ 20291', '-').replace('€ 22808', '-');
+    assert.equal(draai(html).verzonden.length, 0);
+  });
+});
+

@@ -2,10 +2,13 @@
   "manifest_version": 3,
   "name": "KAAP Inkoop Radar hulp",
   "short_name": "KAAP hulp",
-  "version": "1.0.0",
-  "description": "Opent pagina's van mobile.de en Gaspedaal op de achtergrond en geeft de inhoud door aan de KAAP Inkoop Radar.",
+  "version": "1.1.0",
+  "description": "Opent pagina's van mobile.de en Gaspedaal op de achtergrond voor de KAAP Inkoop Radar, en neemt het BPM-bedrag over uit AutotelexPRO.",
   "minimum_chrome_version": "110",
-  "permissions": ["scripting"],
+  "permissions": [
+    "scripting",
+    "storage"
+  ],
   "host_permissions": [
     "https://*.mobile.de/*",
     "https://*.gaspedaal.nl/*"
@@ -15,9 +18,22 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://kelliank98.github.io/KAAP_Portal/*"],
-      "js": ["brug.js"],
+      "matches": [
+        "https://kelliank98.github.io/KAAP_Portal/*"
+      ],
+      "js": [
+        "brug.js"
+      ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.autotelexpro.nl/*"
+      ],
+      "js": [
+        "autotelex.js"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }

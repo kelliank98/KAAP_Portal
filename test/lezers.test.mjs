@@ -844,6 +844,66 @@ describe('Verwachte verkoopprijs NL: 3e van de 5 goedkoopste vergelijkbare op Ga
   });
 });
 
+// ---------------------------------------------------------------- BPM uit Autotelex
+describe('BPM uit Autotelex (KAAP-extensie 1.1)', () => {
+  const g = { bedrag: 20291, basis: 'afschrijvingstabel', afschrijvingstabel: 20291, koerslijst: 22808, taxatierapport: null, uitvoering: 'BMW X6 - M50i High Executive', toelating: '13-06-2022' };
+  function extensie(w, versie) {
+    const starts = [];
+    w.addEventListener('message', (e) => {
+      const d = e.data; if (!d || typeof d !== 'object') return;
+      if (d.kaap === 'hulp-ping') w.postMessage({ kaap: 'hulp-aanwezig', versie }, '*');
+      if (d.kaap === 'hulp-atx-start') { starts.push(d); w.postMessage({ kaap: 'hulp-atx-gestart', id: d.id, ok: true }, '*'); }
+    });
+    return starts;
+  }
+  const kandidaat = { id: 'k1', oms: 'BMW X6 M50i', land: 'DE', btw: 'btw', prijs: 60000, verkoop: 95000, brandstof: 'benzine', det: '2022-06-13', co2w: 250, keuring: '2026-10-20', status: 'nieuw', created: 1 };
+
+  test('zonder extensie of met een oude extensie: uitleg, geen aanvraag', async () => {
+    const zonder = laadApp();
+    zonder.d.querySelector('#btnAtx').click();
+    assert.match(zonder.d.querySelector('#toast').textContent, /KAAP-extensie nodig/);
+    const oud = laadApp();
+    const starts = extensie(oud.w, '1.0.0'); oud.w.hulpPing(); await wachtOpHulp(oud.w);
+    oud.d.querySelector('#btnAtx').click();
+    assert.match(oud.d.querySelector('#toast').textContent, /Werk de KAAP-extensie bij naar versie 1\.1/);
+    assert.equal(starts.length, 0);
+    assert.match(oud.d.querySelector('#hulpTekst').textContent, /Werk bij naar versie 1\.1 voor BPM uit Autotelex/);
+  });
+
+  test('het voordeligste bedrag komt bij de kandidaat die open staat, met de uitvoering eronder, en wordt bewaard', async () => {
+    const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [kandidaat], profielen: [] }) });
+    const starts = extensie(w, '1.1.0'); w.hulpPing(); await wachtOpHulp(w);
+    w.vulKandForm(G('S').kandidaten[0]);
+    d.querySelector('#btnAtx').click(); await tik();
+    assert.equal(starts.length, 1, 'de app vraagt de extensie AutotelexPRO te openen');
+    assert.match(d.querySelector('#toast').textContent, /AutotelexPRO opent/);
+    w.postMessage({ kaap: 'hulp-atx', id: starts[0].id, gegevens: g }, '*'); await tik();
+    assert.equal(veld(w, 'k_bpmatx'), '20291');
+    const k = G('S').kandidaten[0];
+    assert.equal(k.bpmAtx, 20291); assert.equal(k.bpmAtxInfo.uitvoering, 'BMW X6 - M50i High Executive');
+    assert.equal(JSON.parse(w.localStorage.getItem(SLEUTEL)).kandidaten[0].bpmAtx, 20291, 'bewaard');
+    const blok = d.querySelector('#bpmOut').textContent;
+    assert.match(blok, /BPM \(Autotelex\)€\s20\.291/);
+    assert.match(blok, /Autotelex: BMW X6 - M50i High Executive \(13-06-2022\) · afschrijvingstabel €\s20\.291 · koerslijst €\s22\.808/);
+    assert.match(d.querySelector('#toast').textContent, /BPM uit Autotelex: €\s20\.291 \(afschrijvingstabel\)/);
+    // Bedrag met de hand gewijzigd: de Autotelex-regel hoort er dan niet meer bij.
+    zet(w, 'k_bpmatx', '19000');
+    assert.doesNotMatch(d.querySelector('#bpmOut').textContent, /Autotelex: BMW X6/);
+    assert.equal(w.leesKandForm().bpmAtxInfo, null);
+  });
+
+  test('een antwoord voor een andere aanvraag wordt genegeerd', async () => {
+    const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [kandidaat], profielen: [] }) });
+    const starts = extensie(w, '1.1.0'); w.hulpPing(); await wachtOpHulp(w);
+    w.vulKandForm(G('S').kandidaten[0]);
+    d.querySelector('#btnAtx').click(); await tik();
+    w.postMessage({ kaap: 'hulp-atx', id: 'iets-anders', gegevens: g }, '*'); await tik();
+    assert.equal(veld(w, 'k_bpmatx'), '');
+    assert.equal(G('S').kandidaten[0].bpmAtx, undefined);
+    assert.equal(starts.length, 1);
+  });
+});
+
 describe('Vervallen bladwijzers KAAP teller en KAAP kandidaat', () => {
   test('oude teller-bladwijzer: geen getal meer opgeslagen, wel uitleg', () => {
     const { w, d } = laadApp({ url: 'https://kaap.test/inkoop.html?teller=5&bv=2&bron=' + encodeURIComponent('https://www.gaspedaal.nl/bmw/x5') });

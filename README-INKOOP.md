@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.54
+# KAAP Inkoop Radar v1.55
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -9,7 +9,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | Bestand | Doel | Waar plaatsen |
 | --- | --- | --- |
 | `inkoop.html` | de app | hoofdmap van de repo (naast `index.html`, dat is de Factuur Generator) |
-| `kaap-extensie/` | de KAAP-extensie voor Chrome (v1.0.0): haalt mobile.de en Gaspedaal op voor de app | een vaste map op je computer, laden via `chrome://extensions` |
+| `kaap-extensie/` | de KAAP-extensie voor Chrome (v1.1.0): haalt mobile.de en Gaspedaal op voor de app, en neemt het BPM-bedrag over uit AutotelexPRO | een vaste map op je computer, laden via `chrome://extensions` |
 | `test/inkoop.test.mjs`, `test/lezers.test.mjs`, `test/extensie.test.mjs`, `test/proxy.test.mjs` | geautomatiseerde tests van app, paginalezers, extensie en proxy | `test/` |
 | `test/fixtures/` | bewaarde voorbeeldpagina's van de sites, waar de tests tegen draaien | `test/fixtures/` |
 | `test/e2e-extensie.mjs` | test van de extensie in een echte Chrome (`npm run test:browser`) | `test/` |
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.54_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.55_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -59,6 +59,8 @@ Terugdraaien kan in Cloudflare bij de Worker onder *Deployments*. Let op: de ver
 ## KAAP-extensie: mobile.de en Gaspedaal in de app
 
 mobile.de en Gaspedaal laten zich alleen door een gewone browser lezen. De extensie gebruikt daarom jouw eigen Chrome: op verzoek van de app opent hij de zoekpagina in een tabblad op de achtergrond, geeft de inhoud door aan de app en sluit het tabblad weer. De app leest de pagina zelf uit; al het rekenwerk zit dus in `inkoop.html` en de extensie hoeft bijna nooit te worden bijgewerkt.
+
+**Bijwerken naar een nieuwe versie van de extensie:** vervang de bestanden in je map `kaap-extensie` door die uit de zip, open `chrome://extensions` en klik bij KAAP Inkoop Radar hulp op het ronde pijltje (herladen). Herlaad daarna het tabblad van de app.
 
 **Installeren (eenmalig, 2 minuten, alleen Chrome op de computer):**
 
@@ -114,7 +116,11 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 
 - In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**, direct onder Vraagprijs (v1.51). Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
 - Leeg laten betekent: de indicatie van de app, zoals voorheen.
-- Automatisch ophalen uit Autotelex kan alleen via hun API. Die is niet gratis: Autotelex noemt de kosten alleen op aanvraag, en een BPM-berekening voor import staat niet tussen hun openbaar beschreven API's (nagezocht op 05-10-2026). Daarom vul je het bedrag zelf in.
+- **BPM uit Autotelex** (v1.55, extensie 1.1.0): klik naast het veld op de knop. AutotelexPRO opent in een nieuw tabblad in je Chrome; jij zoekt daar de auto (Op kenmerken / import) en kiest de uitvoering. Zodra de voertuigpagina met "BPM berekenen bij IMPORT" er staat, zet de extensie het voordeligste Rest-BPM-bedrag (zoals Autotelex het aanmerkt) in het veld, met de uitvoering en de andere bedragen eronder. Op de Autotelex-pagina verschijnt rechtsonder "Overgenomen in de KAAP Inkoop Radar".
+- De extensie leest op AutotelexPRO alleen de BPM-bedragen, de uitvoering en de eerste toelating; hij klikt en verandert daar niets, en neemt alleen iets over als de app erom vroeg (een half uur geldig). Dat past bij de voorwaarden van Autotelex: kleine gedeelten voor eigen gebruik (art. B.4.2), niet aan derden (B.4.4).
+- Nagemeten op 05-10-2026 op een echte berekening: afschrijvingstabel € 20.291 (door Autotelex als voordeligste aangemerkt), koerslijst € 22.808; de extensie las € 20.291.
+- Wijzig je het bedrag met de hand, dan verdwijnt de Autotelex-regel eronder; het bedrag blijft wat jij invult.
+- De betaalde API van Autotelex is hiervoor niet nodig.
 
 ## Doelmarge in procenten (v1.50)
 
@@ -129,7 +135,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 173 punten:
+De tests draaien zonder netwerk en controleren 185 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
