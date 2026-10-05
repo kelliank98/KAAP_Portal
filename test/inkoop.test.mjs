@@ -413,7 +413,7 @@ describe('Marge (v1.37)', () => {
 function profiel(extra){
   const sites = {}; for (const k of Object.keys(G('SITES'))) sites[k] = true;
   return Object.assign({
-    naam:'', merk:'BMW', model:'X5', bjvan:2020, bjtot:null, km:100000, kw:200, pmin:50000, pmax:90000,
+    naam:'', merk:'BMW', model:'X5', bjvan:2020, bjtot:null, km:100000, pk:272, pmin:50000, pmax:90000,
     aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:['sportpakket'],
     uitv:'M Sport', uitvDe:'M Sportpaket', modelDe:'', uitvNiet:'', sites,
   }, extra || {});
@@ -444,7 +444,7 @@ describe('Zoeklinks per site', () => {
     assert.equal(q.get('pw'), '200:');   // kW, live nagemeten 22-09-2026
     assert.deepEqual(q.getAll('fe'), ['SPORT_PACKAGE']);
     assert.equal(q.get('vat'), null);
-    assert.equal(params(linkVan(w.bouwLinks(profiel({kw:null})), 'mobile').url).get('pw'), null);
+    assert.equal(params(linkVan(w.bouwLinks(profiel({pk:null})), 'mobile').url).get('pw'), null);
   });
 
   test('mobile.de: BTW-filter vat=1, marge vat=0, dealer st=DEALER', () => {
@@ -520,9 +520,9 @@ describe('Zoeklinks per site', () => {
 
   test('Kleinanzeigen: prijs in pad, model als zoekwoord, merk/jaar/km/PS/automaat als attributen', () => {
     const l = linkVan(links, 'kleinanzeigen');
-    // 200 kW = 272 PS; live nagemeten 22-09-2026
+    // 272 pk (= PS) gaat ongewijzigd naar Kleinanzeigen; live nagemeten 22-09-2026
     assert.equal(l.url, 'https://www.kleinanzeigen.de/s-autos/preis:50000:90000/x5-m-sportpaket/k0c216+autos.marke_s:bmw+autos.ez_i:2020,+autos.km_i:,100000+autos.power_i:272,+autos.getriebe_s:automatik');
-    assert.ok(!linkVan(w.bouwLinks(profiel({kw:null})), 'kleinanzeigen').url.includes('power_i'));
+    assert.ok(!linkVan(w.bouwLinks(profiel({pk:null})), 'kleinanzeigen').url.includes('power_i'));
   });
 
   test('Kleinanzeigen: Duitse modelnaam gaat voor, één brandstof wordt meegestuurd, twee niet', () => {
@@ -620,10 +620,11 @@ describe('Donker thema zoals KAAP Studio', () => {
   test('geen externe stylesheet meer (Google Fonts weg), alles in één bestand', () => {
     assert.equal(d.querySelectorAll('link[rel=stylesheet], link[rel=preconnect]').length, 0);
   });
-  test('kop met ingebouwd KAAP-logo, merknaam en versie', () => {
-    const img = d.querySelector('header.top .brand img');
-    assert.ok(img.getAttribute('src').startsWith('data:image/png;base64,'), 'logo zit in het bestand');
-    assert.equal(img.alt, 'KAAP Auto House');
+  test('kop: KAAP in vette letters (v1.62), merknaam en versie', () => {
+    assert.equal(d.querySelector('header.top .brand img'), null, 'geen logo-afbeelding meer');
+    const merk = d.querySelector('header.top .brand .merknaam');
+    assert.equal(merk.tagName, 'B'); assert.equal(merk.textContent, 'KAAP');
+    assert.equal(w.getComputedStyle(merk).fontWeight, '800');
     assert.equal(d.querySelector('.brand span').textContent, 'Inkoop Radar');
     assert.ok(d.querySelector('.top-r #ophaalStatus'), 'statusbolletje in de kop');
   });
@@ -880,6 +881,35 @@ describe('Zoekopdrachten per site onder de resultaten, inklapbaar (v1.57)', () =
     doc.querySelector('#btnZoekNu').click();
     assert.equal(doc.querySelector('#linkKaart').open, true);
     assert.match(doc.querySelector('#toast').textContent, /Klik per site op Open/);
+  });
+});
+
+describe('Vermogen in pk en Prijs van/tot naast elkaar (v1.62)', () => {
+  test('formulier: pk min., en de velden zo dat van/tot steeds naast elkaar staan', () => {
+    assert.equal(d.querySelector('#p_kw'), null, 'geen kW-veld meer');
+    assert.match(d.querySelector('#p_pk').closest('label').textContent, /^pk min\./);
+    const volgorde = [...d.querySelectorAll('#tab-profielen .frm > .f')].map(f => (f.querySelector('input,select') || f.querySelector('.chips') || {}).id);
+    const i = volgorde.indexOf('p_merk');
+    assert.deepEqual(volgorde.slice(i, i + 10), ['p_merk', 'p_model', 'p_bjvan', 'p_bjtot', 'p_pmin', 'p_pmax', 'p_km', 'p_pk', 'p_facelift', 'p_deuren']);
+    const vooraf = [...d.querySelectorAll('#tab-profielen .frm > .f')].slice(0, volgorde.indexOf('p_pmin')).filter(f => !f.classList.contains('full')).length;
+    assert.equal(vooraf % 2, 0, 'Prijs van begint een nieuwe rij van twee, dus Prijs tot staat ernaast');
+  });
+  test('pk wordt kW voor AutoScout24 en mobile.de (naar beneden afgerond), pk blijft pk voor Kleinanzeigen', () => {
+    assert.equal(w.kwVanPk(272), 200); assert.equal(w.kwVanPk(300), 220); assert.equal(w.kwVanPk(null), null);
+    const p = {naam:'', merk:'BMW', model:'X5', bjvan:2020, bjtot:null, km:null, pk:300, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'', uitvDe:'', modelDe:'', uitvNiet:'', sites:{mobile:true, as24de:true, kleinanzeigen:true}};
+    const links = w.bouwLinks(p), url = (site) => links.find(l => l.site === site).url;
+    assert.equal(new URL(url('mobile')).searchParams.get('pw'), '220:');
+    assert.equal(new URL(url('as24de')).searchParams.get('powerfrom'), '220');
+    assert.ok(url('kleinanzeigen').includes('autos.power_i:300,'), url('kleinanzeigen'));
+    assert.equal(w.pastCriteria({kw: 219}, p), false); assert.equal(w.pastCriteria({kw: 220}, p), true);
+  });
+  test('bewaarde profielen en de laatste zoekopdracht met kW worden omgerekend naar pk', () => {
+    const opslag = {profielen: [{id: 'a', naam: 'X5', merk: 'BMW', model: 'X5', kw: 200}, {id: 'b', naam: 'X6', merk: 'BMW', model: 'X6', kw: null}], concept: {merk: 'BMW', model: 'X5', kw: 250}};
+    const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(x){ x.fetch = () => Promise.reject(new Error('geen netwerk in test')); x.scrollTo = () => {}; x.localStorage.setItem('kaap_inkoop_v1', JSON.stringify(opslag)); } }).window;
+    const S2 = plain(win.eval('S'));
+    assert.deepEqual(S2.profielen.map(p => [p.pk, 'kw' in p]), [[272, false], [null, false]]);
+    assert.equal(S2.concept.pk, 340); assert.equal('kw' in S2.concept, false);
   });
 });
 

@@ -511,9 +511,9 @@ describe('Zoeken met de KAAP-extensie', () => {
     assert.match(G('LIVE').sites[0].melding, /vooral andere modellen/);
   });
 
-  test('kW minimum wordt nagerekend bij sites die het vermogen meegeven', () => {
+  test('pk minimum wordt (als kW) nagerekend bij sites die het vermogen meegeven', () => {
     const { w } = laadApp();
-    const p = { kw: 250 };
+    const p = { pk: 340 };   // 340 pk = 250 kW
     assert.equal(w.pastCriteria({ kw: 210 }, p), false);
     assert.equal(w.pastCriteria({ kw: 290 }, p), true);
     assert.equal(w.pastCriteria({ price: 1 }, p), true, 'zonder vermogen in de advertentie geen oordeel');
@@ -894,7 +894,7 @@ describe('BPM uit Autotelex (KAAP-extensie 1.2)', () => {
   });
 
   test('gekoppeld zoekprofiel: merk en het model dat in de omschrijving staat', async () => {
-    const profiel = { id: 'p1', naam: 'X', merk: 'BMW', model: 'X5, X6', bjvan: 2021, bjtot: null, km: null, kw: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '', carr: [], brandstof: [], opties: [], uitv: '', uitvDe: '', modelDe: '', uitvNiet: '', sites: {} };
+    const profiel = { id: 'p1', naam: 'X', merk: 'BMW', model: 'X5, X6', bjvan: 2021, bjtot: null, km: null, pk: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '', carr: [], brandstof: [], opties: [], uitv: '', uitvDe: '', modelDe: '', uitvNiet: '', sites: {} };
     const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [Object.assign({}, kandidaat, { profiel: 'p1' })], profielen: [profiel] }) });
     const starts = extensie(w, '1.2.0'); w.hulpPing(); await wachtOpHulp(w);
     w.vulKandForm(G('S').kandidaten[0]);
@@ -936,7 +936,7 @@ describe('Vervallen bladwijzers KAAP teller en KAAP kandidaat', () => {
 // ---------------------------------------------------------------- tabbladen
 describe('Opruimen van de vervallen bladwijzers', () => {
   test('bewaarde aantallen van KAAP teller verdwijnen uit de opslag; de rest blijft staan', () => {
-    const profiel = { id: 'p1', naam: 'X5', merk: 'BMW', model: 'X5', bjvan: 2022, bjtot: null, km: null, kw: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '',
+    const profiel = { id: 'p1', naam: 'X5', merk: 'BMW', model: 'X5', bjvan: 2022, bjtot: null, km: null, pk: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '',
       carr: [], brandstof: [], opties: [], uitv: '', uitvDe: '', modelDe: '', uitvNiet: '', sites: { mobile: true } };
     const oud = { profielen: [profiel], kandidaten: [{ id: 'k1', oms: 'BMW X5', land: 'DE' }], tellers: { s1abc: { n: 516, d: 1 } }, instellingen: { doelmarge: 4000 } };
     const { w, G } = laadApp({ opslag: JSON.stringify(oud) });
