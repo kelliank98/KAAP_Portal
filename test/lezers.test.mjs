@@ -542,7 +542,7 @@ describe('Naar kandidaat en Gegevens ophalen', () => {
     assert.equal(veld(w, 'k_prijs'), '65455'); assert.equal(veld(w, 'k_btw'), 'btw'); assert.equal(veld(w, 'k_det'), '2023-03-01');
     assert.equal(veld(w, 'k_km'), '59998'); assert.equal(veld(w, 'k_brandstof'), 'diesel'); assert.equal(veld(w, 'k_co2w'), '180'); assert.equal(veld(w, 'k_land'), 'DE');
     assert.match(d.querySelector('#toast').textContent, /Aangevuld uit de advertentie/);
-    assert.match(d.querySelector('#bpmOut').textContent, /Te betalen BPM/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)€\s[\d.]+/);
   });
 
   test('margeauto van Marktplaats: BTW-status wordt marge, kenteken ingevuld', async () => {

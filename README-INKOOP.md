@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.51
+# KAAP Inkoop Radar v1.52
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.51_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.52_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -184,6 +184,8 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Scherp geprijsd**: in de resultaten krijgt een advertentie een label als hij 15% of meer (instelbaar) onder de mediaanprijs van hetzelfde model en bouwjaar in die zoekopdracht ligt, vanaf drie vergelijkbare auto's. Dat zijn de auto's die snel weg zijn.
 
 ## Kostprijs en marge per kandidaat
+
+- Het blok naast het kandidaatformulier heet *Marge en kostprijs* (v1.52): bovenaan groot de marge met het percentage, daaronder de kostprijs. Van de BPM staat alleen het bedrag erin: van Autotelex als je dat invult, anders de indicatie van de app (forfaitair of met je koerslijstpercentage).
 
 - **Kostprijs** = inkoop excl. BTW (bij een BTW-auto gedeeld door 1,19 voor DE, 1,21 voor NL/BE, 1,25 voor DK) + transport + importkosten + BPM.
 - **BPM**: forfaitaire afschrijving is standaard. Vul je een percentage in bij *Afschrijving koerslijst / taxatie*, dan staan beide uitkomsten onder elkaar en gaat de koerslijst-uitkomst de kostprijs in. Voeg de koerslijst of het taxatierapport bij de aangifte.

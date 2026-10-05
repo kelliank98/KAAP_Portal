@@ -291,15 +291,15 @@ describe('Koerslijst-afschrijving (v1.38)', () => {
     assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:120})).nettoKoers, undefined);
     assert.equal(w.bpmVoor(Object.assign({}, basis, {afs:-5})).nettoKoers, undefined);
   });
-  test('legenda onder het balkje noemt het gebruikte percentage', () => {
+  test('het blok noemt van de BPM alleen het bedrag, met forfaitair of koerslijst erbij', () => {
     const zet = (id, v, ev) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', {bubbles:true})); };
     d.querySelector('#btnNieuwKand').click();
     zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
-    assert.match(d.querySelector('#bpmOut .legend').textContent, /afschrijving 67\.42%/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)€\s5\.838/);
+    assert.equal(d.querySelector('#bpmOut .legend'), null, 'geen uitgebreide berekening meer');
+    assert.doesNotMatch(d.querySelector('#bpmOut').textContent, /Bruto BPM|Dieseltoeslag|Vergeleken tarieven/);
     zet('k_afs', '72');
-    const leg = d.querySelector('#bpmOut .legend').textContent;
-    assert.match(leg, /te betalen 28%/);
-    assert.match(leg, /afschrijving koerslijst 72%/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(koerslijst 72%\)€\s5\.017/);   // 17.918 × 28%
     d.querySelector('#btnNieuwKand').click();
   });
   test('bij een BPM-fout geen bedrag', () => {
@@ -324,10 +324,10 @@ describe('BPM volgens Autotelex (v1.50)', () => {
   test('formulier, uitleg, lijst en bewaren', () => {
     d.querySelector('#btnNieuwKand').click();
     zet('k_oms', 'BMW X5 Autotelex-test'); zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
-    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie van de app\)/);
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)/);
     zet('k_bpmatx', '4321');
     const uit = d.querySelector('#bpmOut').textContent;
-    assert.match(uit, /BPM volgens Autotelex/); assert.match(uit, /De BPM volgens Autotelex gaat in de kostprijs\. Indicatie van de app: €\s[\d.]+/);
+    assert.match(uit, /BPM volgens Autotelex€\s4\.321/); assert.match(uit, /Indicatie van de app: €\s[\d.]+\./);
     d.querySelector('#btnBewaarKand').click();
     const k = G('S').kandidaten.find(x => x.oms === 'BMW X5 Autotelex-test');
     assert.equal(k.bpmAtx, 4321);
@@ -335,7 +335,7 @@ describe('BPM volgens Autotelex (v1.50)', () => {
     const rij = [...d.querySelectorAll('#kandTabel tbody tr')].find(tr => /Autotelex-test/.test(tr.textContent));
     assert.match(rij.children[3].textContent, /4\.321\s?A/);
     zet('k_bpmatx', '');
-    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie van de app\)/, 'leeg: weer de indicatie van de app');
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie, forfaitair\)/, 'leeg: weer de indicatie van de app');
     G('S').kandidaten = G('S').kandidaten.filter(x => x.id !== k.id);
     d.querySelector('#btnNieuwKand').click();
   });
@@ -666,11 +666,11 @@ describe('UI en opslag', () => {
     zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
     const uit = d.querySelector('#bpmOut').textContent;
     assert.ok(uit.includes('5.838'), 'te betalen BPM 5.838 in beeld: ' + uit.slice(0, 200));
-    assert.ok(uit.includes('17.918'), 'bruto 17.918 in beeld');
+    assert.match(uit, /Vul de verwachte verkoopprijs in/);
     zet('k_verkoop', '79950');
     const met = d.querySelector('#bpmOut').textContent;
-    assert.ok(met.includes('Marge'), 'margeblok zichtbaar');
-    assert.ok(met.includes('9.166'), 'marge ≈ 9.166 in beeld: ' + met.slice(-300));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
+    assert.match(met, /^Marge/, 'de marge staat bovenaan');
+    assert.ok(d.querySelector('#bpmOut .big').textContent.includes('9.166'), 'marge ≈ 9.166 groot bovenaan: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
     d.querySelector('#btnBewaarKand').click();
     assert.equal(d.querySelectorAll('#kandTabel tbody tr').length, 1);
     assert.ok(d.querySelector('#kandTabel tbody tr').textContent.includes('9.166'), 'marge in de tabel');
