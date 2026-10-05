@@ -844,7 +844,7 @@ describe('Zoekopdrachten per site onder de resultaten, inklapbaar (v1.57)', () =
     assert.equal(tab.querySelectorAll('div.card').length, 0, 'geen vaste blokken meer');
     const blokken = [...tab.querySelectorAll('details.card')];
     assert.deepEqual(blokken.map(b => b.querySelector(':scope > summary').textContent.trim()), ['Kosten en aannames', 'Sites (standaard aan/uit voor nieuwe profielen)', "mobile.de merk-ID's",
-      'Automatisch ophalen (GitHub Actions)', 'Status live zoeken per site', 'KAAP-extensie: mobile.de en Gaspedaal in de app', 'Prijshistorie van AutoScout24', 'Geleerde model-koppelingen', 'Gegevens', 'Tarieftabellen BPM (controle)']);
+      'Automatisch ophalen (GitHub Actions)', 'Ophaler en meldingen (mail en WhatsApp)', 'Status live zoeken per site', 'KAAP-extensie: mobile.de en Gaspedaal in de app', 'Prijshistorie van AutoScout24', 'Geleerde model-koppelingen', 'Gegevens', 'Tarieftabellen BPM (controle)']);
     assert.ok(blokken.every(b => b.id), 'elk blok heeft een id');
     assert.deepEqual(blokken.filter(b => b.open).map(b => b.id), ['inst_kosten'], 'alleen Kosten en aannames staat standaard open');
     const ids = [...doc.querySelectorAll('details.card')].map(b => b.id);
@@ -949,3 +949,57 @@ describe('Model als keuzelijst (v1.66)', () => {
     assert.match(win.bouwLinks(p('C-Klasse')).find(x => x.site === 'kleinanzeigen').url, /\/c-klasse\/k0c216/);
   });
 });
+
+describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testbericht starten (v1.67)', () => {
+  function laad(){
+    const verzoeken = [];
+    const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(x){ x.scrollTo = () => {}; x.HTMLElement.prototype.scrollIntoView = function(){};
+        x.fetch = (adres, o = {}) => { const u = String(adres); verzoeken.push({ u, methode: o.method || 'GET', headers: o.headers || {}, body: o.body ? JSON.parse(o.body) : null });
+          if (u.endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc123' }) });
+          if (u.endsWith('/contents/profiles.json')) return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+          if (u.endsWith('/dispatches')) return Promise.resolve({ ok: true, status: 204, json: async () => null });
+          return Promise.reject(new Error('geen netwerk in test')); }; } }).window;
+    return { win, verzoeken };
+  }
+  test('sleutel bewaren: profiles.json gaat meteen naar de repo; de sleutel staat niet in de gegevens of de reservekopie', async () => {
+    const { win, verzoeken } = laad(), d = win.document;
+    const zet = (id, v) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new win.Event('input', {bubbles:true})); };
+    zet('p_merk', 'BMW'); zet('p_model', 'X5'); d.querySelector('#btnBewaarProfiel').click();
+    d.querySelector('#s_ghkey').value = 'github_pat_TEST'; d.querySelector('#btnGhKey').click();
+    await new Promise(r => setTimeout(r, 30));
+    const put = verzoeken.find(v => v.methode === 'PUT');
+    assert.ok(put, 'profiles.json geschreven');
+    assert.equal(put.u, 'https://api.github.com/repos/kelliank98/KAAP_Portal/contents/profiles.json');
+    assert.equal(put.headers.Authorization, 'Bearer github_pat_TEST');
+    assert.equal(put.body.sha, 'abc123'); assert.equal(put.body.branch, 'main');
+    assert.match(put.body.message, /profiles\.json bijgewerkt vanuit de Inkoop Radar \(1 profiel\)/);
+    const inhoud = JSON.parse(Buffer.from(put.body.content, 'base64').toString('utf8'));
+    assert.equal(inhoud.profiles[0].naam, 'BMW X5'); assert.ok(inhoud.profiles[0].links.length > 0);
+    assert.equal(d.querySelector('#s_ghkey').value, '', 'veld leeg na bewaren');
+    assert.ok(!win.localStorage.getItem('kaap_inkoop_v1').includes('github_pat_TEST'), 'niet in de gegevens en dus niet in de reservekopie');
+    assert.match(d.querySelector('#ghStatus').textContent, /profiles\.json laatst bijgewerkt/);
+    const aantal = verzoeken.filter(v => v.methode === 'PUT').length;
+    assert.equal(await win.syncProfielen(false), false, 'niets veranderd: niet opnieuw schrijven');
+    assert.equal(verzoeken.filter(v => v.methode === 'PUT').length, aantal);
+  });
+  test('Ophaler nu starten en Testbericht sturen starten de workflow Inkoop-radar', async () => {
+    const { win, verzoeken } = laad(), d = win.document;
+    win.localStorage.setItem('kaap_github', JSON.stringify({ sleutel: 'github_pat_TEST', laatst: JSON.stringify([]) }));
+    d.querySelector('#btnTestbericht').click(); await new Promise(r => setTimeout(r, 30));
+    const start = verzoeken.find(v => v.u.endsWith('/dispatches'));
+    assert.equal(start.u, 'https://api.github.com/repos/kelliank98/KAAP_Portal/actions/workflows/inkoop-radar.yml/dispatches');
+    assert.deepEqual(start.body, { ref: 'main', inputs: { testbericht: 'true' } });
+    assert.match(d.querySelector('#toast').textContent, /Testbericht gestart/);
+    d.querySelector('#btnOphalerStart').click(); await new Promise(r => setTimeout(r, 30));
+    assert.deepEqual(verzoeken.filter(v => v.u.endsWith('/dispatches')).pop().body.inputs, { testbericht: 'false' });
+  });
+  test('zonder sleutel: duidelijke melding, niets naar GitHub', async () => {
+    const { win, verzoeken } = laad(), d = win.document;
+    d.querySelector('#btnOphalerStart').click(); await new Promise(r => setTimeout(r, 30));
+    assert.match(d.querySelector('#toast').textContent, /nog geen GitHub-sleutel/);
+    assert.equal(verzoeken.filter(v => /api\.github\.com/.test(v.u)).length, 0);
+    assert.match(d.querySelector('#ghStatus').textContent, /Nog geen sleutel/);
+  });
+});
+
