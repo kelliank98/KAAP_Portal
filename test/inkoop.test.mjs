@@ -763,12 +763,87 @@ describe('Zoekopdrachten per site onder de resultaten, inklapbaar (v1.57)', () =
   test('open of dicht wordt onthouden in deze browser, los van de gegevens', async () => {
     const win = laadMetUi(), doc = win.document;
     await klap(doc.querySelector('#linkKaart'), true);
-    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { zoeklinksOpen: true });
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { open: { linkKaart: true } });
     assert.equal(win.localStorage.getItem('kaap_inkoop_v1'), null, 'open/dicht komt niet in de gegevens of de reservekopie');
-    assert.equal(laadMetUi('{"zoeklinksOpen":true}').document.querySelector('#linkKaart').open, true, 'open na herladen');
+    assert.equal(laadMetUi('{"open":{"linkKaart":true}}').document.querySelector('#linkKaart').open, true, 'open na herladen');
     await klap(doc.querySelector('#linkKaart'), false);
-    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { zoeklinksOpen: false });
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { open: {} });
     assert.equal(laadMetUi('kapot{').document.querySelector('#linkKaart').open, false, 'onleesbare voorkeur: gewoon dicht');
+  });
+
+  test('Zo filter je op uitvoering en opties: ook inklapbaar, standaard dicht, onthouden (v1.58)', async () => {
+    const win = laadMetUi(), doc = win.document;
+    const uitleg = doc.querySelector('#uitlegKaart');
+    assert.equal(uitleg.tagName, 'DETAILS'); assert.equal(uitleg.open, false, 'standaard dicht');
+    assert.match(uitleg.querySelector(':scope > summary').textContent, /Zo filter je op uitvoering en opties/);
+    assert.ok(uitleg.querySelector('.kv'), 'de uitleg zit in het blok');
+    assert.ok(doc.querySelector('#linkKaart').compareDocumentPosition(uitleg) & win.Node.DOCUMENT_POSITION_FOLLOWING, 'onder Zoekopdrachten per site');
+    await klap(uitleg, true);
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { open: { uitlegKaart: true } });
+    const opnieuw = laadMetUi('{"open":{"uitlegKaart":true}}').document;
+    assert.equal(opnieuw.querySelector('#uitlegKaart').open, true, 'open na herladen');
+    assert.equal(opnieuw.querySelector('#linkKaart').open, false, 'elk blok apart');
+  });
+
+  test('Opgeslagen profielen: inklapbaar, standaard open, aantal naast de titel (v1.58)', () => {
+    const win = laadMetUi(), doc = win.document;
+    const kaart = doc.querySelector('#profKaart');
+    assert.equal(kaart.tagName, 'DETAILS'); assert.equal(kaart.open, true, 'standaard open');
+    assert.match(kaart.querySelector(':scope > summary').textContent, /Opgeslagen profielen/);
+    assert.ok(kaart.querySelector('#profLijst'));
+    assert.equal(doc.querySelector('#tel_prof').textContent, '', 'nog geen profielen');
+    zet(win, 'p_merk', 'BMW'); zet(win, 'p_model', 'X5');
+    doc.querySelector('#btnBewaarProfiel').click();
+    assert.equal(doc.querySelector('#tel_prof').textContent, '1');
+  });
+
+  test('Kandidaten op de tab Kandidaten: inklapbaar, standaard open, filter en knop in het blok (v1.58)', () => {
+    const win = laadMetUi(), doc = win.document;
+    const kaart = doc.querySelector('#kandKaart');
+    assert.equal(kaart.tagName, 'DETAILS'); assert.equal(kaart.open, true, 'standaard open');
+    assert.ok(doc.querySelector('#tab-kandidaten').contains(kaart));
+    assert.equal(kaart.querySelector(':scope > summary').textContent.trim(), 'Kandidaten');
+    for (const id of ['filtStatus', 'btnBijwerken', 'kandTabel', 'kandLeeg']) assert.ok(kaart.querySelector('#' + id), id + ' zit in het blok');
+    assert.equal(kaart.querySelector(':scope > summary select, :scope > summary button'), null, 'geen knoppen in de titelregel (die klappen anders het blok in)');
+    assert.equal(doc.querySelector('#tel_kand').textContent, '');
+    win.eval("S.kandidaten.push({id:'k1', oms:'BMW X5 xDrive45e', land:'DE', prijs:50000, status:'nieuw', brandstof:'hybride'}); renderKandTabel();");
+    assert.equal(doc.querySelector('#tel_kand').textContent, '1');
+  });
+
+  test('Instellingen: alle blokken inklapbaar, Kosten en aannames standaard open, de rest dicht; elk blok apart onthouden (v1.58)', async () => {
+    const win = laadMetUi(), doc = win.document;
+    const tab = doc.querySelector('#tab-instellingen');
+    assert.equal(tab.querySelectorAll('div.card').length, 0, 'geen vaste blokken meer');
+    const blokken = [...tab.querySelectorAll('details.card')];
+    assert.deepEqual(blokken.map(b => b.querySelector(':scope > summary').textContent.trim()), ['Kosten en aannames', 'Sites (standaard aan/uit voor nieuwe profielen)', "mobile.de merk-ID's",
+      'Automatisch ophalen (GitHub Actions)', 'Status live zoeken per site', 'KAAP-extensie: mobile.de en Gaspedaal in de app', 'Prijshistorie van AutoScout24', 'Geleerde model-koppelingen', 'Gegevens', 'Tarieftabellen BPM (controle)']);
+    assert.ok(blokken.every(b => b.id), 'elk blok heeft een id');
+    assert.deepEqual(blokken.filter(b => b.open).map(b => b.id), ['inst_kosten'], 'alleen Kosten en aannames staat standaard open');
+    const ids = [...doc.querySelectorAll('details.card')].map(b => b.id);
+    assert.equal(new Set(ids).size, ids.length, 'unieke id\'s');
+    assert.ok(doc.querySelector('#tabellen').textContent.includes('t/m'), 'tarieftabellen staan klaar in het dichte blok');
+    await klap(doc.querySelector('#inst_gegevens'), true);
+    assert.deepEqual(JSON.parse(win.localStorage.getItem('kaap_inkoop_ui')), { open: { inst_gegevens: true } });
+    const opnieuw = laadMetUi(win.localStorage.getItem('kaap_inkoop_ui')).document;
+    assert.equal(opnieuw.querySelector('#inst_gegevens').open, true, 'open na herladen');
+    assert.equal(opnieuw.querySelector('#inst_sites').open, false, 'de andere blijven zoals ze waren');
+    assert.equal(opnieuw.querySelector('#inst_kosten').open, true);
+    assert.equal(laadMetUi('{"open":{"kandKaart":false,"profKaart":false}}').document.querySelector('#kandKaart').open, false, 'een standaard open blok blijft dicht als je het dichtklapte');
+    // Bewaard wordt alleen wat afwijkt van de standaard; weer openklappen haalt de afwijking weg.
+    const k = laadMetUi('{"open":{"inst_kosten":false}}');
+    assert.equal(k.document.querySelector('#inst_kosten').open, false);
+    await klap(k.document.querySelector('#inst_kosten'), true);
+    assert.deepEqual(JSON.parse(k.localStorage.getItem('kaap_inkoop_ui')), { open: {} });
+  });
+
+  test('klik op de status in de kop opent Instellingen en klapt het juiste blok open (v1.58)', () => {
+    const win = laadMetUi(), doc = win.document;
+    doc.querySelector('#hulpStatus').click();
+    assert.ok(doc.querySelector('#tab-instellingen').classList.contains('on'));
+    assert.equal(doc.querySelector('#inst_extensie').open, true, 'extensie-blok open');
+    doc.querySelector('#ophaalStatus').click();
+    assert.equal(doc.querySelector('#inst_ophalen').open, true, 'blok met de laatste run open');
+    assert.equal(doc.querySelector('#inst_sites').open, false);
   });
 
   test('Zoeken zonder proxy en zonder extensie klapt het blok open, want dan zijn de links de weg', () => {

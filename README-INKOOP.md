@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.57
+# KAAP Inkoop Radar v1.58
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.57_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.58_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -136,7 +136,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 199 punten:
+De tests draaien zonder netwerk en controleren 204 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
