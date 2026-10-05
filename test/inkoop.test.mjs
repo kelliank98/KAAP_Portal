@@ -913,3 +913,39 @@ describe('Vermogen in pk en Prijs van/tot naast elkaar (v1.62)', () => {
   });
 });
 
+
+describe('Model als keuzelijst (v1.66)', () => {
+  const facet = '{"facets":[{"key":"model","type":"AttributeGroupFacet","label":"Model","attributeGroup":[{"attributeValueKey":"GLC-klasse","attributeValueId":11690,"attributeValueLabel":"GLC-klasse","histogramCount":710},{"attributeValueKey":"C-Klasse","attributeValueId":965,"attributeValueLabel":"C-Klasse","histogramCount":3317},{"attributeValueKey":"amg-gt","attributeValueId":11591,"attributeValueLabel":"AMG GT","histogramCount":104}]}]}';
+  function laad(opslag){
+    const gevraagd = [];
+    const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(x){ x.scrollTo = () => {}; x.HTMLElement.prototype.scrollIntoView = function(){}; if (opslag) x.localStorage.setItem('kaap_modellen', opslag);
+        x.fetch = (adres) => { gevraagd.push(new URL(String(adres)).searchParams.get('url')); return Promise.resolve({ ok: true, status: 200, text: async () => '<html>' + facet + '</html>' }); }; } }).window;
+    return { win, gevraagd };
+  }
+  const opties = (win) => [...win.document.querySelectorAll('#modellenlijst option')].map(o => o.value + ' | ' + o.textContent);
+  test('merk kiezen vult de keuzelijst met de modellen van dat merk, met het aantal auto\'s', async () => {
+    const { win, gevraagd } = laad();
+    assert.equal(win.document.querySelector('#p_model').getAttribute('list'), 'modellenlijst');
+    const merk = win.document.querySelector('#p_merk'); merk.value = 'Mercedes-Benz'; merk.dispatchEvent(new win.Event('change'));
+    await new Promise(r => setTimeout(r, 30));
+    assert.deepEqual(gevraagd.filter(u => /marktplaats/.test(u || '')), ['https://www.marktplaats.nl/l/auto-s/mercedes-benz/']);
+    assert.deepEqual(opties(win), ['AMG GT | 104 auto\'s', 'C-Klasse | 3.317 auto\'s', 'GLC-klasse | 710 auto\'s']);
+    assert.ok(JSON.parse(win.localStorage.getItem('kaap_modellen'))['mercedes-benz'].lijst.length === 3, 'onthouden');
+  });
+  test('onthouden lijst: niet opnieuw ophalen; onbekend merk of geen proxy: lege lijst', async () => {
+    const { win, gevraagd } = laad(JSON.stringify({ bmw: { t: Date.now(), lijst: [{ naam: 'X5', n: 1083 }, { naam: '5-Serie', n: 1171 }] } }));
+    const merk = win.document.querySelector('#p_merk');
+    merk.value = 'BMW'; merk.dispatchEvent(new win.Event('change')); await new Promise(r => setTimeout(r, 30));
+    assert.deepEqual(opties(win), ['5-Serie | 1.171 auto\'s', 'X5 | 1.083 auto\'s']);
+    assert.equal(gevraagd.filter(u => /marktplaats/.test(u || '')).length, 0);
+    merk.value = 'Bestaatniet'; merk.dispatchEvent(new win.Event('change')); await new Promise(r => setTimeout(r, 30));
+    assert.equal(opties(win).length, 0);
+  });
+  test('Kleinanzeigen: GLC-klasse uit de lijst zoekt als glc; C-Klasse blijft c-klasse', () => {
+    const { win } = laad();
+    const p = (model) => ({naam:'', merk:'Mercedes-Benz', model, bjvan:null, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'', uitvDe:'', modelDe:'', uitvNiet:'', sites:{kleinanzeigen:true}});
+    assert.match(win.bouwLinks(p('GLC-klasse')).find(x => x.site === 'kleinanzeigen').url, /\/glc\/k0c216/);
+    assert.match(win.bouwLinks(p('C-Klasse')).find(x => x.site === 'kleinanzeigen').url, /\/c-klasse\/k0c216/);
+  });
+});

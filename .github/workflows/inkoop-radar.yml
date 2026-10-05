@@ -12,6 +12,11 @@ on:
   schedule:
     - cron: "17 */2 * * *"
   workflow_dispatch:               # handmatig starten via Actions > Inkoop-radar > Run workflow
+    inputs:
+      testbericht:
+        description: "Stuur een testbericht (mail en/of WhatsApp), ook als er niets nieuws is"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -39,6 +44,8 @@ jobs:
 
       - name: Ophalen
         id: fetch
+        env:
+          TESTBERICHT: ${{ inputs.testbericht }}
         run: node tools/inkoop-fetch.mjs "$PROFILES" "$RESULTS"
 
       - name: results.json vastleggen

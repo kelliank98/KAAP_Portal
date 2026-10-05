@@ -90,3 +90,14 @@ ${blokken}
 
   return { melding: true, onderwerp, html, tekst, aantal: lijst.length, gemeld: bewaard };
 }
+
+// Testbericht: zelfde opbouw als een echte melding, zodat je de mail en WhatsApp kunt controleren.
+export function testMelding(nu = new Date()) {
+  const moment = nu.toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+  return {
+    melding: true, aantal: 0, onderwerp: 'Testbericht van de KAAP Inkoop Radar',
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.45;color:#111"><p style="margin:0 0 6px"><b>Testbericht</b> · ${esc(moment)}</p><p style="margin:0">De melding werkt. Bij een nieuwe treffer of een prijswijziging krijg je zo'n bericht met de auto's erin.</p><p style="margin:18px 0 0"><a href="${APP_URL}">Open de Inkoop Radar</a></p></div>\n`,
+    tekst: `*KAAP: testbericht*\n\nDe melding werkt (${moment}). Bij een nieuwe treffer of een prijswijziging krijg je zo'n bericht met de auto's erin.`,
+  };
+}
+

@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.65</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.66</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -239,7 +239,7 @@ details summary{cursor:pointer;font-weight:500}
         <div class="frm">
           <label class="f full"><span>Naam</span><input type="text" id="p_naam" placeholder="Wordt automatisch gevuld als je 'm leeg laat"></label>
           <label class="f"><span>Merk</span><input type="text" id="p_merk" list="merkenlijst" placeholder="BMW"><datalist id="merkenlijst"></datalist></label>
-          <label class="f"><span>Model</span><input type="text" id="p_model" placeholder="X5, X6"></label>
+          <label class="f"><span>Model</span><input type="text" id="p_model" list="modellenlijst" placeholder="X5, X6" autocomplete="off"><datalist id="modellenlijst"></datalist></label>
           <label class="f"><span>Bouwjaar van</span><input type="number" id="p_bjvan" min="2000" max="2030" placeholder="2020"></label>
           <label class="f"><span>Bouwjaar tot</span><input type="number" id="p_bjtot" min="2000" max="2030" placeholder=""></label>
           <label class="f"><span>Prijs van</span><input type="number" id="p_pmin" step="1000" placeholder="50000"></label>
@@ -470,7 +470,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.65';
+const APP_VERSIE = '1.66';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -798,6 +798,7 @@ function margeKleur(mg){
 // Zoekwoord-slug: 'RS 6' -> rs6 (Kleinanzeigen vindt 'rs-6' niet), rest onaangeroerd.
 function kwSlug(s){
   return slug((s||'').toString().toLowerCase().replace(/\b(\d)\s*-?\s*(serie|series|reeks)\b/g, '$1er')   // 5-serie: in Duitse titels "5er"
+    .replace(/\b([a-z]{2,})\s*-?\s*(klasse|class)\b/g, '$1')   // GLC-klasse: in titels "GLC 300"; C-Klasse blijft (te kort)
     .replace(/\b(rs|s|sq|m|gt|id|ex|q|a|c|e|x|v|t)\s+(\d)/g,'$1$2'));
 }
 function as24Slug(model){
@@ -1135,6 +1136,7 @@ function vulProfielForm(p){
   p = p || {naam:'',merk:'',model:'',bjvan:null,bjtot:null,km:null,pk:null,pmin:null,pmax:null,aanbieder:'',deuren:'',btw:'',carr:[],brandstof:[],opties:[],uitv:'',uitvDe:'',sites:std};
   $('#profTitle').textContent = p.id ? 'Bewaarde zoekopdracht' : 'Zoekopdracht';
   $('#p_naam').value = p.naam||''; $('#p_merk').value = p.merk||''; $('#p_model').value = p.model||'';
+  vulModellenlijst(p.merk);
   $('#p_bjvan').value = p.bjvan||''; $('#p_bjtot').value = p.bjtot||''; $('#p_facelift').value = p.facelift||''; $('#p_km').value = p.km||''; $('#p_pk').value = p.pk||'';
   $('#p_pmin').value = p.pmin||''; $('#p_pmax').value = p.pmax||''; $('#p_aanbieder').value = p.aanbieder || ''; $('#p_deuren').value = p.deuren || '';
   $('#p_uitv').value = p.uitv||''; $('#p_uitv_de').value = p.uitvDe||''; $('#p_uitv_niet').value = p.uitvNiet||''; $('#p_model_de').value = p.modelDe||'';
@@ -1427,6 +1429,34 @@ function renderInstellingen(){
 
 }
 function vulMerkenlijst(){ const dl = $('#merkenlijst'); dl.innerHTML = Object.keys(S.instellingen.makeIds).sort().map(m=>`<option value="${esc(m)}">`).join(''); }
+// Keuzelijst voor Model (v1.66): de modellen van het gekozen merk, met hun Nederlandse namen en het aantal auto's,
+// uit de modellijst van Marktplaats ({"attributeValueLabel":"C-Klasse","histogramCount":3317}, live nagemeten 05-10-2026).
+// Eén keer per merk opgehaald via de proxy en 30 dagen bewaard in deze browser. Vrij typen blijft mogelijk.
+const MODELLEN_KEY = 'kaap_modellen', MODELLEN_BEWAAR_MS = 30 * 864e5;
+function modellenLees(){ try { return JSON.parse(localStorage.getItem(MODELLEN_KEY) || '{}') || {}; } catch(e){ return {}; } }
+let modellenMerk = '';
+async function vulModellenlijst(merk){
+  const sleutel = slug(merk || ''), dl = $('#modellenlijst');
+  if (sleutel === modellenMerk) return;
+  modellenMerk = sleutel; dl.innerHTML = '';
+  if (!sleutel || !MP_L2[sleutel]) return;
+  let lijst = (modellenLees()[sleutel] || {}).lijst;
+  if (!lijst || Date.now() - (modellenLees()[sleutel].t || 0) > MODELLEN_BEWAAR_MS){
+    if (!(S.instellingen.proxy || '').trim()) return;
+    try {
+      const html = await haalViaProxy(`https://www.marktplaats.nl/l/auto-s/${sleutel}/`);
+      const i = html.indexOf('"facets"');
+      const g = i >= 0 && html.slice(i, i + 300000).match(/"key":"model","type":"AttributeGroupFacet","label":"[^"]+","attributeGroup":(\[[\s\S]*?\])/);
+      lijst = g ? JSON.parse(g[1]).map(x => ({naam: x.attributeValueLabel || x.attributeValueKey, n: +x.histogramCount || 0})).filter(x => x.naam) : [];
+      if (!lijst.length) return;
+      const alle = modellenLees(); alle[sleutel] = {t: Date.now(), lijst};
+      try { localStorage.setItem(MODELLEN_KEY, JSON.stringify(alle)); } catch(e){}
+    } catch(e){ modellenMerk = ''; return; }   // niet gelukt: de volgende keer opnieuw
+  }
+  if (modellenMerk !== sleutel) return;   // intussen een ander merk gekozen
+  dl.innerHTML = lijst.slice().sort((a, b) => a.naam.localeCompare(b.naam, 'nl', {numeric: true}))
+    .map(x => `<option value="${esc(x.naam)}">${x.n ? x.n.toLocaleString('nl-NL') + " auto's" : ''}</option>`).join('');
+}
 
 
 
@@ -2724,6 +2754,10 @@ function toonTab(n){ $$('nav button').forEach(b => b.classList.toggle('on', b.da
 $$('nav button').forEach(b => b.addEventListener('click', () => toonTab(b.dataset.tab)));
 
 // profiel events
+// Merk gekozen of getypt: de keuzelijst voor Model vullen (even wachten tot het typen stopt).
+let modellenWacht = null;
+$('#p_merk').addEventListener('change', () => vulModellenlijst($('#p_merk').value));
+$('#p_merk').addEventListener('input', () => { clearTimeout(modellenWacht); modellenWacht = setTimeout(() => vulModellenlijst($('#p_merk').value), 600); });
 ['p_naam','p_merk','p_model','p_bjvan','p_bjtot','p_km','p_pk','p_pmin','p_pmax','p_uitv','p_uitv_de','p_uitv_niet','p_model_de'].forEach(id => $('#'+id).addEventListener('input', renderLinks));
 ['p_carr','p_brandstof','p_opties','p_sites'].forEach(id => $('#'+id).addEventListener('chipchange', renderLinks));
 ['p_aanbieder','p_deuren'].forEach(id => $('#'+id).addEventListener('change', renderLinks));
@@ -2898,6 +2932,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.66', 'Model is nu een keuzelijst, net als Merk: na het kiezen van een merk staan alle modellen van dat merk erin met het aantal auto\u2019s (uit Marktplaats, per merk 30 dagen onthouden). Vrij typen kan nog steeds, ook meer modellen met een komma.'],
   ['1.65', 'Alleen een correctie in de toelichting in de code: de live metingen van v1.63 en v1.64 waren op 05-10-2026, niet op 06-10-2026. Verder niets veranderd.'],
   ['1.64', 'Modelnamen leert de app nu zelf op alle sites: bij Zoeken zoekt hij het model op in de modellijst van mobile.de, Gaspedaal, AutoScout24, Marktplaats, 2dehands en 2ememain, en onthoudt het. Zo werken ook GLE Coupé en Q5 Sportback (model plus uitvoering, ook bij merken zonder reeksen zoals Audi op mobile.de) en zoekt 2dehands bij GLC geen GLE\u2019s meer. Titels als C 200 tellen voor C-Klasse en 530e voor 5-serie; Kleinanzeigen zoekt 5-serie als 5er. De verkoopprijs NL vergelijkt alleen met hetzelfde model (GLE Coupé niet met gewone GLE\u2019s).'],
   ['1.63', 'De app vindt een model nu zelf als een site het anders noemt. Gaspedaal: GLC heet daar glc-klasse; voorheen toonde Gaspedaal dan alle Mercedes-Benz. mobile.de: GLC is daar de reeks "GLC-Klasse (Alle)"; voorheen kende de app die niet. Gevonden namen worden onthouden; ook een geplakte mobile.de-link van een hele reeks werkt nu.'],

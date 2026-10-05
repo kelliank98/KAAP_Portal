@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { bouwMelding, korteTitel } from '../tools/melding.mjs';
+import { bouwMelding, korteTitel, testMelding } from '../tools/melding.mjs';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const nu = new Date('2026-10-05T16:17:00Z');
@@ -94,9 +94,22 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13)', () => {
     const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
     execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer }, stdio: 'pipe' });
     const res = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
-    assert.equal(res.tool, 'inkoop-fetch 1.13');
+    assert.equal(res.tool, 'inkoop-fetch 1.14');
     assert.deepEqual(Object.keys(res.gemeld), ['a1'], 'eerder gemelde auto\'s blijven onthouden');
     assert.match(readFileSync(uitvoer, 'utf8'), /melding=false\nonderwerp=\n/);
     assert.equal(existsSync(join(map, 'melding.html')), false);
+  });
+  test('testbericht: handmatig te starten, ook zonder treffer; niets wordt als gemeld onthouden', () => {
+    const m = testMelding(nu);
+    assert.equal(m.melding, true); assert.equal(m.onderwerp, 'Testbericht van de KAAP Inkoop Radar');
+    assert.match(m.tekst, /^\*KAAP: testbericht\*\n\nDe melding werkt \(05-10-2026 18:17\)/);
+    const map = mkdtempSync(join(tmpdir(), 'kaap-test-'));
+    writeFileSync(join(map, 'profiles.json'), JSON.stringify({ profiles: [{ id: 'p1', naam: 'X5', exclude: [], links: [] }] }));
+    writeFileSync(join(map, 'results.json'), JSON.stringify({ profiles: {} }));
+    const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
+    execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer, TESTBERICHT: 'true' }, stdio: 'pipe' });
+    assert.match(readFileSync(uitvoer, 'utf8'), /melding=true\nonderwerp=Testbericht van de KAAP Inkoop Radar\n/);
+    assert.match(readFileSync(join(map, 'melding.txt'), 'utf8'), /^\*KAAP: testbericht\*/);
+    assert.deepEqual(JSON.parse(readFileSync(join(map, 'results.json'), 'utf8')).gemeld, {});
   });
 });
