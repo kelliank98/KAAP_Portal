@@ -308,6 +308,39 @@ describe('Koerslijst-afschrijving (v1.38)', () => {
   });
 });
 
+describe('BPM volgens Autotelex (v1.50)', () => {
+  const zet = (id, v, ev) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', {bubbles:true})); };
+  test('kostprijs gebruikt het Autotelex-bedrag in plaats van de indicatie van de app', () => {
+    const r = w.bpmVoor({brandstof:'benzine', phev:false, co2w:187, co2n:null, det:'2021-03-15', keuring:'2026-10-06', afs:null});
+    const app = G('bpmTeBetalen')(r);
+    const zonder = w.kostprijs({prijs:60000, land:'DE', btw:'btw'}, r);
+    const met = w.kostprijs({prijs:60000, land:'DE', btw:'btw', bpmAtx: 4321}, r);
+    assert.equal(zonder.bpm, app); assert.equal(zonder.bpmBron, 'app');
+    assert.equal(met.bpm, 4321); assert.equal(met.bpmBron, 'autotelex');
+    assert.ok(Math.abs((met.totaal - zonder.totaal) - (4321 - app)) < 0.01);
+    assert.equal(w.kostprijs({prijs:60000, land:'NL', btw:'btw', bpmAtx: 4321}, r).bpm, 0, 'NL-kenteken: geen BPM');
+    assert.equal(w.kostprijs({prijs:60000, land:'DE', btw:'btw', bpmAtx: 5000}, {fout:'geen CO2'}).totaal != null, true, 'ook als de app zelf geen BPM kan berekenen');
+  });
+  test('formulier, uitleg, lijst en bewaren', () => {
+    d.querySelector('#btnNieuwKand').click();
+    zet('k_oms', 'BMW X5 Autotelex-test'); zet('k_prijs', '60000'); zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie van de app\)/);
+    zet('k_bpmatx', '4321');
+    const uit = d.querySelector('#bpmOut').textContent;
+    assert.match(uit, /BPM volgens Autotelex/); assert.match(uit, /De BPM volgens Autotelex gaat in de kostprijs\. Indicatie van de app: €\s[\d.]+/);
+    d.querySelector('#btnBewaarKand').click();
+    const k = G('S').kandidaten.find(x => x.oms === 'BMW X5 Autotelex-test');
+    assert.equal(k.bpmAtx, 4321);
+    assert.equal(JSON.parse(w.localStorage.getItem('kaap_inkoop_v1')).kandidaten.find(x => x.id === k.id).bpmAtx, 4321);
+    const rij = [...d.querySelectorAll('#kandTabel tbody tr')].find(tr => /Autotelex-test/.test(tr.textContent));
+    assert.match(rij.children[3].textContent, /4\.321\s?A/);
+    zet('k_bpmatx', '');
+    assert.match(d.querySelector('#bpmOut').textContent, /BPM \(indicatie van de app\)/, 'leeg: weer de indicatie van de app');
+    G('S').kandidaten = G('S').kandidaten.filter(x => x.id !== k.id);
+    d.querySelector('#btnNieuwKand').click();
+  });
+});
+
 describe('Marge (v1.37)', () => {
   test('BTW-auto: 21% over de verkoop, marge = verkoop excl. − kostprijs', () => {
     const kp = {totaal: 56908};
@@ -325,12 +358,25 @@ describe('Marge (v1.37)', () => {
     assert.equal(w.margeVoor({verkoop: null, btw: 'btw', prijs: 60000}, {totaal: 1}), null);
     assert.equal(w.margeVoor({verkoop: 70000, btw: 'btw', prijs: 60000}, {totaal: null}), null);
   });
-  test('kleur op de doelmarge', () => {
-    G('S').instellingen.doelmarge = 3000;
-    assert.equal(w.margeKleur(3000), 'gekocht');
-    assert.equal(w.margeKleur(2999), 'bod');
-    assert.equal(w.margeKleur(-1), 'afgewezen');
+  test('kleur op de doelmarge: een percentage van de kostprijs, standaard 20%', () => {
+    assert.equal(G('S').instellingen.doelmargePct, 20);
+    assert.equal(G('S').instellingen.doelmarge, undefined, 'het oude bedrag in euro\'s is weg');
+    assert.equal(w.margeKleur({marge: 10000, pct: 20}), 'gekocht');
+    assert.equal(w.margeKleur({marge: 9999, pct: 19.99}), 'bod');
+    assert.equal(w.margeKleur({marge: -1, pct: -0.01}), 'afgewezen');
     assert.equal(w.margeKleur(null), '');
+    G('S').instellingen.doelmargePct = 15;
+    assert.equal(w.margeKleur({marge: 7500, pct: 15}), 'gekocht');
+    G('S').instellingen.doelmargePct = 20;
+  });
+  test('doelmarge instellen per 1%, zonder minimum; leeg wordt weer 20%', () => {
+    const veldDm = d.querySelector('#s_doelmarge');
+    assert.equal(veldDm.getAttribute('step'), '1');
+    assert.match(veldDm.closest('label').textContent, /% van de kostprijs/);
+    for (const [invoer, verwacht] of [['12', 12], ['7.6', 7], ['0', 0], ['', 20]]) {
+      veldDm.value = invoer; d.querySelector('#btnBewaarInst').click();
+      assert.equal(G('S').instellingen.doelmargePct, verwacht, 'invoer ' + JSON.stringify(invoer));
+    }
   });
 });
 

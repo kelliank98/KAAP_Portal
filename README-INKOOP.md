@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.49
+# KAAP Inkoop Radar v1.50
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.49_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.50_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -100,14 +100,24 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - "Niet meer online" betekent dat de site zelf zegt dat de advertentie weg is: AutoScout24, Marktplaats en 2dehands geven dan HTTP 410, en AutoScout24 en Kleinanzeigen sturen een verdwenen advertentie door naar zoekresultaten (nagemeten op 05-10-2026). Bij mobile.de herkent de app dat nog niet zeker; dan staat er "kon niet lezen".
 - Werkt voor dezelfde sites als *Gegevens ophalen*: AutoScout24, Marktplaats, 2dehands, 2ememain en Kleinanzeigen via de proxy, mobile.de via de extensie.
 
-## Verwachte verkoopprijs NL (v1.49)
+## Verwachte verkoopprijs NL (v1.49, verbeterd in v1.50)
 
-- Bij elk resultaat van *Zoeken* staat onder de prijs **verkoop NL ≈ € …**: de mediaan van de vraagprijzen van vergelijkbare auto's die nu in Nederland te koop staan. Houd de muis erop voor het aantal auto's en de middelste helft van de prijzen.
-- Vergelijkbaar is: zelfde brandstof, zelfde motor (de motorcode in de titel, zoals 45e of 30d; anders het vermogen ±12%), bouwjaar ±1 en een kilometerstand binnen 20.000 km of 30%. Pas vanaf drie vergelijkbare auto's staat er een bedrag.
-- Bron: per model één pagina van Gaspedaal (de 100 nieuwste, via de extensie), zonder je filters op prijs, km en uitvoering en met een bouwjaar ruimer. Zonder extensie gebruikt de app AutoScout24 NL via de proxy. Het vergelijkingsmateriaal blijft twee uur bewaard, zodat opnieuw zoeken sneller is.
+- Bij elk resultaat van *Zoeken* staat onder de prijs **verkoop NL ≈ € …**. Klik bij de auto op **waarop gebaseerd?** voor de lijst met de auto's waarop het bedrag rust, met links naar de advertenties.
+- Bron is altijd Gaspedaal (zo bepaal je zelf ook een verkoopprijs), dus alleen met de KAAP-extensie. Per model haalt de app de eerste drie pagina's op: tot 300 auto's die nu in Nederland te koop staan, zonder je filters op prijs en uitvoering, met een bouwjaar ruimer en een kilometergrens 30% ruimer. Gaspedaal bladert met `&page=N` (nagemeten 05-10-2026). Twee uur bewaard, zodat opnieuw zoeken snel is.
+- Vergelijkbaar is: zelfde brandstof, zelfde motor (de motorcode in de titel, zoals 45e of 30d; anders het vermogen ±12%), bouwjaar ±1 en een kilometerstand binnen 25.000 km of 30%. Daarvan tellen de zeven die in bouwjaar en kilometerstand het dichtst bij de auto liggen (een jaar weegt als 20.000 km). Het bedrag is de mediaan van die zeven; pas vanaf drie auto's staat er een bedrag.
+- Waarom v1.50: in v1.49 telden alle auto's binnen een ruim venster mee, uit maar 100 advertenties. Een auto met veel kilometers kreeg zo een te hoge verkoopprijs. Nagemeten op 05-10-2026 voor een X5 45e uit 2020 met 165.000 km: v1.49 gaf € 43.749, v1.50 geeft € 38.700, en de zeven auto's eronder stonden te koop voor € 36.499 tot € 41.950.
 - **Naar kandidaat** vult de verwachte verkoopprijs in het kandidaatformulier in; daarmee rekent de app de marge uit. Pas hem aan als je het beter weet.
-- Het zijn vraagprijzen van dealers en particulieren, geen verkochte prijzen. Bij modellen die in Nederland weinig te koop staan (bijvoorbeeld diesels) zijn er vaak minder dan drie vergelijkbare auto's; dan staat er geen bedrag.
-- Nagemeten op 05-10-2026 op de echte Gaspedaal-pagina van de X5: 98 van de 100 titels hadden een herkenbare motorcode, en een X5 45e uit 2022 met 60.000 km kwam uit op € 61.945 (13 vergelijkbare auto's).
+- Het zijn vraagprijzen van dealers en particulieren, inclusief BPM, geen verkochte prijzen. Bij modellen die in Nederland weinig te koop staan (bijvoorbeeld diesels) zijn er vaak minder dan drie vergelijkbare auto's; dan staat er geen bedrag.
+
+## BPM volgens Autotelex (v1.50)
+
+- In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**. Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
+- Leeg laten betekent: de indicatie van de app, zoals voorheen.
+- Automatisch ophalen uit Autotelex kan alleen via hun API. Die is niet gratis: Autotelex noemt de kosten alleen op aanvraag, en een BPM-berekening voor import staat niet tussen hun openbaar beschreven API's (nagezocht op 05-10-2026). Daarom vul je het bedrag zelf in.
+
+## Doelmarge in procenten (v1.50)
+
+- *Instellingen > Doelmarge (% van de kostprijs)*, per 1%, standaard 20%. De marge kleurt groen vanaf dat percentage, oranje eronder en rood bij verlies. In de kandidatenlijst staat het percentage achter het bedrag.
 
 ## Testen
 
@@ -118,7 +128,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 166 punten:
+De tests draaien zonder netwerk en controleren 170 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -176,7 +186,8 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 
 - **Kostprijs** = inkoop excl. BTW (bij een BTW-auto gedeeld door 1,19 voor DE, 1,21 voor NL/BE, 1,25 voor DK) + transport + importkosten + BPM.
 - **BPM**: forfaitaire afschrijving is standaard. Vul je een percentage in bij *Afschrijving koerslijst / taxatie*, dan staan beide uitkomsten onder elkaar en gaat de koerslijst-uitkomst de kostprijs in. Voeg de koerslijst of het taxatierapport bij de aangifte.
-- **Marge**: vul de verwachte verkoopprijs in Nederland in (incl. BTW). Bij een BTW-auto draag je 21% over de verkoop af; bij een margeauto alleen BTW over verkoop − inkoop (margeregeling). Marge = verkoop − BTW − kostprijs. De kolom Marge in de kandidatenlijst kleurt op de doelmarge uit Instellingen.
+- **BPM volgens Autotelex**: vul je die in, dan gaat dat bedrag in de kostprijs in plaats van de indicatie van de app (v1.50).
+- **Marge**: vul de verwachte verkoopprijs in Nederland in (incl. BTW). Bij een BTW-auto draag je 21% over de verkoop af; bij een margeauto alleen BTW over verkoop − inkoop (margeregeling). Marge = verkoop − BTW − kostprijs. De kolom Marge in de kandidatenlijst kleurt op de doelmarge uit Instellingen (een percentage van de kostprijs, standaard 20%).
 
 ## Onderhoud
 
