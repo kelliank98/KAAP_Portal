@@ -190,10 +190,15 @@ describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
   const nu = new Date('2026-09-22T12:00:00Z').getTime();
   const res = (urenGeleden, fouten) => ({generated: new Date(nu - urenGeleden * 3600000).toISOString(),
     profiles: {p1: {sites: {'as24nl:0': {items: [], error: fouten ? 'HTTP 503' : null}, 'marktplaats:0': {items: []}}}}});
-  test('groen binnen 3 uur, oranje tot 24 uur, rood daarna', () => {
+  test('groen binnen 3 uur, oranje tot 24 uur, rood tot een week, daarna grijs: ophaler staat uit (v1.60)', () => {
     assert.equal(w.ophaalStatus(res(1), nu).klasse, 'ok');
     assert.equal(w.ophaalStatus(res(5), nu).klasse, 'warn');
     assert.equal(w.ophaalStatus(res(30), nu).klasse, 'bad');
+    assert.equal(w.ophaalStatus(res(6 * 24), nu).klasse, 'bad');
+    const uit = w.ophaalStatus(res(8 * 24), nu);
+    assert.equal(uit.klasse, '');
+    assert.match(uit.tekst, /^Ophaler: draait niet automatisch, laatste run 14-09-2026\. Live zoeken werkt los daarvan$/);
+    assert.equal(w.ophaalStatus(res(8 * 24, true), nu).klasse, '', 'oude fouten maken het niet oranje');
   });
   test('een site met een fout maakt een verse run oranje', () => {
     const st = w.ophaalStatus(res(1, true), nu);
@@ -213,6 +218,10 @@ describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
     w.eval('RES = ' + JSON.stringify(vers) + '; zetOphaalStatus();');
     assert.ok(el.classList.contains('ok'), el.className);
     assert.match(el.title, /Ophaler: laatste run/);
+    // Zoals nu in de repo: laatste run op 13-09-2026, automatisch draaien staat uit.
+    w.eval('RES = ' + JSON.stringify({generated: new Date(Date.now() - 22 * 24 * 3600000).toISOString(), profiles: {}}) + '; zetOphaalStatus();');
+    assert.equal(el.className, 'dot', 'grijs, niet rood');
+    assert.match(el.title, /draait niet automatisch/);
     w.eval('RES = null; zetOphaalStatus();');
   });
   test('bladwijzers sturen hun versie mee; een oudere bladwijzer geeft een melding', () => {
