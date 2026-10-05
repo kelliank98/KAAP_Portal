@@ -15,8 +15,9 @@
   body{padding:20px 16px 80px;}
   .nav{max-width:900px;margin:0 auto 18px;background:var(--navy);border-radius:10px;padding:14px 18px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 6px 24px rgba(27,40,65,.18);}
-  .nav .brand{color:#fff;font-size:14px;font-weight:500;margin-right:auto;letter-spacing:.4px;}
+  .nav .brand{color:#fff;font-size:14px;font-weight:400;margin-right:auto;letter-spacing:.4px;}
   .nav .brand span{display:block;font-size:11px;font-weight:300;color:var(--gold-soft);letter-spacing:0;}
+  .nav .brand b{font-weight:700;}
   .nav .versie{align-self:flex-start;background:#2C3A52;color:var(--gold-soft);font-size:10px;font-weight:500;
     letter-spacing:.5px;padding:3px 9px;border-radius:20px;border:.7px solid #46536e;white-space:nowrap;
     cursor:pointer;font-family:inherit;transition:all .15s;}
@@ -190,7 +191,7 @@
 <body>
 
 <div class="nav">
-  <div class="brand">KAAP Factuur Generator</div>
+  <div class="brand"><b>KAAP</b> Factuur Generator</div>
   <button class="versie" id="app-versie" title="Updategeschiedenis bekijken">v?</button>
   <button class="tab active" data-view="gen">Factuur</button>
   <button class="tab" data-view="reg">Register</button>
@@ -413,9 +414,10 @@
    Het versienummer staat alleen HIER. Bij een nieuwe versie: VERSIE ophogen en
    bovenaan HISTORIE een regel toevoegen. Het label in de navigatiebalk, de
    paginatitel, het stempel in concepten en back-ups komen allemaal hieruit. */
-const VERSIE='1.27';
+const VERSIE='1.28';
 /* Updategeschiedenis. Nieuwste bovenaan. */
 const HISTORIE=[
+ ['1.28','Naam linksboven in de balk: alleen KAAP vetgedrukt, "Factuur Generator" in gewone letters. Het logo op de factuur zelf is ongewijzigd.'],
  ['1.27','Register: sorteren op Datum, Nr., Klant en Bedrag, plus CSV-export van de getoonde periode voor de boekhouder. Nieuw tabblad Klanten met alle facturen per klant. Factuurnummer van een opgeslagen factuur staat op slot (dubbelklik om toch te wijzigen). Datum wordt gecontroleerd en genormaliseerd; een ongeldige datum blokkeert het opslaan. Gekoppeld Drive-bestand wordt bij terugkeren naar het tabblad opnieuw ingelezen als een ander apparaat het heeft gewijzigd. Extra kosten (o.a. het afleverpakket) tellen nu ook mee in de interne registerweergave, de BTW-kolom en de maandstaven, gelijk aan de factuur zelf. Versienummer staat nog maar op \u00e9\u00e9n plek, bovenaan het script. Lettertype met terugvalopties zonder internetverbinding.'],
  ['1.26','Back-up exporteren neemt nu ook de voorraad mee; importeren herkent het nieuwe bundelformaat en oude back-ups met alleen facturen. Waarschuwing bij het sluiten van het tabblad als er niet-opgeslagen wijzigingen zijn. Interne opschoning bij het koppelen van de back-upmap.'],
  ['1.25','Datum, tijd en URL die de browser zelf bovenaan de afdruk zette zijn weg. De paginamarge staat op nul; de witruimte komt nu uit de factuur zelf.'],

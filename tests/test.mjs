@@ -33,7 +33,7 @@ function boot(seed = {}) {
     .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck)=/g, 'var $1='));
   return w;
 }
-const VER = '1.27';
+const VER = '1.28';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -287,6 +287,19 @@ t('schrijven zet het tijdstempel, zodat eigen schrijfacties niet als "ander appa
 
 console.log('\n15. Lettertype (v1.27)');
 t('terugvalstack aanwezig', () => { if (!html.includes("font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif")) throw new Error('stack mist'); });
+
+console.log('\n16. Naam linksboven (v1.28)');
+t('alleen KAAP vetgedrukt in de balk, tekst ongewijzigd', () => {
+  const w = boot(); const b = w.document.querySelector('.nav .brand');
+  eq(b.textContent.trim(), 'KAAP Factuur Generator');
+  const vet = b.querySelectorAll('b'); eq(vet.length, 1, 'aantal vette delen'); eq(vet[0].textContent, 'KAAP');
+  eq(w.getComputedStyle(vet[0]).fontWeight, '700', 'KAAP');
+  eq(w.getComputedStyle(b).fontWeight, '400', 'Factuur Generator');
+});
+t('logo op de factuur zelf ongewijzigd', () => {
+  if (!html.includes('font-weight="700" font-size="62" fill="#1B2841" letter-spacing="1">AUTO HOUSE</text>')) throw new Error('AUTO HOUSE gewijzigd');
+  if (!html.includes('font-weight="500" font-size="26" fill="#1B2841" letter-spacing="6">KAAP</text>')) throw new Error('KAAP in het factuurlogo gewijzigd');
+});
 
 await runAll();
 console.log(`\n${pass} geslaagd, ${fail} mislukt`);
