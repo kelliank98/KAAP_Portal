@@ -18,6 +18,12 @@ const html = readFileSync(process.env.INKOOP_HTML || resolve(hier, '..', 'inkoop
 const fixture = (naam) => readFileSync(resolve(hier, 'fixtures', naam), 'utf8');
 const plain = (x) => JSON.parse(JSON.stringify(x));
 const tik = (ms = 15) => new Promise(r => setTimeout(r, ms));
+// Wacht tot de nagebootste extensie zich bij de app heeft gemeld. Berichten tussen vensters zijn
+// asynchroon; met een vaste wachttijd faalde dit af en toe als de hele testreeks tegelijk draaide.
+async function wachtOpHulp(w, maxMs = 2000) {
+  for (const begin = Date.now(); Date.now() - begin < maxMs; await tik(5)) if (w.eval('HULP.aanwezig')) return;
+  throw new Error('de nagebootste extensie meldde zich niet bij de app');
+}
 const SLEUTEL = 'kaap_inkoop_v1';
 const vensters = [];
 after(() => vensters.forEach(w => { try { w.close(); } catch (e) {} }));
@@ -360,7 +366,7 @@ describe('Zoeken met de KAAP-extensie', () => {
   test('met extensie: beide sites leveren resultaten, het modelnummer wordt geleerd en bewaard', async () => {
     const { w, d, G } = laadApp();
     const verzoeken = nepExtensie(w, paginas);
-    w.hulpPing(); await tik();
+    w.hulpPing(); await wachtOpHulp(w);
     assert.equal(G('HULP').aanwezig, true);
     assert.equal(d.querySelector('#hulpStatus').hidden, false, 'kop toont dat de extensie actief is');
     assert.match(d.querySelector('#hulpTekst').textContent, /Actief, versie 1\.0\.0/);
@@ -402,7 +408,7 @@ describe('Zoeken met de KAAP-extensie', () => {
   test('twee uitvoeringen delen één Gaspedaal-pagina: één keer ophalen, teller niet dubbel', async () => {
     const { w, d, G } = laadApp();
     const verzoeken = nepExtensie(w, paginas);
-    w.hulpPing(); await tik();
+    w.hulpPing(); await wachtOpHulp(w);
     w.eval("S.instellingen.proxy = ''");
     zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5'); zet(w, 'p_uitv', 'M Sport, High Executive');
     d.querySelector('#p_sites input[value="mobile"]').click();   // alleen Gaspedaal
@@ -418,7 +424,7 @@ describe('Zoeken met de KAAP-extensie', () => {
   test('controlepagina bij mobile.de: melding per site, Gaspedaal werkt gewoon door', async () => {
     const { w, d, G } = laadApp();
     nepExtensie(w, (url) => /mobile\.de/.test(url) ? fixture('mobile-controle.html') : paginas(url));
-    w.hulpPing(); await tik();
+    w.hulpPing(); await wachtOpHulp(w);
     w.eval("S.instellingen.proxy = ''");
     zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5');
     await w.zoekLive();
@@ -434,7 +440,7 @@ describe('Zoeken met de KAAP-extensie', () => {
   async function zoekAlleenMobile(pagina, model = 'X5') {
     const app = laadApp();
     app.verzoeken = nepExtensie(app.w, pagina);
-    app.w.hulpPing(); await tik();
+    app.w.hulpPing(); await wachtOpHulp(app.w);
     app.w.eval("S.instellingen.proxy = ''");
     zet(app.w, 'p_merk', 'BMW'); zet(app.w, 'p_model', model);
     app.d.querySelector('#p_sites input[value="gaspedaal"]').click();   // alleen mobile.de
@@ -475,7 +481,7 @@ describe('Zoeken met de KAAP-extensie', () => {
     assert.match(tekst, /kent het model "X5" niet onder die naam.*Model-koppeling/);
     assert.doesNotMatch(tekst, /1\.231 op de site|BMW 330|BMW X6/);
     assert.equal(G('S').instellingen.koppelingen['mobile|bmw|x5'], undefined);
-    assert.equal(verzoeken.length, 1, 'alleen de merkpagina is opgehaald');
+    assert.equal(verzoeken.filter(v => /mobile\.de/.test(v.url)).length, 1, 'van mobile.de alleen de merkpagina');
 
     const x7 = await zoekAlleenMobile(paginas, 'X7');
     assert.equal(x7.mob.items.length, 0, 'geen X7 in de titels: niets tonen, niet het hele merk');
@@ -494,7 +500,7 @@ describe('Zoeken met de KAAP-extensie', () => {
   test('klopt het gevonden modelnummer niet, dan bewaart de app het niet', async () => {
     const { w, G } = laadApp();
     nepExtensie(w, (url) => /mobile\.de\/fahrzeuge\/search/.test(url) ? fixture('mobile-zoek.html') : paginas(url));   // ook op nummer 49 gemengde modellen
-    w.hulpPing(); await tik();
+    w.hulpPing(); await wachtOpHulp(w);
     w.eval("S.instellingen.proxy = ''");
     zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5');
     await w.zoekLive();
@@ -514,7 +520,7 @@ describe('Zoeken met de KAAP-extensie', () => {
 
   test('de extensie die niet antwoordt geeft een melding en geen eeuwig wachten', async () => {
     const { w } = laadApp();
-    w.postMessage({ kaap: 'hulp-aanwezig', versie: '1.0.0' }, '*'); await tik();
+    w.postMessage({ kaap: 'hulp-aanwezig', versie: '1.0.0' }, '*'); await wachtOpHulp(w);
     w.eval('var __st = setTimeout; setTimeout = (f, ms) => __st(f, ms > 1000 ? 30 : ms)');   // wachttijd inkorten voor de test
     await assert.rejects(w.hulpHaal('https://suchen.mobile.de/x', { wachtOp: 'x' }), /geen antwoord van de KAAP-extensie/);
   });
@@ -548,7 +554,7 @@ describe('Naar kandidaat en Gegevens ophalen', () => {
 
   test('mobile.de via de extensie: bruto prijs, BTW en eerste toelating', async () => {
     const { w, d, G } = laadApp();
-    nepExtensie(w, paginas); w.hulpPing(); await tik();
+    nepExtensie(w, paginas); w.hulpPing(); await wachtOpHulp(w);
     w.kandidaatUit({ oms: 'BMW X5', url: 'https://suchen.mobile.de/fahrzeuge/details.html?id=40000000000003', prijs: 54990, land: 'DE', btw: true });
     await G('verrijkBezig');
     assert.equal(veld(w, 'k_oms'), 'BMW X5 xDrive30d M Sportpaket | AHK Laser 360° RFK');
@@ -558,7 +564,7 @@ describe('Naar kandidaat en Gegevens ophalen', () => {
 
   test('klik op de knop bij een resultaatkaart doet hetzelfde', async () => {
     const { w, d, G } = laadApp();
-    nepExtensie(w, paginas); w.hulpPing(); await tik();
+    nepExtensie(w, paginas); w.hulpPing(); await wachtOpHulp(w);
     w.eval("S.instellingen.proxy = ''");
     zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5');
     d.querySelector('#p_sites input[value="gaspedaal"]').click();   // alleen mobile.de
@@ -609,6 +615,191 @@ describe('Naar kandidaat en Gegevens ophalen', () => {
 });
 
 // ---------------------------------------------------------------- vervallen bladwijzers
+// ---------------------------------------------------------------- Kandidaten bijwerken
+describe('Kandidaten bijwerken', () => {
+  const kand = (extra) => Object.assign({ land: 'DE', btw: 'btw', brandstof: 'diesel', det: '2023-03-01', co2w: 180, keuring: '2026-10-20', status: 'nieuw', created: 1759000000000 }, extra);
+  const kandidaten = [
+    kand({ id: 'k1', oms: 'AutoScout24 DE', url: 'https://www.autoscout24.de/angebote/bmw-x5-voorbeeld', prijs: 66950 }),
+    kand({ id: 'k2', oms: 'Marktplaats', url: 'https://www.marktplaats.nl/v/auto-s/bmw/m2000000001-x', prijs: 61950, land: 'NL', status: 'bekeken' }),
+    kand({ id: 'k3', oms: 'Kleinanzeigen weg', url: 'https://www.kleinanzeigen.de/s-anzeige/bmw-x5/3000000099-216-1234', prijs: 49900 }),
+    kand({ id: 'k4', oms: 'mobile.de', url: 'https://suchen.mobile.de/fahrzeuge/details.html?id=40000000000003', prijs: 52990, status: 'bod' }),
+    kand({ id: 'k5', oms: 'al gekocht', url: 'https://www.autoscout24.de/angebote/bmw-x5-gekocht', prijs: 50000, status: 'gekocht' }),
+    kand({ id: 'k6', oms: 'site onbekend', url: 'https://www.gocar.be/nl/autos/bmw/x5/1', prijs: 48000 }),
+    kand({ id: 'k7', oms: 'AutoScout24 NL verkocht', url: 'https://www.autoscout24.nl/aanbod/bmw-x5-verkocht', prijs: 58000, land: 'NL' }),
+    kand({ id: 'k8', oms: 'storing', url: 'https://www.autoscout24.de/angebote/bmw-x5-storing', prijs: 57000 }),
+    kand({ id: 'k9', oms: 'zonder link', url: '', prijs: 45000 }),
+  ];
+  const aanvragen = [];
+  const proxy = (adres) => {
+    const doel = new URL(String(adres)).searchParams.get('url') || '';
+    aanvragen.push(doel);
+    if (/autoscout24\.nl/.test(doel)) return Promise.resolve({ ok: false, status: 410, text: async () => '' });   // verkocht: de site zegt "weg"
+    if (/storing/.test(doel)) return Promise.resolve({ ok: false, status: 500, text: async () => '' });
+    const naam = /autoscout24\.de/.test(doel) ? 'as24-de-advertentie.html' : /marktplaats\.nl/.test(doel) ? 'marktplaats-advertentie.html'
+      : /kleinanzeigen\.de\/s-anzeige/.test(doel) ? 'kleinanzeigen-zoek.html' : null;   // Kleinanzeigen stuurt een verdwenen advertentie door naar zoekresultaten
+    if (!naam) return Promise.reject(new Error('onverwacht adres in de test: ' + doel));
+    return Promise.resolve({ ok: true, status: 200, text: async () => fixture(naam) });
+  };
+
+  test('prijsdaling, prijsstijging, verkocht en storing worden herkend; gekochte en onleesbare kandidaten overgeslagen', async () => {
+    aanvragen.length = 0;
+    const { w, d, G } = laadApp({ fetch: proxy, opslag: JSON.stringify({ kandidaten, profielen: [] }) });
+    nepExtensie(w, paginas); w.hulpPing(); await wachtOpHulp(w);
+    w.vulKandForm(G('S').kandidaten.find(k => k.id === 'k1'));   // k1 staat open in het formulier
+    await w.werkKandidatenBij();
+    const k = (id) => plain(G('S').kandidaten.find(x => x.id === id));
+
+    assert.equal(k('k1').controle.status, 'gedaald'); assert.equal(k('k1').controle.oud, 66950); assert.equal(k('k1').controle.nieuw, 65455);
+    assert.equal(k('k1').prijs, 65455, 'de nieuwe vraagprijs gaat in kostprijs en marge');
+    assert.deepEqual(k('k1').prijzen.map(x => x.prijs), [66950, 65455], 'de oude prijs blijft bewaard');
+    assert.equal(veld(w, 'k_prijs'), '65455', 'het open formulier toont de nieuwe vraagprijs');
+    assert.equal(k('k2').controle.status, 'ongewijzigd'); assert.equal(k('k2').prijs, 61950); assert.equal(k('k2').prijzen, undefined);
+    assert.equal(k('k3').controle.status, 'weg'); assert.match(k('k3').controle.melding, /bestaat niet meer/);
+    assert.equal(k('k3').prijs, 49900, 'een verdwenen advertentie verandert de prijs niet');
+    assert.equal(k('k4').controle.status, 'gestegen'); assert.equal(k('k4').prijs, 54990);
+    assert.equal(k('k4').status, 'bod', 'de status kiest de gebruiker zelf');
+    assert.equal(k('k5').controle, undefined, 'gekocht: niet meer gecontroleerd');
+    assert.equal(k('k6').controle, undefined, 'site die de app niet kan lezen');
+    assert.equal(k('k7').controle.status, 'weg');
+    assert.equal(k('k8').controle.status, 'fout'); assert.match(k('k8').controle.melding, /HTTP 500/);
+    assert.equal(k('k9').controle, undefined);
+    assert.ok(!aanvragen.some(a => /gekocht|gocar/.test(a)), 'gekochte en onleesbare kandidaten worden niet opgevraagd');
+
+    const lijst = d.querySelector('#kandTabel').textContent;
+    assert.match(lijst, /↓ €\s1\.495 op/); assert.match(lijst, /↑ €\s2\.000 op/); assert.match(lijst, /niet meer online/);
+    assert.match(lijst, /prijs ongewijzigd op/); assert.match(lijst, /kon niet lezen op/);
+    assert.match(d.querySelector('#toast').textContent, /^6 kandidaten bijgewerkt: 1 in prijs gedaald, 1 in prijs gestegen, 2 niet meer online, 1 ongewijzigd, 1 niet te lezen\. 1 overgeslagen/);
+    const bewaard = JSON.parse(w.localStorage.getItem(SLEUTEL));
+    assert.equal(bewaard.kandidaten.find(x => x.id === 'k1').prijs, 65455, 'bewaard in de browser');
+    assert.equal(d.querySelector('#btnBijwerken').textContent, 'Kandidaten bijwerken'); assert.equal(d.querySelector('#btnBijwerken').disabled, false);
+  });
+
+  test('zonder extensie: mobile.de wordt overgeslagen en de app zegt waarom', async () => {
+    const { w, d, G } = laadApp({ fetch: proxy, opslag: JSON.stringify({ kandidaten: [kandidaten[3], kandidaten[1]], profielen: [] }) });
+    await w.werkKandidatenBij();
+    assert.equal(G('S').kandidaten.find(x => x.id === 'k4').controle, undefined);
+    assert.equal(G('S').kandidaten.find(x => x.id === 'k2').controle.status, 'ongewijzigd');
+    assert.match(d.querySelector('#toast').textContent, /1 kandidaat bijgewerkt: 1 ongewijzigd\. 1 overgeslagen: die site kan de app niet lezen, of het is mobile\.de zonder extensie\./);
+  });
+
+  test('niets te doen: uitleg in plaats van een lege ronde', async () => {
+    const { w, d } = laadApp({ opslag: JSON.stringify({ kandidaten: [kandidaten[3]], profielen: [] }) });
+    await w.werkKandidatenBij();
+    assert.match(d.querySelector('#toast').textContent, /Geen van je 1 lopende kandidaten staat op een site die de app kan lezen \(mobile\.de kan alleen met de KAAP-extensie\)/);
+    const leeg = laadApp();
+    await leeg.w.werkKandidatenBij();
+    assert.match(leeg.d.querySelector('#toast').textContent, /Geen lopende kandidaten met een link/);
+  });
+
+  test('verdwenen advertentie herkend: AutoScout24 en Kleinanzeigen tonen dan zoekresultaten, Marktplaats geeft 410', () => {
+    const { w } = laadApp();
+    const fout = (f) => { try { f(); } catch (e) { return e; } return null; };
+    const as24 = fout(() => w.parseerAs24Advertentie('<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"listings":[{"id":"x"}],"numberOfResults":20}}}</script>', 'https://www.autoscout24.de/angebote/x'));
+    assert.equal(as24.weg, true); assert.match(as24.message, /verkocht of verwijderd/);
+    const ka = fout(() => w.parseerKleinanzeigenAdvertentie(fixture('kleinanzeigen-zoek.html'), 'https://www.kleinanzeigen.de/s-anzeige/x/1-216-1'));
+    assert.equal(ka.weg, true); assert.match(ka.message, /bestaat niet meer/);
+    const kapot = fout(() => w.parseerKleinanzeigenAdvertentie('<html><body><h1>Wartungsarbeiten</h1></body></html>', 'https://www.kleinanzeigen.de/s-anzeige/x/1-216-1'));
+    assert.equal(kapot.weg, undefined, 'een kapotte of andere pagina is niet hetzelfde als verkocht');
+    const opbouw = fout(() => w.parseerAs24Advertentie('<html>geen data</html>', 'https://www.autoscout24.de/angebote/x'));
+    assert.equal(opbouw.weg, undefined);
+  });
+});
+
+// ---------------------------------------------------------------- Verwachte verkoopprijs NL
+describe('Verwachte verkoopprijs NL', () => {
+  test('motorcode uit de titel', () => {
+    const { w } = laadApp();
+    const gevallen = {
+      'BMW X5 xDrive45e M Sport': '45e', 'BMW X5 xDrive 30d': '30d', 'BMW X5 xDr45e M SPORT / PANODAK': '45e', 'BMW X5 30 d xDrive M Sport': '30d', 'BMW X3 M40i': '40i',
+      'BMW 330 e Touring': '330e', 'Mercedes-Benz GLE 350 de 4MATIC': '350de', 'Audi Q8 50 TDI quattro': '50tdi', 'Audi Q7 55 TFSI e': '55tfsi',
+      'BMW X5 M Sport 22 Zoll Pano': null, 'Volvo XC90 T8 Recharge': null, 'BMW X5 2022 360 Kamera': null, 'VW Golf 2.0 TSI': null, 'BMW X5 20 inch velgen': null,
+    };
+    for (const [titel, code] of Object.entries(gevallen)) assert.equal(w.motorCode(titel), code, titel);
+  });
+
+  test('mediaan van vergelijkbare NL-auto\'s: zelfde brandstof en motor, bouwjaar ±1, km binnen 20.000 of 30%', () => {
+    const { w } = laadApp();
+    const ref = { bron: 'Gaspedaal', items: w.parseerGaspedaalZoek(fixture('gaspedaal-referentie.html')).items };
+    assert.equal(ref.items.length, 12);
+    // Zeven van de twaalf passen: twee te oud of te veel km, een andere motor (50e), diesel en benzine vallen af.
+    // Ook een 45e waarbij de verkoper alleen het vermogen van de benzinemotor noemde (210 kW) telt mee: de motorcode beslist.
+    // Prijzen: 59.950 61.500 62.450 63.000 64.950 66.000 69.950 -> mediaan 63.000; middelste helft 61.975 tot 65.475.
+    assert.deepEqual(plain(w.nlVerkoop({ title: 'BMW X5 xDrive45e M Sport', ez: '2022-03', km: 60000, fuel: 'hybride', kw: 290 }, ref)),
+      { mediaan: 63000, laag: 61975, hoog: 65475, n: 7, bron: 'Gaspedaal' });
+    assert.equal(w.nlVerkoop({ title: 'BMW X5 xDrive30d', ez: '2022', km: 58000, fuel: 'diesel', kw: 210 }, ref), null, 'minder dan drie vergelijkbare: geen bedrag');
+    assert.equal(w.nlVerkoop({ title: 'BMW X5 xDrive45e', km: 60000, fuel: 'hybride' }, ref), null, 'zonder bouwjaar geen schatting');
+    const zelf = ref.items.find(x => x.price === 64950);
+    assert.equal(w.nlVerkoop(zelf, ref).n, 6, 'een NL-advertentie telt niet als zijn eigen vergelijking');
+  });
+
+  test('zoeken met extensie: per model één Gaspedaal-pagina zonder prijsfilters, bedrag op de kaart en bij Naar kandidaat', async () => {
+    const { w, d, G } = laadApp();
+    const pagina = (url) => /gaspedaal\.nl/.test(url) && /bmin=2019/.test(url) ? fixture('gaspedaal-referentie.html') : paginas(url);
+    const verzoeken = nepExtensie(w, pagina);
+    w.hulpPing(); await wachtOpHulp(w);
+    w.eval("S.instellingen.proxy = ''");
+    zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5'); zet(w, 'p_bjvan', '2020'); zet(w, 'p_pmax', '90000');
+    d.querySelector('#p_sites input[value="mobile"]').click();   // alleen Gaspedaal als resultaat
+    await w.zoekLive();
+
+    const gp = verzoeken.filter(v => /gaspedaal\.nl/.test(v.url)).map(v => v.url);
+    assert.equal(gp.length, 2, 'resultaten en vergelijkingsmateriaal');
+    const ref = gp.find(u => /bmin=2019/.test(u));
+    assert.ok(ref, 'vergelijkingsmateriaal: bouwjaar een jaar ruimer'); assert.doesNotMatch(ref, /pmax|pmin|kmax/, 'zonder je filters op prijs en km');
+    assert.match(ref, /\/bmw\/x5\/automatisch\?/);
+    const nl = G('LIVE').nlRef.x5;
+    assert.equal(nl.status, 'klaar'); assert.equal(nl.items.length, 12); assert.equal(nl.bron, 'Gaspedaal');
+
+    const kaarten = [...d.querySelectorAll('#resLijst .res')];
+    const eerste = kaarten.find(k => /XDrive45e High Executive M-SPORT/.test(k.textContent));
+    // 2021, 89.901 km, 45e: vergelijkbaar zijn 2021/70.000 (59.950), 2020/65.000 (54.950) en 2022/75.000 (62.450) -> mediaan 59.950
+    assert.match(eerste.querySelector('.nlv').textContent, /verkoop NL ≈ €\s59\.950/);
+    assert.match(eerste.querySelector('.nlv').getAttribute('title'), /3 vergelijkbare auto's die nu in Nederland te koop staan \(Gaspedaal\)/);
+    assert.match(d.querySelector('#resLijst').textContent, /Verwachte verkoopprijs NL per auto.*X5: 12 auto's op Gaspedaal/);
+    const zonder = kaarten.find(k => /Head-Up Display - Lederen/.test(k.textContent));
+    assert.equal(zonder.querySelector('.nlv'), null, 'te weinig vergelijkbare auto\'s: geen bedrag');
+
+    eerste.querySelector('.naarkand').click();
+    assert.equal(veld(w, 'k_verkoop'), '59950', 'Naar kandidaat vult de verwachte verkoopprijs in');
+
+    // Nog een keer zoeken binnen twee uur: het vergelijkingsmateriaal komt uit het geheugen.
+    verzoeken.length = 0;
+    await w.zoekLive();
+    assert.equal(verzoeken.filter(v => /bmin=2019/.test(v.url)).length, 0);
+    assert.equal(G('LIVE').nlRef.x5.items.length, 12);
+  });
+
+  test('zonder extensie maar met proxy: AutoScout24 NL als vergelijkingsmateriaal', async () => {
+    const lijst = (n, prijs0, pre) => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { numberOfResults: n, listings: Array.from({ length: n }, (_, i) => ({
+      id: pre + i, url: '/aanbod/bmw-x5-' + pre + i, price: { priceRaw: prijs0 + i * 1000 }, tracking: { mileage: String(50000 + i * 1000), firstRegistration: '06-2022' },
+      vehicle: { make: 'BMW', model: 'X5', modelVersionInput: 'xDrive45e M Sport', fuel: 'Elektro/Benzine' } })) } } }) + '</script>';
+    const aanvragen = [];
+    const { w, d, G } = laadApp({ fetch: (adres) => {
+      const doel = new URL(String(adres)).searchParams.get('url') || ''; aanvragen.push(doel);
+      if (/autoscout24\.nl/.test(doel)) return Promise.resolve({ ok: true, status: 200, text: async () => lijst(5, 60000, 'nl') });
+      if (/autoscout24\.de/.test(doel)) return Promise.resolve({ ok: true, status: 200, text: async () => lijst(1, 52000, 'de') });
+      return Promise.reject(new Error('onverwacht adres in de test: ' + doel));
+    } });
+    w.eval("S.instellingen.proxy = 'https://proxy.test/'");
+    zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5'); zet(w, 'p_bjvan', '2022'); zet(w, 'p_pmax', '60000');
+    d.querySelectorAll('#p_sites input').forEach(i => { if (i.checked !== (i.value === 'as24de')) i.click(); });
+    await w.zoekLive();
+    const ref = aanvragen.find(a => /autoscout24\.nl/.test(a));
+    assert.ok(ref); assert.match(ref, /fregfrom=2021/); assert.doesNotMatch(ref, /priceto/);
+    assert.equal(G('LIVE').nlRef.x5.bron, 'AutoScout24 NL');
+    assert.match(d.querySelector('#resLijst .nlv').textContent, /verkoop NL ≈ €\s62\.000/, 'mediaan van 60.000 t/m 64.000');
+  });
+
+  test('zonder extensie en zonder proxy: geen vergelijkingsmateriaal en geen fout', async () => {
+    const { w, d, G } = laadApp();
+    w.eval("S.instellingen.proxy = ''");
+    zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5');
+    await w.zoekLive();
+    assert.deepEqual(plain(G('LIVE').nlRef), {});
+    assert.doesNotMatch(d.querySelector('#resLijst').textContent, /Verwachte verkoopprijs NL/);
+  });
+});
+
 describe('Vervallen bladwijzers KAAP teller en KAAP kandidaat', () => {
   test('oude teller-bladwijzer: geen getal meer opgeslagen, wel uitleg', () => {
     const { w, d } = laadApp({ url: 'https://kaap.test/inkoop.html?teller=5&bv=2&bron=' + encodeURIComponent('https://www.gaspedaal.nl/bmw/x5') });

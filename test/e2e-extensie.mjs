@@ -22,11 +22,14 @@ import { mkdtempSync, rmSync, existsSync, cpSync, readFileSync, writeFileSync } 
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:net';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(hier, '..');
 const EXT_BRON = join(REPO, 'kaap-extensie');
-const WEB = 8765;
+// Een vrije poort, zodat de test niet botst met een andere lokale server (05-10-2026 stond op 8765 een
+// devserver van KAAP Studio; de test opende toen die in plaats van de app).
+const WEB = await new Promise((ok, mis) => { const s = createServer(); s.once('error', mis); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => ok(port)); }); });
 const KANDIDATEN = [
   process.env.BROWSER,
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -116,6 +119,13 @@ try {
   // 1. app lokaal serveren en browser starten
   const web = spawn('python3', ['-m', 'http.server', String(WEB), '--bind', '127.0.0.1', '--directory', REPO], { stdio: 'ignore' });
   kinderen.push(web);
+  // Eerst nagaan dat deze server echt de app uit deze map geeft.
+  let eigen = false;
+  for (let i = 0; i < 20 && !eigen; i++) {
+    await slaap(250);
+    try { eigen = (await (await fetch(`http://127.0.0.1:${WEB}/inkoop.html`)).text()).includes(readFileSync(join(REPO, 'inkoop.html'), 'utf8').match(/const APP_VERSIE = '[\d.]+'/)[0]); } catch (e) {}
+  }
+  if (!eigen) throw new Error(`de lokale server op poort ${WEB} geeft niet de app uit deze map`);
   const b = startBrowser();
   let versie = null;
   for (let i = 0; i < 40 && !versie; i++) { await slaap(500); try { versie = await b.stuur('Browser.getVersion'); } catch (e) {} }
@@ -145,10 +155,12 @@ try {
   const gp = await evalueer(b, sessionId, `window.__kaapE2E.haal('https://www.gaspedaal.nl/bmw/x5/automatisch?bmin=2020&kmax=100000&pmin=50000&pmax=90000&srt=dt-d', 'numberOfPages', '${CONTROLE}').then(r => ({ ok: r.ok, gevonden: r.gevonden, kb: r.html ? Math.round(r.html.length / 1024) : 0, ms: r.ms, titel: r.titel, fout: r.fout }))`);
   check('Gaspedaal: pagina opgehaald via een achtergrondtabblad', !!(gp.ok && gp.gevonden && gp.kb > 50), gp.ok ? `${gp.kb} kB in ${gp.ms} ms, titel "${(gp.titel || '').slice(0, 50)}"` : gp.fout);
 
-  // 7. mobile.de: echte pagina, of de controlepagina netjes gemeld
+  // 7. mobile.de: echte pagina, of de controlepagina netjes gemeld. De extensie stopt 12 s nadat de
+  //    controlepagina verschijnt en in elk geval na 25 s (STANDAARD_MS); op een drukke computer laadt de
+  //    pagina zelf soms 10 s, dus de grens hier is 25 s plus marge en niet de 12 s.
   const mob = await evalueer(b, sessionId, `window.__kaapE2E.haal('https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&dam=false&ms=3500%3B49%3B%3BM+Sportpaket&fr=2020%3A&ml=%3A100000&p=50000%3A90000&tr=AUTOMATIC_GEAR&sb=doc&od=down', 'numResultsTotal', '${CONTROLE}').then(r => ({ ok: r.ok, gevonden: r.gevonden, controle: r.controle === true, isControle: !!(r.html && r.html.includes('${CONTROLE}')), kb: r.html ? Math.round(r.html.length / 1024) : 0, ms: r.ms, fout: r.fout }))`);
   if (mob.ok && mob.gevonden) check('mobile.de: pagina opgehaald via een achtergrondtabblad', true, `${mob.kb} kB in ${mob.ms} ms`);
-  else check('mobile.de: controlepagina voor de testbrowser, door de extensie gemeld en niet omzeild', !!(mob.ok && mob.controle && mob.isControle && mob.ms < 20000), mob.ok ? `gestopt na ${mob.ms} ms` : mob.fout);
+  else check('mobile.de: controlepagina voor de testbrowser, door de extensie gemeld en niet omzeild', !!(mob.ok && mob.controle && mob.isControle && mob.ms <= 27000), mob.ok ? `gestopt na ${mob.ms} ms` : mob.fout);
 
   // 8. achtergrondtabbladen zijn weer gesloten
   await slaap(800);
@@ -165,10 +177,11 @@ try {
     await zoekLive();
     const sites = LIVE.sites.map(s => ({ site: s.site, status: s.status, n: s.items.length, count: s.count, fout: s.error, eerste: s.items[0] ? [s.items[0].title, s.items[0].price, s.items[0].ez, s.items[0].km, s.items[0].fuel].join(' | ') : null }));
     const ms = Date.now() - t0;
-    const kaart = [...document.querySelectorAll('#resLijst .res')].find(k => k.querySelector('.naarkand'));
+    const nl = { ref: Object.values(LIVE.nlRef || {}).map(r => ({ status: r.status, n: r.items.length, bron: r.bron, fout: r.fout })), kaarten: [...document.querySelectorAll('#resLijst .nlv')].map(e => e.textContent) };
+    const kaart = [...document.querySelectorAll('#resLijst .res')].find(k => k.querySelector('.nlv')) || [...document.querySelectorAll('#resLijst .res')].find(k => k.querySelector('.naarkand'));
     let kandidaat = null;
     if (kaart) { kaart.querySelector('.naarkand').click(); await verrijkBezig; const v = (id) => document.getElementById(id).value; kandidaat = { tab: document.getElementById('tab-kandidaten').classList.contains('on'), oms: v('k_oms'), prijs: v('k_prijs'), km: v('k_km'), land: v('k_land'), url: v('k_url').slice(0, 50) }; }
-    return { ms, hulp: HULP.aanwezig, kop: document.getElementById('hulpStatus').hidden === false, sites, kaarten: document.querySelectorAll('#resLijst .res').length, kandidaat, versie: APP_VERSIE };
+    return { ms, hulp: HULP.aanwezig, kop: document.getElementById('hulpStatus').hidden === false, sites, kaarten: document.querySelectorAll('#resLijst .res').length, kandidaat, nl, verkoopIngevuld: document.getElementById('k_verkoop').value, versie: APP_VERSIE };
   })()`);
   console.log('App:', 'v' + app.versie);
   check('app ziet de extensie en toont dat in de kop', app.hulp === true && app.kop === true);
@@ -177,6 +190,10 @@ try {
   if (mbs && mbs.status === 'klaar') check('app: Zoeken toont resultaten van mobile.de', mbs.n >= 0, `${mbs.n} getoond van ${mbs.count} op de site; eerste: ${mbs.eerste}`);
   else check('app: mobile.de-controlepagina wordt in gewone taal gemeld', !!mbs && /controlepagina/.test(mbs.fout || ''), mbs ? mbs.fout : 'mobile.de ontbreekt');
   check('app toont resultaatkaarten', app.kaarten > 0, `${app.kaarten} kaarten, zoeken duurde ${app.ms} ms`);
+  const ref = app.nl && app.nl.ref[0];
+  check('app: verwachte verkoopprijs NL uit echte Gaspedaal-advertenties', !!(ref && ref.status === 'klaar' && ref.n > 0 && app.nl.kaarten.length > 0),
+    ref ? (ref.status === 'klaar' ? `${ref.n} NL-advertenties als vergelijking, bedrag op ${app.nl.kaarten.length} van ${app.kaarten} kaarten, bijv. "${app.nl.kaarten[0] || '-'}"` : ref.fout || ref.status) : 'geen vergelijkingsmateriaal');
+  if (app.nl && app.nl.kaarten.length) check('Naar kandidaat neemt de verwachte verkoopprijs over', +app.verkoopIngevuld > 0, 'ingevuld: ' + app.verkoopIngevuld);
   check('knop Naar kandidaat vult het formulier', !!(app.kandidaat && app.kandidaat.tab && app.kandidaat.oms && app.kandidaat.prijs), JSON.stringify(app.kandidaat));
 
   try { await b.stuur('Browser.close'); } catch (e) {}

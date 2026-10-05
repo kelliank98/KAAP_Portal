@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.48
+# KAAP Inkoop Radar v1.49
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.48_2026-10-03.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.49_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -92,6 +92,23 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - Wat de advertentie niet noemt, blijft leeg of blijft staan zoals jij het invulde. Is de advertentie weg, dan zegt de app dat.
 - De bladwijzers *KAAP kandidaat* en *KAAP teller* zijn vervallen (v1.45): ze gaven bij de controle op echte advertenties vaak een verkeerde prijs of een verkeerd aantal door. Verwijder ze uit je bladwijzerbalk (rechtsklik > *Delete*); ze staan alleen daar. De aantallen die de teller ooit in de app bewaarde, ruimt de app zelf op (v1.48).
 
+## Kandidaten bijwerken (v1.49)
+
+- Knop **Kandidaten bijwerken** boven de kandidatenlijst. De app haalt de advertentie van elke lopende kandidaat opnieuw op (niet bij status Gekocht of Afgewezen).
+- In de lijst zie je per kandidaat: **↓ € 1.500 op 05-10** (prijs gedaald), **↑** (gestegen), **niet meer online**, **prijs ongewijzigd** of **kon niet lezen** (met de reden als je de muis erop houdt).
+- Een nieuwe vraagprijs gaat in *Vraagprijs* en dus in kostprijs en marge; de oude prijzen blijven bewaard. De status verandert de app niet: dat kies je zelf.
+- "Niet meer online" betekent dat de site zelf zegt dat de advertentie weg is: AutoScout24, Marktplaats en 2dehands geven dan HTTP 410, en AutoScout24 en Kleinanzeigen sturen een verdwenen advertentie door naar zoekresultaten (nagemeten op 05-10-2026). Bij mobile.de herkent de app dat nog niet zeker; dan staat er "kon niet lezen".
+- Werkt voor dezelfde sites als *Gegevens ophalen*: AutoScout24, Marktplaats, 2dehands, 2ememain en Kleinanzeigen via de proxy, mobile.de via de extensie.
+
+## Verwachte verkoopprijs NL (v1.49)
+
+- Bij elk resultaat van *Zoeken* staat onder de prijs **verkoop NL ≈ € …**: de mediaan van de vraagprijzen van vergelijkbare auto's die nu in Nederland te koop staan. Houd de muis erop voor het aantal auto's en de middelste helft van de prijzen.
+- Vergelijkbaar is: zelfde brandstof, zelfde motor (de motorcode in de titel, zoals 45e of 30d; anders het vermogen ±12%), bouwjaar ±1 en een kilometerstand binnen 20.000 km of 30%. Pas vanaf drie vergelijkbare auto's staat er een bedrag.
+- Bron: per model één pagina van Gaspedaal (de 100 nieuwste, via de extensie), zonder je filters op prijs, km en uitvoering en met een bouwjaar ruimer. Zonder extensie gebruikt de app AutoScout24 NL via de proxy. Het vergelijkingsmateriaal blijft twee uur bewaard, zodat opnieuw zoeken sneller is.
+- **Naar kandidaat** vult de verwachte verkoopprijs in het kandidaatformulier in; daarmee rekent de app de marge uit. Pas hem aan als je het beter weet.
+- Het zijn vraagprijzen van dealers en particulieren, geen verkochte prijzen. Bij modellen die in Nederland weinig te koop staan (bijvoorbeeld diesels) zijn er vaak minder dan drie vergelijkbare auto's; dan staat er geen bedrag.
+- Nagemeten op 05-10-2026 op de echte Gaspedaal-pagina van de X5: 98 van de 100 titels hadden een herkenbare motorcode, en een X5 45e uit 2022 met 60.000 km kwam uit op € 61.945 (13 vergelijkbare auto's).
+
 ## Testen
 
 Vóór elke oplevering:
@@ -101,10 +118,10 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 157 punten:
+De tests draaien zonder netwerk en controleren 166 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
-- `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat* en het gelijk houden van twee tabbladen.
+- `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
 - `test/extensie.test.mjs` test de achtergrond van de extensie met een nagebootste Chrome: rechten in het manifest, welke adressen mogen, wachten, opgeven bij een controlepagina, tijdslimiet, hoogstens drie tabbladen.
 - `test/proxy.test.mjs` test de toegangscontrole van de Worker, ook met `SLEUTEL_VERPLICHT`.
 
@@ -116,7 +133,7 @@ De test in een echte browser hoort niet bij `npm test`, want hij heeft Chrome en
 npm run test:browser
 ```
 
-Die start Chrome met een leeg tijdelijk profiel, laadt een tijdelijke kopie van de extensie (met als enige verschil dat die ook naar de testpagina op `127.0.0.1` luistert), en controleert de brug met de app, de adresweigering, een echte Gaspedaal-pagina, het sluiten van tabbladen en het zoeken in de app. Let op de grens van deze test: mobile.de herkent een door een testprogramma bestuurde browser en toont dan een controlepagina. De test controleert in dat geval dat de extensie dat meldt en niets omzeilt; of mobile.de in jouw eigen Chrome resultaten geeft, zie je met *Extensie testen* in Instellingen.
+Die kiest een vrije poort, start Chrome met een leeg tijdelijk profiel, laadt een tijdelijke kopie van de extensie (met als enige verschil dat die ook naar de testpagina op `127.0.0.1` luistert), en controleert de brug met de app, de adresweigering, een echte Gaspedaal-pagina, het sluiten van tabbladen en het zoeken in de app. Let op de grens van deze test: mobile.de herkent een door een testprogramma bestuurde browser en toont dan een controlepagina. De test controleert in dat geval dat de extensie dat meldt en niets omzeilt; of mobile.de in jouw eigen Chrome resultaten geeft, zie je met *Extensie testen* in Instellingen.
 
 De BPM-referentiewaarden zijn met de hand uit de tarieftabellen uitgerekend en staan als berekening in het testbestand. Wijzig je een tabel, dan hoort daar een bron van de Belastingdienst bij en een nieuw referentiegeval. De voorbeeldpagina's in `test/fixtures/` zijn ingekorte kopieën van echte pagina's van 03-10-2026. Namen van verkopers, adressen, telefoonnummers, advertentienummers, foto-adressen en kentekens zijn vervangen door verzonnen waarden, want de repo is openbaar; doe dat ook bij een nieuwe voorbeeldpagina. Verandert een site zijn opbouw, bewaar dan een nieuwe pagina en werk de lezer en de verwachting samen bij.
 
