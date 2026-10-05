@@ -226,47 +226,64 @@ describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
   });
 });
 
-describe('Prijsbenchmark (v1.39)', () => {
-  const items = [
-    {price: 60000, ez: '2021-03'}, {price: 62000, ez: '2021-05'}, {price: 65000, ez: '2021-01'}, {price: 70000, ez: '2021-09'},
-    {price: 45000, ez: '2021-02'},   // −27% onder de mediaan van 2021
-    {price: 40000, ez: '2019-06'},   // 2019: maar één auto, geen oordeel
-    {price: 50000, ez: null},        // zonder bouwjaar telt niet mee
+describe('Scherp geprijsd: NL t.o.v. de 5 goedkoopste NL (v1.59)', () => {
+  const nl = [
+    {price: 42909, ez: '2021-03', km: 90000},
+    {price: 44900, ez: '2021-05', km: 80000},
+    {price: 44900, ez: '2021-05', km: 80000},   // dezelfde auto op een tweede site: telt één keer
+    {price: 48909, ez: '2021-01', km: 70000},
+    {price: 51740, ez: '2021-09', km: 60000},
+    {price: 52950, ez: '2021-02', km: 50000},
+    {price: 60000, ez: '2021-06', km: 40000},
+    {price: 1010, ez: '2021-11', km: 20000},    // lease-advertentie: minder dan de helft van de mediaan, telt niet mee
   ];
-  test('index per model en bouwjaar, gesorteerd', () => {
-    const idx = w.prijsIndex([{model: 'X5', items}]);
-    assert.deepEqual(plain(idx['x5|2021']), [45000, 60000, 62000, 65000, 70000]);
-    assert.deepEqual(plain(idx['x5|2019']), [40000]);
-    assert.equal(Object.keys(idx).length, 2);
+  const nl2022 = [{price: 50000, ez: '2022-01'}, {price: 52000, ez: '2022-02'}, {price: 53000, ez: '2022-03'}, {price: 70000, ez: '2022-04'}];   // maar 4 auto's
+  const de = [{price: 30000, ez: '2021-04', km: 50000}, {price: 31000, ez: '2021-04', km: 52000}, {price: 32000, ez: '2021-05'}, {price: 33000, ez: '2021-06'}, {price: 34000, ez: '2021-07'}];
+  const groepen = [{model: 'X5', land: 'NL', items: nl.slice(0, 3)}, {model: 'X5', land: 'NL', items: nl.slice(3).concat(nl2022)}, {model: 'X5', land: 'DE', items: de}];
+
+  test('index: alleen NL-advertenties, dubbele één keer, spotprijzen eruit, gemiddelde van de 5 goedkoopste', () => {
+    const idx = w.prijsIndex(groepen);
+    assert.deepEqual(Object.keys(idx), ['x5|2021'], 'Duitse auto\'s tellen niet mee; 2022 heeft maar 4 NL-auto\'s');
+    assert.deepEqual(plain(idx['x5|2021'].vijf), [42909, 44900, 48909, 51740, 52950]);
+    assert.equal(idx['x5|2021'].ref, 48281.6);
+    assert.equal(idx['x5|2021'].n, 6);
   });
-  test('mediaan (oneven aantal) en drempel van 15%', () => {
-    G('S').instellingen.scherpPct = 15;
-    const idx = w.prijsIndex([{model: 'X5', items}]);
-    const s = w.scherpPrijs(items[4], 'X5', idx);
-    assert.equal(s.mediaan, 62000);
-    assert.equal(s.pct, 27);
-    assert.equal(s.n, 5);
-    assert.equal(w.scherpPrijs(items[0], 'X5', idx), null);   // 60000 is maar 3% onder de mediaan
-    assert.equal(w.scherpPrijs(items[5], 'X5', idx), null);   // 2019: te weinig auto's
-    assert.equal(w.scherpPrijs(items[4], 'X3', idx), null);   // ander model: geen index
-  });
-  test('mediaan bij even aantal is het gemiddelde van de middelste twee', () => {
-    const idx = w.prijsIndex([{model: 'X5', items: items.slice(0, 4).concat([{price: 30000, ez: '2021-01'}, {price: 30000, ez: '2021-01'}])}]);
-    // gesorteerd: 30000, 30000, 60000, 62000, 65000, 70000 -> mediaan 61000
-    assert.equal(w.scherpPrijs({price: 30000, ez: '2021-01'}, 'X5', idx).mediaan, 61000);
+  test('label vanaf 10% onder dat gemiddelde, alleen op NL-advertenties', () => {
+    G('S').instellingen.scherpPct = 10;
+    const idx = w.prijsIndex(groepen);
+    const s = w.scherpPrijs(nl[0], 'X5', idx, 'NL');
+    assert.equal(s.pct, 11); assert.equal(s.ref, 48282); assert.equal(s.jaar, '2021');
+    assert.equal(w.scherpPrijs(nl[1], 'X5', idx, 'NL'), null, '44.900 is maar 7% onder het gemiddelde');
+    assert.equal(w.scherpPrijs(nl[7], 'X5', idx, 'NL'), null, 'spotprijs krijgt geen label');
+    assert.equal(w.scherpPrijs(de[0], 'X5', idx, 'DE'), null, 'Duitse advertentie: geen label');
+    assert.equal(w.scherpPrijs({price: 30000, ez: '2021-04'}, 'X5', idx, 'BE'), null, 'Belgische advertentie: geen label');
+    assert.equal(w.scherpPrijs(nl2022[0], 'X5', idx, 'NL'), null, 'minder dan 5 NL-auto\'s: geen oordeel');
+    assert.equal(w.scherpPrijs(nl[0], 'X3', idx, 'NL'), null, 'ander model: geen index');
   });
   test('drempel uit Instellingen wordt gebruikt', () => {
-    const idx = w.prijsIndex([{model: 'X5', items}]);
-    G('S').instellingen.scherpPct = 30;
-    assert.equal(w.scherpPrijs(items[4], 'X5', idx), null);
+    const idx = w.prijsIndex(groepen);
     G('S').instellingen.scherpPct = 15;
+    assert.equal(w.scherpPrijs(nl[0], 'X5', idx, 'NL'), null);
+    G('S').instellingen.scherpPct = 10;
   });
-  test('resultaatkaart toont het label', () => {
-    const idx = w.prijsIndex([{model: 'X5', items}]);
-    const kaart = w.resKaart({title: 'BMW X5', url: 'https://x.test/1', price: 45000, ez: '2021-02', fuel: 'benzine'}, 'DE', false, null, {}, {model: 'X5', prijsIdx: idx});
-    assert.ok(kaart.textContent.includes('scherp: −27% t.o.v. mediaan 2021'), kaart.textContent);
-    const gewoon = w.resKaart({title: 'BMW X5', url: 'https://x.test/2', price: 62000, ez: '2021-02', fuel: 'benzine'}, 'DE', false, null, {}, {model: 'X5', prijsIdx: idx});
-    assert.ok(!gewoon.textContent.includes('scherp'));
+  test('resultaatkaart: label op een NL-kaart, met de vijf prijzen in de uitleg; niet op een Duitse kaart', () => {
+    const idx = w.prijsIndex(groepen);
+    const auto = {title: 'BMW X5 xDrive45e', url: 'https://x.test/1', price: 42909, ez: '2021-03', km: 90000, fuel: 'hybride'};
+    const kaart = w.resKaart(auto, 'NL', false, null, {}, {model: 'X5', prijsIdx: idx});
+    assert.ok(kaart.textContent.includes('scherp: −11% t.o.v. 5 goedkoopste NL'), kaart.textContent);
+    const uitleg = kaart.querySelector('.tag.marge').getAttribute('title').replace(/\s/g, ' ');
+    assert.match(uitleg, /Gemiddelde van de 5 goedkoopste NL-advertenties van dit model uit 2021 in deze zoekopdracht: € 48\.282 \(€ 42\.909, € 44\.900, € 48\.909, € 51\.740, € 52\.950\)/);
+    const duits = w.resKaart(Object.assign({}, auto, {url: 'https://x.test/2'}), 'DE', false, null, {}, {model: 'X5', prijsIdx: idx});
+    assert.ok(!duits.textContent.includes('scherp'));
+  });
+  test('Instellingen: nieuwe omschrijving, standaard 10%; de oude drempel (t.o.v. de mediaan) vervalt één keer', () => {
+    assert.match(d.querySelector('#s_scherp').closest('label').textContent, /% onder 5 goedkoopste NL/);
+    const laad = (opslag) => new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(win){ win.fetch = () => Promise.reject(new Error('geen netwerk in test')); win.scrollTo = () => {}; win.localStorage.setItem('kaap_inkoop_v1', JSON.stringify(opslag)); } }).window;
+    const oud = laad({ instellingen: { scherpPct: 15 } });
+    assert.equal(oud.eval('S.instellingen.scherpPct'), 10);
+    assert.equal(oud.eval('S.instellingen.scherpRegel'), 2);
+    assert.equal(laad({ instellingen: { scherpPct: 12, scherpRegel: 2 } }).eval('S.instellingen.scherpPct'), 12, 'een zelf gekozen drempel na v1.59 blijft staan');
   });
 });
 

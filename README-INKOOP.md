@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.58
+# KAAP Inkoop Radar v1.59
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.58_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.59_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -188,7 +188,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - Gestructureerde opties (Sportpakket, panoramadak, enz.) zijn secundair: ze vangen minder dan het zoekwoord. Maximaal 2 à 3 per profiel, elk vinkje kost echte auto's.
 - Prijs minimum en kW minimum zijn de meest betrouwbare ondergrens voor goed uitgeruste auto's. kW werkt op AutoScout24, mobile.de (`pw=`) en Kleinanzeigen (`autos.power_i`, omgerekend naar PS); beide live nagemeten op 22-09-2026. Geeft een site het vermogen mee in het resultaat, dan rekent de app het ook zelf na.
 - Het BTW/marge-filter werkt op mobile.de, Marktplaats, 2dehands en 2ememain; AutoScout24 en Kleinanzeigen kennen het niet. De app zegt dit onder het veld.
-- **Scherp geprijsd**: in de resultaten krijgt een advertentie een label als hij 15% of meer (instelbaar) onder de mediaanprijs van hetzelfde model en bouwjaar in die zoekopdracht ligt, vanaf drie vergelijkbare auto's. Dat zijn de auto's die snel weg zijn.
+- **Scherp geprijsd** (v1.59): alleen NL-advertenties kunnen dit label krijgen, want alleen NL-prijzen (inclusief BPM) zijn onderling te vergelijken. Een NL-advertentie is scherp als hij 10% of meer (instelbaar) onder het gemiddelde van de 5 goedkoopste NL-advertenties van hetzelfde model en bouwjaar in die zoekopdracht zit. Vanaf 5 auto's; dezelfde auto op twee sites telt één keer, en spotprijzen (lease, onderdelen: onder de helft van de mediaan) tellen niet mee. Op echte X5-data van 05-10-2026 (186 auto's uit zes sites): 3 labels, tegen 31 met de oude regel (15% onder de mediaan van alle landen samen).
 
 ## Kostprijs en marge per kandidaat
 
