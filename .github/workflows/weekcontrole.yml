@@ -1,12 +1,17 @@
 name: Weekcontrole
 
 on:
-  # Zondag 12:00 Nederlandse tijd, het hele jaar door.
-  # GitHub draait op UTC; daarom twee tijden plus een controle op de klok.
+  # Elke zondag. GitHub start geplande taken vaak uren later dan gevraagd (gemeten: 4 tot 5 uur).
+  # Tot 05-10-2026 stond hier een controle "is het 12 uur in Nederland?"; door die vertraging
+  # sloeg die elke week alles over, terwijl de run toch groen werd. Daarom geen tijdscontrole meer:
+  # de controle draait op zondag zodra GitHub eraan toekomt.
   schedule:
-    - cron: "0 10 * * 0"   # 12:00 in de zomer
-    - cron: "0 11 * * 0"   # 12:00 in de winter
+    - cron: "0 10 * * 0"   # zondag 10:00 UTC (12:00 zomertijd, 11:00 wintertijd), of later
   workflow_dispatch:        # zelf starten mag altijd
+
+concurrency:
+  group: weekcontrole
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -22,26 +27,12 @@ jobs:
       MAIL_TO: ${{ secrets.MAIL_TO }}
       CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
     steps:
-      - name: Is het 12 uur in Nederland?
-        id: klok
-        run: |
-          uur=$(TZ=Europe/Amsterdam date +%H)
-          echo "uur=$uur"
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$uur" != "12" ]; then
-            echo "draaien=nee" >> $GITHUB_OUTPUT
-          else
-            echo "draaien=ja" >> $GITHUB_OUTPUT
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.klok.outputs.draaien == 'ja'
 
       - uses: actions/setup-node@v4
-        if: steps.klok.outputs.draaien == 'ja'
-        with: { node-version: '20' }
+        with: { node-version: '22' }
 
       - name: Alle sites controleren
-        if: steps.klok.outputs.draaien == 'ja'
         id: check
         continue-on-error: true
         env:
@@ -49,22 +40,22 @@ jobs:
         run: node tools/kaap-check.mjs "https://kaap-proxy.kelliankaap.workers.dev/"
 
       - name: Storing samenvatten in het overzicht
-        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure'
+        if: steps.check.outcome == 'failure'
         run: |
           echo "### Storing bij de weekcontrole" >> $GITHUB_STEP_SUMMARY
           echo "Zie STATUS.md in de repo en leg het blok 'Voorleggen aan Claude' voor." >> $GITHUB_STEP_SUMMARY
 
       - name: STATUS.md vastleggen
-        if: steps.klok.outputs.draaien == 'ja'
         run: |
           git config user.name "kaap-bot"
           git config user.email "bot@users.noreply.github.com"
           git add STATUS.md
           git diff --cached --quiet || git commit -m "Weekcontrole $(TZ=Europe/Amsterdam date '+%d-%m-%Y')"
+          git pull --rebase --quiet   # er kan intussen iets gepusht zijn
           git push
 
       - name: Mail bij storing
-        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.MAIL_TO != ''
+        if: steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.MAIL_TO != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -78,7 +69,7 @@ jobs:
           body: file://STATUS.md
 
       - name: WhatsApp bij storing
-        if: steps.klok.outputs.draaien == 'ja' && steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.CALLMEBOT_PHONE != ''
+        if: steps.check.outcome == 'failure' && env.MELD_DIRECT == '1' && env.CALLMEBOT_PHONE != ''
         env:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: |
