@@ -34,7 +34,7 @@ function boot(seed = {}) {
     .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck|logoDialoogVerversen)=/g, 'var $1='));
   return w;
 }
-const VER = '1.30';
+const VER = '1.31';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -286,8 +286,13 @@ t('schrijven zet het tijdstempel, zodat eigen schrijfacties niet als "ander appa
   await w.fileWrite(); const b = JSON.parse(geschreven); eq(w.bundelTijd, b.tijd); if (!(b.tijd > 0)) throw new Error('geen tijd');
 });
 
-console.log('\n15. Lettertype (v1.27)');
-t('terugvalstack aanwezig', () => { if (!html.includes("font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif")) throw new Error('stack mist'); });
+console.log('\n15. Lettertype (v1.27, v1.31)');
+t('terugvalstack aanwezig', () => { if (!html.includes("font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif")) throw new Error('stack mist'); });
+t('Montserrat geladen in alle gebruikte diktes en cursief; Poppins nergens meer in de opmaak', () => {
+  if (!html.includes("family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400")) throw new Error('import mist of onvolledig');
+  const css = html.slice(0, html.indexOf('</style>')); if (css.includes('Poppins')) throw new Error('Poppins nog in de CSS');
+  const w = boot(); eq(w.getComputedStyle(w.document.body).fontFamily.split(',')[0].replace(/["']/g, ''), 'Montserrat');
+});
 
 console.log('\n16. Naam linksboven (v1.28, v1.30)');
 t('naam linksboven: KAAP | FACTUUR GENERATOR, alleen KAAP vet', () => {

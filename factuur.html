@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KAAP | Factuur Generator</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap');
   :root{
     --navy:#1B2841;--gold:#C0A062;--gold-soft:#D8C296;--ink:#2B3345;--grey:#6E7688;
     --light:#9AA1B0;--ivory:#FBFAF7;--field:#F3F1EB;--row-alt:#F7F5F0;--rule:#E4E1D8;--white:#fff;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{background:#E8E6E0;font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
+  html,body{background:#E8E6E0;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
   body{padding:20px 16px 80px;}
   .nav{max-width:900px;margin:0 auto 18px;background:var(--navy);border-radius:10px;padding:14px 18px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 6px 24px rgba(27,40,65,.18);}
@@ -169,6 +169,8 @@
     .vcard,.panel,tr,.totalrow,.pay,.section-h,.iv,.foot{break-inside:avoid;page-break-inside:avoid;}
     /* Totaal en betaalblok niet losgescheurd van de tabel erboven */
     .totalrow,.pay{break-before:avoid;page-break-before:avoid;}
+    /* Sectiekop nooit los onderaan een pagina: altijd samen met wat eronder staat */
+    .section-h{break-after:avoid;page-break-after:avoid;}
     /* ALLEEN OP PAPIER groter. Op het scherm blijft alles zoals het was:
        daar zit je dichtbij en wil je overzicht, op papier wil je leesbaarheid.
        13.3px = 10pt, 18px = 13.5pt bij de standaard 96dpi van een browser. */
@@ -419,9 +421,10 @@
    Het versienummer staat alleen HIER. Bij een nieuwe versie: VERSIE ophogen en
    bovenaan HISTORIE een regel toevoegen. Het label in de navigatiebalk, de
    paginatitel, het stempel in concepten en back-ups komen allemaal hieruit. */
-const VERSIE='1.30';
+const VERSIE='1.31';
 /* Updategeschiedenis. Nieuwste bovenaan. */
 const HISTORIE=[
+ ['1.31','Lettertype Montserrat in plaats van Poppins, op het scherm en op papier. Sluit aan bij de letters van het nieuwe logo. Alle gebruikte diktes en cursief worden echt geladen. Het logo zelf is een afbeelding en verandert niet. Op papier blijft een sectiekop zoals SPECIFICATIE altijd bij de inhoud eronder.'],
  ['1.30','Naam linksboven: KAAP | FACTUUR GENERATOR, met KAAP als merk in vet en iets meer letterafstand. Titel in het browsertabblad: KAAP | Factuur Generator.'],
  ['1.29','Nieuw logo op de factuur: KAAP vet, AUTO HOUSE dun, BV eronder. Het oude logo is vervangen. Klik op het logo om een eigen logo te kiezen (PNG, JPG, WebP of SVG) of het standaardlogo terug te zetten. Een eigen logo wordt in deze browser bewaard en gaat mee in het gekoppelde Drive-bestand, de back-ups en de export; het nieuwst gekozen logo wint. Nieuw adres: kelliank98.github.io/KAAP_Portal/factuur.html. Het oude adres stuurt automatisch door; facturen, voorraad en Drive-koppeling blijven gewoon staan.'],
  ['1.28','Naam linksboven in de balk: alleen KAAP vetgedrukt, "Factuur Generator" in gewone letters. Het logo op de factuur zelf is ongewijzigd.'],
