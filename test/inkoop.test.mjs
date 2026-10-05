@@ -672,13 +672,15 @@ describe('UI en opslag', () => {
     zet('k_verkoop', '79950');
     const met = d.querySelector('#bpmOut').textContent;
     assert.match(met, /^Marge/, 'de marge staat bovenaan');
-    assert.equal(d.querySelector('#bpmOut .pct').textContent, '16%', 'percentage groot bovenaan');   // 9.166 / 56.908
-    assert.ok(d.querySelector('#bpmOut .pct').classList.contains('bod'), '16% is onder de doelmarge van 20% maar boven 10%: oranje');
-    assert.ok(d.querySelector('#bpmOut .bedrag').textContent.includes('9.166'), 'bedrag eronder: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
+    const blokje = d.querySelector('#bpmOut .margeregel .tag.pct');
+    assert.equal(blokje.textContent, '16%', 'percentage in een blokje bovenaan');   // 9.166 / 56.908
+    assert.ok(blokje.classList.contains('bod'), '16% is onder de doelmarge van 20% maar boven 10%: oranje');
+    assert.ok(d.querySelector('#bpmOut .margeregel .bedrag').textContent.includes('9.166'), 'bedrag ernaast: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
+    assert.equal(d.querySelector('#bpmOut .margeregel').textContent.replace(/\s+/g, ' '), 'Marge16%€ 9.166', 'naast elkaar op één regel');
     const regels = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.deepEqual(regels, ['Inkoop', 'Vraagprijs (DE)€ 60.000', 'BTW 19% eraf− € 9.580', 'Inkoop excl. BTW€ 50.420', 'Kosten', 'Transport DE€ 400',
       'Import, RDW, kenteken€ 250', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.908', 'Verkoop', 'Verkoopprijs NL€ 79.950', 'BTW 21% eraf− € 13.876',
-      'Verkoop excl. BTW€ 66.074', 'Marge€ 9.166 · 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
+      'Verkoop excl. BTW€ 66.074', 'Marge€ 9.166 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
     zet('k_btw', 'marge', 'change');
     const marge = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.ok(marge.includes('Geen BTW-aftrek€ 0') && marge.includes('Inkoop€ 60.000'), 'margeauto: geen BTW eraf bij inkoop');

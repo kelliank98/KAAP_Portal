@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.53
+# KAAP Inkoop Radar v1.54
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.53_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.54_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -185,7 +185,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 
 ## Kostprijs en marge per kandidaat
 
-- Het blok naast het kandidaatformulier heet *Marge en kostprijs* (v1.53): bovenaan groot het margepercentage (marge ÷ kostprijs), het bedrag in grijs eronder, en een tabel met inkoop, kosten en verkoop. Van de BPM staat alleen het bedrag erin: van Autotelex als je dat invult, anders de indicatie van de app (forfaitair of met je koerslijstpercentage).
+- Het blok naast het kandidaatformulier heet *Marge en kostprijs* (v1.54, tab *Kandidaten*): bovenaan het margepercentage (marge ÷ kostprijs) in een gekleurd blokje met het bedrag in grijs ernaast, en een tabel met inkoop, kosten en verkoop. Van de BPM staat alleen het bedrag erin: van Autotelex als je dat invult, anders de indicatie van de app (forfaitair of met je koerslijstpercentage).
 - Kleur van de marge, ook in de kandidatenlijst: groen als de doelmarge gehaald wordt (standaard 20%), oranje tot 10%, daaronder rood.
 
 - **Kostprijs** = inkoop excl. BTW (bij een BTW-auto gedeeld door 1,19 voor DE, 1,21 voor NL/BE, 1,25 voor DK) + transport + importkosten + BPM.
