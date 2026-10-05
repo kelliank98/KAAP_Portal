@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.55
+# KAAP Inkoop Radar v1.56
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -9,7 +9,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | Bestand | Doel | Waar plaatsen |
 | --- | --- | --- |
 | `inkoop.html` | de app | hoofdmap van de repo (naast `index.html`, dat is de Factuur Generator) |
-| `kaap-extensie/` | de KAAP-extensie voor Chrome (v1.1.0): haalt mobile.de en Gaspedaal op voor de app, en neemt het BPM-bedrag over uit AutotelexPRO | een vaste map op je computer, laden via `chrome://extensions` |
+| `kaap-extensie/` | de KAAP-extensie voor Chrome (v1.2.0): haalt mobile.de en Gaspedaal op voor de app, vult de zoekvelden in AutotelexPRO in en neemt het BPM-bedrag over | een vaste map op je computer, laden via `chrome://extensions` |
 | `test/inkoop.test.mjs`, `test/lezers.test.mjs`, `test/extensie.test.mjs`, `test/proxy.test.mjs` | geautomatiseerde tests van app, paginalezers, extensie en proxy | `test/` |
 | `test/fixtures/` | bewaarde voorbeeldpagina's van de sites, waar de tests tegen draaien | `test/fixtures/` |
 | `test/e2e-extensie.mjs` | test van de extensie in een echte Chrome (`npm run test:browser`) | `test/` |
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.55_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.56_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -116,8 +116,9 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 
 - In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**, direct onder Vraagprijs (v1.51). Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
 - Leeg laten betekent: de indicatie van de app, zoals voorheen.
-- **BPM uit Autotelex** (v1.55, extensie 1.1.0): klik naast het veld op de knop. AutotelexPRO opent in een nieuw tabblad in je Chrome; jij zoekt daar de auto (Op kenmerken / import) en kiest de uitvoering. Zodra de voertuigpagina met "BPM berekenen bij IMPORT" er staat, zet de extensie het voordeligste Rest-BPM-bedrag (zoals Autotelex het aanmerkt) in het veld, met de uitvoering en de andere bedragen eronder. Op de Autotelex-pagina verschijnt rechtsonder "Overgenomen in de KAAP Inkoop Radar".
-- De extensie leest op AutotelexPRO alleen de BPM-bedragen, de uitvoering en de eerste toelating; hij klikt en verandert daar niets, en neemt alleen iets over als de app erom vroeg (een half uur geldig). Dat past bij de voorwaarden van Autotelex: kleine gedeelten voor eigen gebruik (art. B.4.2), niet aan derden (B.4.4).
+- **BPM uit Autotelex** (v1.56, extensie 1.2.0): klik naast het veld op de knop. AutotelexPRO opent in een nieuw tabblad in je Chrome en de extensie vult bij *Op kenmerken / import* de zoekvelden in: personenauto, eerste toelating, merk, brandstof, automaat en model. Jij klikt op **Zoeken** en kiest de uitvoering. Zodra de voertuigpagina met "BPM berekenen bij IMPORT" er staat, zet de extensie het voordeligste Rest-BPM-bedrag (zoals Autotelex het aanmerkt) in het veld, met de uitvoering en de andere bedragen eronder. Op de Autotelex-pagina verschijnt rechtsonder "Overgenomen in de KAAP Inkoop Radar".
+- Het invullen gebeurt één keer, alleen binnen drie minuten na je klik in de app. Merk en model komen uit het gekoppelde zoekprofiel, anders uit de omschrijving van de kandidaat (bij BMW wordt 330e de 3-serie; Touring, Coupé en dergelijke alleen als dat in de omschrijving staat). Wat de extensie niet kan vinden, staat rechtsonder in de melding; dat kies je zelf. Zonder eerste toelating bij de kandidaat vult hij niets in. Werkt Autotelex zijn zoekscherm om, dan vul je het gewoon zelf in; het overnemen van het bedrag werkt los daarvan.
+- De extensie leest op AutotelexPRO verder alleen de BPM-bedragen, de uitvoering en de eerste toelating; hij klikt nergens op (ook niet op Zoeken) en neemt alleen iets over als de app erom vroeg (een half uur geldig). Dat past bij de voorwaarden van Autotelex: kleine gedeelten voor eigen gebruik (art. B.4.2), niet aan derden (B.4.4).
 - Nagemeten op 05-10-2026 op een echte berekening: afschrijvingstabel € 20.291 (door Autotelex als voordeligste aangemerkt), koerslijst € 22.808; de extensie las € 20.291.
 - Wijzig je het bedrag met de hand, dan verdwijnt de Autotelex-regel eronder; het bedrag blijft wat jij invult.
 - De betaalde API van Autotelex is hiervoor niet nodig.
@@ -135,11 +136,11 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 185 punten:
+De tests draaien zonder netwerk en controleren 195 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
-- `test/extensie.test.mjs` test de achtergrond van de extensie met een nagebootste Chrome: rechten in het manifest, welke adressen mogen, wachten, opgeven bij een controlepagina, tijdslimiet, hoogstens drie tabbladen.
+- `test/extensie.test.mjs` test de achtergrond van de extensie met een nagebootste Chrome: rechten in het manifest, welke adressen mogen, wachten, opgeven bij een controlepagina, tijdslimiet, hoogstens drie tabbladen; en het Autotelex-deel: bedragen lezen, en de zoekvelden invullen op een nagebootst zoekscherm dat zich gedraagt als de site (lijsten die na bouwjaar en merk opnieuw laden).
 - `test/proxy.test.mjs` test de toegangscontrole van de Worker, ook met `SLEUTEL_VERPLICHT`.
 
 Een ander bestand testen: `INKOOP_HTML=pad/naar/bestand.html node --test`.

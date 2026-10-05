@@ -106,6 +106,7 @@ async function haalPagina(vraag) {
 // tussendoor stoppen. Een aanvraag is een half uur geldig; een nieuwe aanvraag vervangt de oude.
 const AUTOTELEX_START = 'https://www.autotelexpro.nl/Default.aspx';
 const AUTOTELEX_GELDIG_MS = 30 * 60 * 1000;
+const AUTOTELEX_INVUL_MS = 3 * 60 * 1000;   // zoekvelden alleen invullen vlak na de klik in de app, en één keer
 async function atxAanvraag() {
   try { return (await chrome.storage.session.get('atx')).atx || null; } catch (e) { return null; }
 }
@@ -129,10 +130,24 @@ chrome.runtime.onMessage.addListener((bericht, afzender, antwoord) => {
   if (bericht.type === 'atx-start') {
     // Van brug.js in het tabblad van de app: AutotelexPRO openen en onthouden wie erom vroeg.
     if (!afzender.tab || afzender.tab.id == null) return undefined;
-    const aanvraag = { id: String(bericht.id || ''), appTab: afzender.tab.id, sinds: Date.now() };
+    const v = bericht.voertuig && typeof bericht.voertuig === 'object' ? bericht.voertuig : null;
+    const aanvraag = { id: String(bericht.id || ''), appTab: afzender.tab.id, sinds: Date.now(), ingevuld: !v,
+      voertuig: v ? { dag: +v.dag || null, maand: +v.maand || null, jaar: +v.jaar || null, merk: String(v.merk || '').slice(0, 40), model: String(v.model || '').slice(0, 40),
+        oms: String(v.oms || '').slice(0, 160), brandstof: String(v.brandstof || '').slice(0, 20) } : null };
     chrome.storage.session.set({ atx: aanvraag })
       .then(() => chrome.tabs.create({ url: AUTOTELEX_START, active: true }))
       .then(() => antwoord({ ok: true }), e => antwoord({ ok: false, fout: String((e && e.message) || e) }));
+    return true;
+  }
+  if (bericht.type === 'atx-vraag' || bericht.type === 'atx-ingevuld') {
+    // Van autotelex.js op de startpagina: welke auto moet er in de zoekvelden, en daarna: gedaan.
+    if (!vanAutotelex(afzender)) return undefined;
+    atxAanvraag().then(async (a) => {
+      const vers = a && !a.ingevuld && a.voertuig && Date.now() - a.sinds <= AUTOTELEX_INVUL_MS;
+      if (bericht.type === 'atx-vraag') return antwoord(vers ? { ok: true, voertuig: a.voertuig } : { ok: true });
+      if (a){ a.ingevuld = true; try { await chrome.storage.session.set({ atx: a }); } catch (e) { /* niet erg */ } }
+      antwoord({ ok: true });
+    });
     return true;
   }
   if (bericht.type === 'atx-bpm') {

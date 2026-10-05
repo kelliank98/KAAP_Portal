@@ -7,7 +7,7 @@
      app  -> brug : {kaap:'hulp-haal', id, url, wachtOp, geefOpBij, maxMs}   haal deze pagina
      brug -> app  : {kaap:'hulp-antwoord', id, ok, html, url, titel, gevonden, controle, ms, fout}
    Sinds v1.1.0 (AutotelexPRO):
-     app  -> brug : {kaap:'hulp-atx-start', id}                        open AutotelexPRO voor een BPM-bedrag
+     app  -> brug : {kaap:'hulp-atx-start', id, voertuig}              open AutotelexPRO voor een BPM-bedrag
      brug -> app  : {kaap:'hulp-atx-gestart', id, ok, fout}
      brug -> app  : {kaap:'hulp-atx', id, gegevens}                   het bedrag uit AutotelexPRO */
 (() => {
@@ -27,7 +27,7 @@
     if (d.kaap === 'hulp-ping') { meld(); return; }
     if (d.kaap === 'hulp-atx-start' && d.id) {
       try {
-        chrome.runtime.sendMessage({ type: 'atx-start', id: d.id })
+        chrome.runtime.sendMessage({ type: 'atx-start', id: d.id, voertuig: d.voertuig || null })
           .then(r => naarApp(Object.assign({ kaap: 'hulp-atx-gestart', id: d.id }, r || { ok: false, fout: 'geen antwoord van de extensie' })))
           .catch(err => naarApp({ kaap: 'hulp-atx-gestart', id: d.id, ok: false, fout: String((err && err.message) || err) }));
       } catch (err) {

@@ -8,12 +8,13 @@ opent, als de KAAP Inkoop Radar erom vraagt, zo'n pagina in een tabblad op de
 achtergrond, geeft de inhoud door aan de app en sluit het tabblad weer.
 
 - Hij luistert alleen naar de KAAP Inkoop Radar (kelliank98.github.io/KAAP_Portal).
-- Hij opent op de achtergrond alleen mobile.de en gaspedaal.nl, en leest op AutotelexPRO
-  alleen de BPM-bedragen.
+- Hij opent op de achtergrond alleen mobile.de en gaspedaal.nl. Op AutotelexPRO vult hij
+  na jouw klik in de app de zoekvelden in en leest hij de BPM-bedragen; meer niet.
 - Hij stuurt nergens anders iets heen en bewaart niets.
 - Sinds versie 1.1.0 neemt hij ook het BPM-bedrag over uit AutotelexPRO: klik bij een
-  kandidaat op "BPM uit Autotelex", zoek de auto en kies de uitvoering in AutotelexPRO.
-  Hij leest daar alleen de Rest-BPM-bedragen en klikt zelf niets aan.
+  kandidaat op "BPM uit Autotelex". Sinds 1.2.0 vult hij daar de zoekvelden zelf in
+  (eerste toelating, merk, brandstof, automaat, model); jij klikt op Zoeken en kiest de
+  uitvoering. Hij leest daarna alleen de Rest-BPM-bedragen; uitrekenen doet hij niets.
 - De leescode zit in de app. Verandert een site zijn pagina, dan wordt de app
   bijgewerkt en hoef je deze map niet opnieuw te laden.
 

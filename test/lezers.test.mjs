@@ -845,7 +845,7 @@ describe('Verwachte verkoopprijs NL: 3e van de 5 goedkoopste vergelijkbare op Ga
 });
 
 // ---------------------------------------------------------------- BPM uit Autotelex
-describe('BPM uit Autotelex (KAAP-extensie 1.1)', () => {
+describe('BPM uit Autotelex (KAAP-extensie 1.2)', () => {
   const g = { bedrag: 20291, basis: 'afschrijvingstabel', afschrijvingstabel: 20291, koerslijst: 22808, taxatierapport: null, uitvoering: 'BMW X6 - M50i High Executive', toelating: '13-06-2022' };
   function extensie(w, versie) {
     const starts = [];
@@ -863,19 +863,20 @@ describe('BPM uit Autotelex (KAAP-extensie 1.1)', () => {
     zonder.d.querySelector('#btnAtx').click();
     assert.match(zonder.d.querySelector('#toast').textContent, /KAAP-extensie nodig/);
     const oud = laadApp();
-    const starts = extensie(oud.w, '1.0.0'); oud.w.hulpPing(); await wachtOpHulp(oud.w);
+    const starts = extensie(oud.w, '1.1.0'); oud.w.hulpPing(); await wachtOpHulp(oud.w);
     oud.d.querySelector('#btnAtx').click();
-    assert.match(oud.d.querySelector('#toast').textContent, /Werk de KAAP-extensie bij naar versie 1\.1/);
+    assert.match(oud.d.querySelector('#toast').textContent, /Werk de KAAP-extensie bij naar versie 1\.2/);
     assert.equal(starts.length, 0);
-    assert.match(oud.d.querySelector('#hulpTekst').textContent, /Werk bij naar versie 1\.1 voor BPM uit Autotelex/);
+    assert.match(oud.d.querySelector('#hulpTekst').textContent, /Werk bij naar versie 1\.2 voor BPM uit Autotelex/);
   });
 
   test('het voordeligste bedrag komt bij de kandidaat die open staat, met de uitvoering eronder, en wordt bewaard', async () => {
     const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [kandidaat], profielen: [] }) });
-    const starts = extensie(w, '1.1.0'); w.hulpPing(); await wachtOpHulp(w);
+    const starts = extensie(w, '1.2.0'); w.hulpPing(); await wachtOpHulp(w);
     w.vulKandForm(G('S').kandidaten[0]);
     d.querySelector('#btnAtx').click(); await tik();
     assert.equal(starts.length, 1, 'de app vraagt de extensie AutotelexPRO te openen');
+    assert.deepEqual(plain(starts[0].voertuig), { dag: 13, maand: 6, jaar: 2022, merk: '', model: '', oms: 'BMW X6 M50i', brandstof: 'benzine' }, 'met de gegevens voor de zoekvelden');
     assert.match(d.querySelector('#toast').textContent, /AutotelexPRO opent/);
     w.postMessage({ kaap: 'hulp-atx', id: starts[0].id, gegevens: g }, '*'); await tik();
     assert.equal(veld(w, 'k_bpmatx'), '20291');
@@ -892,9 +893,18 @@ describe('BPM uit Autotelex (KAAP-extensie 1.1)', () => {
     assert.equal(w.leesKandForm().bpmAtxInfo, null);
   });
 
+  test('gekoppeld zoekprofiel: merk en het model dat in de omschrijving staat', async () => {
+    const profiel = { id: 'p1', naam: 'X', merk: 'BMW', model: 'X5, X6', bjvan: 2021, bjtot: null, km: null, kw: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '', carr: [], brandstof: [], opties: [], uitv: '', uitvDe: '', modelDe: '', uitvNiet: '', sites: {} };
+    const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [Object.assign({}, kandidaat, { profiel: 'p1' })], profielen: [profiel] }) });
+    const starts = extensie(w, '1.2.0'); w.hulpPing(); await wachtOpHulp(w);
+    w.vulKandForm(G('S').kandidaten[0]);
+    d.querySelector('#btnAtx').click(); await tik();
+    assert.equal(starts[0].voertuig.merk, 'BMW'); assert.equal(starts[0].voertuig.model, 'X6');
+  });
+
   test('een antwoord voor een andere aanvraag wordt genegeerd', async () => {
     const { w, d, G } = laadApp({ opslag: JSON.stringify({ kandidaten: [kandidaat], profielen: [] }) });
-    const starts = extensie(w, '1.1.0'); w.hulpPing(); await wachtOpHulp(w);
+    const starts = extensie(w, '1.2.0'); w.hulpPing(); await wachtOpHulp(w);
     w.vulKandForm(G('S').kandidaten[0]);
     d.querySelector('#btnAtx').click(); await tik();
     w.postMessage({ kaap: 'hulp-atx', id: 'iets-anders', gegevens: g }, '*'); await tik();
