@@ -951,12 +951,14 @@ describe('Model als keuzelijst (v1.66)', () => {
 });
 
 describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testbericht starten (v1.67)', () => {
-  function laad(){
+  function laad(repo){
     const verzoeken = [];
+    const bestand = () => { const r = typeof repo === 'function' ? repo() : repo;
+      return r ? { sha: 'abc123', content: Buffer.from(JSON.stringify({ profiles: r }, null, 2)).toString('base64').replace(/(.{60})/g, '$1\n') } : { sha: 'abc123' }; };
     const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
       beforeParse(x){ x.scrollTo = () => {}; x.HTMLElement.prototype.scrollIntoView = function(){};
         x.fetch = (adres, o = {}) => { const u = String(adres); verzoeken.push({ u, methode: o.method || 'GET', headers: o.headers || {}, body: o.body ? JSON.parse(o.body) : null });
-          if (u.endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc123' }) });
+          if (u.endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => bestand() });
           if (u.endsWith('/contents/profiles.json')) return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
           if (u.endsWith('/dispatches')) return Promise.resolve({ ok: true, status: 204, json: async () => null });
           return Promise.reject(new Error('geen netwerk in test')); }; } }).window;
@@ -993,6 +995,30 @@ describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testberic
     assert.match(d.querySelector('#toast').textContent, /Testbericht gestart/);
     d.querySelector('#btnOphalerStart').click(); await new Promise(r => setTimeout(r, 30));
     assert.deepEqual(verzoeken.filter(v => v.u.endsWith('/dispatches')).pop().body.inputs, { testbericht: 'false' });
+  });
+  test('v1.68: een browser zonder zoekopdrachten wist profiles.json in de repo niet (05-10-2026: 0 profielen)', async () => {
+    const { win, verzoeken } = laad([{ id: 'ko0svsbls65g', naam: 'BMW X5 M Sport' }]), d = win.document;
+    d.querySelector('#s_ghkey').value = 'github_pat_TEST'; d.querySelector('#btnGhKey').click();
+    await new Promise(r => setTimeout(r, 30));
+    assert.equal(verzoeken.filter(v => v.methode === 'PUT').length, 0, 'niets overschreven');
+    assert.match(d.querySelector('#ghStatus').textContent, /geen bewaarde zoekopdrachten; profiles\.json in de repo \(1\) blijft staan/);
+    await assert.rejects(win.syncProfielen(false), /blijft staan/);
+    assert.equal(verzoeken.filter(v => v.methode === 'PUT').length, 0);
+  });
+  test('v1.68: nieuwe sleutel in een browser met andere zoekopdrachten overschrijft de repo niet; met dezelfde wel', async () => {
+    const zet = (win, id, v) => { const e = win.document.querySelector('#' + id); e.value = v; e.dispatchEvent(new win.Event('input', {bubbles:true})); };
+    const a = laad([{ id: 'andere-browser', naam: 'Audi Q5' }]);
+    zet(a.win, 'p_merk', 'BMW'); zet(a.win, 'p_model', 'X5'); a.win.document.querySelector('#btnBewaarProfiel').click();
+    a.win.document.querySelector('#s_ghkey').value = 'github_pat_TEST'; a.win.document.querySelector('#btnGhKey').click();
+    await new Promise(r => setTimeout(r, 30));
+    assert.equal(a.verzoeken.filter(v => v.methode === 'PUT').length, 0);
+    assert.match(a.win.document.querySelector('#ghStatus').textContent, /niet kent \(Audi Q5\); niets overschreven/);
+    let repo = [];
+    const c = laad(() => repo);
+    zet(c.win, 'p_merk', 'BMW'); zet(c.win, 'p_model', 'X5'); c.win.document.querySelector('#btnBewaarProfiel').click();
+    repo = [{ id: JSON.parse(c.win.localStorage.getItem('kaap_inkoop_v1')).profielen[0].id, naam: 'BMW X5' }];
+    c.win.localStorage.setItem('kaap_github', JSON.stringify({ sleutel: 'github_pat_TEST' }));
+    assert.equal(await c.win.syncProfielen(false), true, 'zelfde zoekopdracht: gewoon bijwerken');
   });
   test('zonder sleutel: duidelijke melding, niets naar GitHub', async () => {
     const { win, verzoeken } = laad(), d = win.document;

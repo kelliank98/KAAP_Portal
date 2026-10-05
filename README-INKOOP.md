@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.67
+# KAAP Inkoop Radar v1.68
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -22,7 +22,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.67_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.68_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -234,7 +234,7 @@ WhatsApp via CallMeBot (gratis, voor persoonlijk gebruik; nagezocht op 05-10-202
 2. Stuur via WhatsApp aan dat contact: `I allow callmebot to send me messages`. Je krijgt een bericht terug met je APIKEY (lukt het niet binnen 2 minuten, probeer het na 24 uur opnieuw).
 3. Twee secrets: `CALLMEBOT_PHONE` = je nummer met landcode (bijv. +31612345678), `CALLMEBOT_APIKEY` = de sleutel uit het bericht.
 
-**Vanuit de app** (v1.67): *Instellingen > Ophaler en meldingen*. Zet daar eenmalig een fijnmazige GitHub-sleutel (github.com/settings/personal-access-tokens/new: alleen de repository KAAP_Portal, permissions *Contents* en *Actions* op *Read and write*). Daarna schrijft de app `profiles.json` zelf in de repo zodra je bewaarde zoekopdrachten veranderen (ook als Zoeken een modelnaam heeft geleerd), en starten de knoppen *Ophaler nu starten* en *Testbericht sturen* de workflow. De sleutel staat alleen in die browser (eigen opslag `kaap_github`), niet in de reservekopie.
+**Vanuit de app** (v1.67): *Instellingen > Ophaler en meldingen*. Zet daar eenmalig een fijnmazige GitHub-sleutel (github.com/settings/personal-access-tokens/new: alleen de repository KAAP_Portal, permissions *Contents* en *Actions* op *Read and write*). Daarna schrijft de app `profiles.json` zelf in de repo zodra je bewaarde zoekopdrachten veranderen (ook als Zoeken een modelnaam heeft geleerd), en starten de knoppen *Ophaler nu starten* en *Testbericht sturen* de workflow. De sleutel staat alleen in die browser (eigen opslag `kaap_github`), niet in de reservekopie. Sinds v1.68 overschrijft de app `profiles.json` nooit met een lege lijst, en wist een browser die net een sleutel krijgt geen zoekopdrachten die hij zelf niet kent (op 05-10-2026 zette een browser zonder bewaarde zoekopdrachten zo 0 profielen in de repo). Dan staat bij *Ophaler en meldingen* waarom er niets is geschreven.
 
 **Testbericht** (v1.14): *Actions > Inkoop-radar > Run workflow*, vink *Stuur een testbericht* aan en klik op *Run workflow*. Binnen een paar minuten komt er een mail en/of WhatsApp "testbericht", ook als er niets nieuws is. Er wordt niets als gemeld onthouden.
 
