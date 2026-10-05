@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KAAP Factuur Generator</title>
+<title>KAAP | Factuur Generator</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
   :root{
@@ -15,9 +15,10 @@
   body{padding:20px 16px 80px;}
   .nav{max-width:900px;margin:0 auto 18px;background:var(--navy);border-radius:10px;padding:14px 18px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 6px 24px rgba(27,40,65,.18);}
-  .nav .brand{color:#fff;font-size:14px;font-weight:400;margin-right:auto;letter-spacing:.4px;}
+  .nav .brand{color:#fff;font-size:14px;font-weight:400;margin-right:auto;letter-spacing:1.5px;}
   .nav .brand span{display:block;font-size:11px;font-weight:300;color:var(--gold-soft);letter-spacing:0;}
   .nav .brand b{font-weight:700;}
+  .nav .brand .sep{display:inline;font-size:inherit;font-weight:300;color:var(--gold-soft);letter-spacing:0;margin:0 3px;}
   .nav .versie{align-self:flex-start;background:#2C3A52;color:var(--gold-soft);font-size:10px;font-weight:500;
     letter-spacing:.5px;padding:3px 9px;border-radius:20px;border:.7px solid #46536e;white-space:nowrap;
     cursor:pointer;font-family:inherit;transition:all .15s;}
@@ -197,7 +198,7 @@
 <body>
 
 <div class="nav">
-  <div class="brand"><b>KAAP</b> Factuur Generator</div>
+  <div class="brand"><b>KAAP</b> <span class="sep">|</span> FACTUUR GENERATOR</div>
   <button class="versie" id="app-versie" title="Updategeschiedenis bekijken">v?</button>
   <button class="tab active" data-view="gen">Factuur</button>
   <button class="tab" data-view="reg">Register</button>
@@ -418,9 +419,10 @@
    Het versienummer staat alleen HIER. Bij een nieuwe versie: VERSIE ophogen en
    bovenaan HISTORIE een regel toevoegen. Het label in de navigatiebalk, de
    paginatitel, het stempel in concepten en back-ups komen allemaal hieruit. */
-const VERSIE='1.29';
+const VERSIE='1.30';
 /* Updategeschiedenis. Nieuwste bovenaan. */
 const HISTORIE=[
+ ['1.30','Naam linksboven: KAAP | FACTUUR GENERATOR, met KAAP als merk in vet en iets meer letterafstand. Titel in het browsertabblad: KAAP | Factuur Generator.'],
  ['1.29','Nieuw logo op de factuur: KAAP vet, AUTO HOUSE dun, BV eronder. Het oude logo is vervangen. Klik op het logo om een eigen logo te kiezen (PNG, JPG, WebP of SVG) of het standaardlogo terug te zetten. Een eigen logo wordt in deze browser bewaard en gaat mee in het gekoppelde Drive-bestand, de back-ups en de export; het nieuwst gekozen logo wint. Nieuw adres: kelliank98.github.io/KAAP_Portal/factuur.html. Het oude adres stuurt automatisch door; facturen, voorraad en Drive-koppeling blijven gewoon staan.'],
  ['1.28','Naam linksboven in de balk: alleen KAAP vetgedrukt, "Factuur Generator" in gewone letters. Het logo op de factuur zelf is ongewijzigd.'],
  ['1.27','Register: sorteren op Datum, Nr., Klant en Bedrag, plus CSV-export van de getoonde periode voor de boekhouder. Nieuw tabblad Klanten met alle facturen per klant. Factuurnummer van een opgeslagen factuur staat op slot (dubbelklik om toch te wijzigen). Datum wordt gecontroleerd en genormaliseerd; een ongeldige datum blokkeert het opslaan. Gekoppeld Drive-bestand wordt bij terugkeren naar het tabblad opnieuw ingelezen als een ander apparaat het heeft gewijzigd. Extra kosten (o.a. het afleverpakket) tellen nu ook mee in de interne registerweergave, de BTW-kolom en de maandstaven, gelijk aan de factuur zelf. Versienummer staat nog maar op \u00e9\u00e9n plek, bovenaan het script. Lettertype met terugvalopties zonder internetverbinding.'],
@@ -1168,7 +1170,7 @@ function stelBestandsnaamIn(){
   const klant=veiligeNaam($('k_naam').value)||'klant';
   document.title=(adminMode?'Intern':'Factuur')+'_'+nr+'_'+klant;
 }
-function herstelTitel(){document.title='KAAP Factuur Generator (v'+VERSIE+')';}
+function herstelTitel(){document.title='KAAP | Factuur Generator (v'+VERSIE+')';}
 window.addEventListener('beforeprint', ()=>{stelBestandsnaamIn();fitSheet();});
 window.addEventListener('afterprint', ()=>{ unfitSheet(); herstelTitel(); });
 /* Weergavestand van de factuur: Verkoop (klant) of Boekhouding (administratie).
@@ -2171,7 +2173,7 @@ renderSales();renderInruil();recalc();
 /* Opmaakregels op de klantvelden + bijhouden of er onopgeslagen wijzigingen zijn */
 (function toonVersie(){
   const el=$('app-versie'); if(el){el.textContent='v'+VERSIE;el.onclick=toonHistorie;}
-  document.title='KAAP Factuur Generator (v'+VERSIE+')';
+  document.title='KAAP | Factuur Generator (v'+VERSIE+')';
 })();
 bindTel($('k_tel'));
 bindUpper($('k_pc'));

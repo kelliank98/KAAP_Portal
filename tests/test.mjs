@@ -34,7 +34,7 @@ function boot(seed = {}) {
     .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck|logoDialoogVerversen)=/g, 'var $1='));
   return w;
 }
-const VER = '1.29';
+const VER = '1.30';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -53,7 +53,7 @@ t('precies één versiestring in comment, constante en historie', () => {
   eq(w.VERSIE, VER, 'VERSIE');
   eq(w.HISTORIE[0][0], VER, 'HISTORIE[0]');
   eq(w.document.getElementById('app-versie').textContent, 'v' + VER, 'label');
-  eq(w.document.title, 'KAAP Factuur Generator (v' + VER + ')', 'title');
+  eq(w.document.title, 'KAAP | Factuur Generator (v' + VER + ')', 'title');
 });
 t('geen dubbele versienummers in de historie', () => {
   const w = boot(); const s = new Set(w.HISTORIE.map(h => h[0]));
@@ -289,10 +289,11 @@ t('schrijven zet het tijdstempel, zodat eigen schrijfacties niet als "ander appa
 console.log('\n15. Lettertype (v1.27)');
 t('terugvalstack aanwezig', () => { if (!html.includes("font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif")) throw new Error('stack mist'); });
 
-console.log('\n16. Naam linksboven (v1.28)');
-t('alleen KAAP vetgedrukt in de balk, tekst ongewijzigd', () => {
+console.log('\n16. Naam linksboven (v1.28, v1.30)');
+t('naam linksboven: KAAP | FACTUUR GENERATOR, alleen KAAP vet', () => {
   const w = boot(); const b = w.document.querySelector('.nav .brand');
-  eq(b.textContent.trim(), 'KAAP Factuur Generator');
+  eq(b.textContent.trim(), 'KAAP | FACTUUR GENERATOR');
+  const sep = b.querySelector('.sep'); eq(sep.textContent, '|'); eq(w.getComputedStyle(sep).display, 'inline', 'scheidingsstreep op dezelfde regel');
   const vet = b.querySelectorAll('b'); eq(vet.length, 1, 'aantal vette delen'); eq(vet[0].textContent, 'KAAP');
   eq(w.getComputedStyle(vet[0]).fontWeight, '700', 'KAAP');
   eq(w.getComputedStyle(b).fontWeight, '400', 'Factuur Generator');
@@ -402,6 +403,7 @@ if (path.basename(FILE) === 'factuur.html' && fs.existsSync(naast)) {
     if (!r.includes("location.replace('factuur.html'+location.search+location.hash)")) throw new Error('script-doorsturing mist');
     if (!r.includes('<meta http-equiv="refresh" content="0; url=factuur.html">')) throw new Error('meta-refresh mist');
     if (r.length > 3000) throw new Error('doorstuurpagina is geen app-kopie');
+    if (!r.includes('<title>KAAP | Factuur Generator</title>')) throw new Error('titel doorstuurpagina');
   });
 }
 
