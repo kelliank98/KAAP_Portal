@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.63</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.64</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -470,7 +470,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.63';
+const APP_VERSIE = '1.64';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -797,7 +797,8 @@ function margeKleur(mg){
 // AutoScout24 gebruikt Engelse modelnamen: 5 Serie -> 5-series, V-Klasse -> v-class, RS 6 -> rs6.
 // Zoekwoord-slug: 'RS 6' -> rs6 (Kleinanzeigen vindt 'rs-6' niet), rest onaangeroerd.
 function kwSlug(s){
-  return slug((s||'').toString().toLowerCase().replace(/\b(rs|s|sq|m|gt|id|ex|q|a|c|e|x|v|t)\s+(\d)/g,'$1$2'));
+  return slug((s||'').toString().toLowerCase().replace(/\b(\d)\s*-?\s*(serie|series|reeks)\b/g, '$1er')   // 5-serie: in Duitse titels "5er"
+    .replace(/\b(rs|s|sq|m|gt|id|ex|q|a|c|e|x|v|t)\s+(\d)/g,'$1$2'));
 }
 function as24Slug(model){
   let m = (model||'').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -811,7 +812,8 @@ function as24Slug(model){
 const splitList = (s) => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
 // mobile.de: ms = merk;model;reeks;zoekwoord. Een gekoppeld model is "merk;model", een hele reeks zoals
 // "GLC-Klasse (Alle)" is "merk;;reeks" (live nagemeten 06-10-2026: ms=17200;;59; gaf 10.970 Mercedes-Benz GLC-Klasse).
-function msVan(kop, v){ const d = String(kop || '').split(';'); while (d.length < 3) d.push(''); return d.slice(0, 3).join(';') + ';' + (v || ''); }
+// Een vierde deel is een zoekwoord dat bij het model hoort (GLE Coupé: reeks GLE-Klasse + "coupe").
+function msVan(kop, v){ const d = String(kop || '').split(';'); while (d.length < 4) d.push(''); return d.slice(0, 3).join(';') + ';' + [d[3], v].filter(Boolean).join(' '); }
 function koppeling(site, merk, model){ return S.instellingen.koppelingen[`${site}|${slug(merk)}|${slug(model)}`] || null; }
 function makeIdVoor(merk){
   const m = cap(merk).toLowerCase();
@@ -875,7 +877,9 @@ function bouwLink(s, p, v, c){
   if (s === 'as24nl' || s === 'as24de' || s === 'as24be'){
     const dom = {as24nl:['https://www.autoscout24.nl/lst','NL'], as24de:['https://www.autoscout24.de/lst','D'], as24be:['https://www.autoscout24.be/nl/lst','B']}[s];
     const kop = koppeling('as24', p.merk, p.model);
-    const path = kop || (p.model ? `${c.merkS}/${c.modelAs24}` : c.merkS);
+    // Geleerd uit de modellijst van AutoScout24: "mmmv:47||114|" (reeks) of "mmmv:47|20920||" (model), eventueel ";coupe".
+    const opNummer = kop && kop.startsWith('mmmv:') ? kop.slice(5).split(';') : null;
+    const path = opNummer ? c.merkS : (kop || (p.model ? `${c.merkS}/${c.modelAs24}` : c.merkS));
     const q = new URLSearchParams();
     q.set('atype','C'); q.set('cy', dom[1]); q.set('ustate','N,U'); q.set('damaged_listing','exclude');
     q.set('sort','age'); q.set('desc','1'); q.set('gear','A');
@@ -891,9 +895,11 @@ function bouwLink(s, p, v, c){
     if (c.carr.length) q.set('body', c.carr.map(x=>x.as24).join(','));
     if (c.opt.length) q.set('eq', c.opt.map(o=>o.as24).join(','));
     if (p.pk){ q.set('powertype','kw'); q.set('powerfrom', kwVanPk(p.pk)); }
-    if (v) q.set('version', v);
+    if (opNummer) q.set('mmmv', opNummer[0]);
+    const versie = [opNummer && opNummer[1], v].filter(Boolean).join(' ');
+    if (versie) q.set('version', versie);
     L.url = `${dom[0]}/${path}?` + q.toString();
-    if (!kop && p.model) L.note = `Model afgeleid (${c.modelAs24}). Klopt niet? Plak de model-URL.`;
+    if (!kop && p.model) L.note = `Model afgeleid (${c.modelAs24}); Zoeken zoekt het zelf op bij AutoScout24.`;
     else if (!p.model) L.note = 'Hele merk.';
     return L;
   }
@@ -909,7 +915,8 @@ function bouwLink(s, p, v, c){
     else if (p.deuren === '45') ids.push('172');     // 4-5 deuren
     else if (p.deuren === '6') ids.push('173');      // 6 of meer
     let qtxt = v;
-    if (kop) ids.unshift(kop.split('/')[1]); else qtxt = (cap(p.model) + ' ' + v).trim();
+    if (kop){ ids.unshift(kop.split('/')[1]); qtxt = [kop.split('/')[2], v].filter(Boolean).join(' '); }   // "glc-klasse/11690" of "gle-klasse/11593/coupe"
+    else qtxt = (cap(p.model) + ' ' + v).trim();
     c.br.forEach(b => ids.push(...b.mp));
     c.carr.forEach(x => ids.push(x.mp));
     c.opt.filter(o=>o.mp).forEach(o => ids.push(o.mp));
@@ -1004,7 +1011,9 @@ function leerKoppeling(site, url, merk, model){
     S.instellingen.makeIds[cap(merk)] = +val.split(';')[0];
   } else if (site.startsWith('as24')){
     key = 'as24'; m = u.pathname.match(/\/lst\/([^\/?#]+)\/([^\/?#]+)/);
-    if (!m) return {ok:false, msg:'Geen /lst/merk/model in deze URL.'}; val = `${m[1]}/${m[2]}`;
+    const mmmv = u.searchParams.get('mmmv');
+    if (mmmv && /^\d+\|\d*\|\d*\|/.test(mmmv)) val = 'mmmv:' + mmmv;   // model of reeks op nummer
+    else if (!m) return {ok:false, msg:'Geen /lst/merk/model in deze URL.'}; else val = `${m[1]}/${m[2]}`;
   } else if (site === 'marktplaats'){
     m = u.pathname.match(/\/l\/auto-s\/([^\/]+)\/f\/([^\/]+)\/(\d+)\//);
     if (!m) return {ok:false, msg:'Klik op Marktplaats eerst het model aan; de URL bevat dan /f/model/nummer/.'}; val = `${m[2]}/${m[3]}`;
@@ -1556,7 +1565,8 @@ async function haalNlReferenties(p, live, ctx){
         items = [eerste.items, ...(await Promise.all(verder))].flat().filter(it => it.price && !gezien.has(it.id) && gezien.add(it.id));
         nlRefCache.set(l.url, {t: Date.now(), items});
       }
-      live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'klaar', items, url: l.url, facelift: p.facelift || null};
+      // Alleen auto's van dit model: GLE Coupé zit bij Gaspedaal in gle-klasse, tussen de gewone GLE's (live nagemeten 06-10-2026).
+      live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'klaar', items: items.filter(it => modelInTitel(it.title, model)), url: l.url, facelift: p.facelift || null};
     } catch(e){
       live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'fout', items: [], fout: String(e.message || e).slice(0, 120), url: l0.url};
     }
@@ -1626,9 +1636,41 @@ document.addEventListener('click', (e) => {
 // Sites geven soms een ander model terug (Marktplaats zoekt los op woorden).
 // Daarom hier narekenen wat de site aanlevert.
 const normTekst = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+// ---------- Modelnamen: elke site noemt een model anders (v1.64) ----------
+// GLC heet bij Gaspedaal glc-klasse, bij mobile.de "GLC-Klasse (Alle)", bij AutoScout24 "GLC (alle)", bij Marktplaats
+// "GLC-klasse"; "Q5 Sportback" bestaat bij AutoScout24 niet als model (Q5, met Sportback als uitvoering). De app zoekt
+// het model op in de modellijst van de site zelf (live nagemeten 06-10-2026) en onthoudt wat hij vond als koppeling.
+const MODEL_REEKS = /klasse|class|series|serie|reihe|reeks|alle/g;
+const MODEL_CARR = ['coupe', 'cabrio', 'cabriolet', 'sportback', 'touring', 'avant', 'estate', 'kombi', 'limousine', 'sedan', 'variant', 'shooting', 'brake', 'gran', 'tourer', 'allroad', 'roadster', 'spider', 'spyder', 'crossback', 'sportwagon'];
+const modelWoorden = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
+const modelKaal = (s) => normTekst(String(s || '').replace(/\(alle\)/i, '')).replace(MODEL_REEKS, '').replace(/^(\d)er$/, '$1');
+// lijst: [{id, naam}] uit de site; geeft {item, rest} terug (rest: carrosseriewoorden die de site niet als model kent) of null.
+function zoekModelIn(lijst, model){
+  const probeer = (m) => {
+    const doel = normTekst(m), kaal = modelKaal(m);
+    if (!doel) return null;
+    return lijst.find(x => normTekst(x.naam) === doel) || (kaal ? lijst.find(x => modelKaal(x.naam) === kaal) : null) || null;
+  };
+  const hit = probeer(model);
+  if (hit) return {item: hit, rest: ''};
+  const w = modelWoorden(model), basis = w.filter(x => !MODEL_CARR.includes(x)), rest = w.filter(x => MODEL_CARR.includes(x));
+  if (rest.length && basis.length){ const b = probeer(basis.join(' ')); if (b) return {item: b, rest: rest.join(' ')}; }
+  return null;
+}
+// Hoort deze titel bij het model? Per woord van het model, zoals sites het in titels schrijven:
+// C-Klasse: "C 200", "C200"; 5-serie: "530e", "520d", "5er"; GLC: "GLC 300", "GLC300e"; X5: "X5", "X5M" (niet "X50").
 function modelInTitel(titel, model){
-  const m = normTekst(model);
-  return m ? normTekst(titel).includes(m) : true;
+  const reeks = /klasse|class|serie|series|reihe|reeks/.test(normTekst(model));
+  const woorden = modelWoorden(model).filter(x => !/^(klasse|class|series|serie|reihe|reeks)$/.test(x));
+  if (!woorden.length) return true;
+  const t = modelWoorden(titel);
+  return woorden.every(x => {
+    if (t.includes(x)) return true;
+    if (/^\d$/.test(x) && reeks) return t.some(y => new RegExp('^' + x + '\\d\\d').test(y) || y === x + 'er');
+    if (/^[a-z]{1,4}$/.test(x)) return t.some(y => new RegExp('^' + x + '\\d').test(y));
+    if (/^[a-z]+\d+$/.test(x)) return t.some(y => y.startsWith(x) && !/\d/.test(y.charAt(x.length)));
+    return normTekst(titel).includes(x);
+  });
 }
 function pastCriteria(it, p){
   if (p.btw === 'btw' && it.btw === false) return false;
@@ -1866,25 +1908,28 @@ function parseerMobileZoek(html){
   // {"optgroupLabel":"X-Reihe","items":[{"value":"group-26","label":"X-Reihe (Alle)","isGroup":true},{"value":"49","label":"X5"},...]}
   // (live nagemeten 03-10-2026). Een hele reeks heeft geen modelnummer en telt hier niet mee.
   const modelId = (model) => {
+    const lijst = [];
+    const voeg = (x) => {
+      if (!x) return;
+      if (Array.isArray(x.items)) return x.items.forEach(voeg);   // reeks met modellen
+      if (x.isGroup && /^group-\d+$/.test(String(x.value))) lijst.push({id: ';' + String(x.value).slice(6), naam: String(x.label || '')});   // hele reeks
+      else if (/^\d+$/.test(String(x.value))) lijst.push({id: String(x.value), naam: String(x.label || '')});
+    };
+    // De modellen van het gekozen merk: "modelsCache":{"1900":[{"value":"32","label":"Q5"},...]}, bij merken met reeksen
+    // met {"optgroupLabel":...,"items":[...]} erin (live nagemeten 06-10-2026). Alleen deze lijst, geen andere keuzelijsten.
+    const cache = jsonNa(flight, '"modelsCache":');
+    if (cache && typeof cache === 'object') Object.values(cache).forEach(a => Array.isArray(a) && a.forEach(voeg));
+    if (!lijst.length) for (let p = flight.indexOf('"optgroupLabel":'); p >= 0; p = flight.indexOf('"optgroupLabel":', p + 1)){
+      const items = jsonNa(flight, '"items":', p);
+      if (Array.isArray(items)) items.forEach(voeg);
+    }
+    const r = zoekModelIn(lijst, model);
+    // "49" (model), ";59" (reeks), met een zoekwoord erbij "49;;coupe" of ";58;coupe": merk + ';' + id is dan de koppeling.
+    if (r) return r.item.id + (r.rest ? (r.item.id.startsWith(';') ? ';' : ';;') + r.rest : '');
+    // Merk zonder reeksen: losse opties, alleen bij precies dezelfde naam (andere keuzelijsten, zoals prijzen, staan er ook zo in).
     const doel = (model || '').trim().toLowerCase(); if (!doel) return null;
-    for (let p = flight.indexOf('"optgroupLabel":'); p >= 0; p = flight.indexOf('"optgroupLabel":', p + 1)){
-      const lijst = jsonNa(flight, '"items":', p);
-      if (!Array.isArray(lijst)) continue;
-      const o = lijst.find(x => x && !x.isGroup && /^\d+$/.test(String(x.value)) && String(x.label || '').trim().toLowerCase() === doel);
-      if (o) return String(o.value);
-    }
-    const re = /\{"value":"(\d+)","label":"([^"]{1,40})"\}/g; let m;   // merk zonder reeksen: losse opties
+    const re = /\{"value":"(\d+)","label":"([^"]{1,40})"\}/g; let m;
     while ((m = re.exec(flight))) if (m[2].trim().toLowerCase() === doel) return m[1];
-    // Een hele reeks: "GLC" is bij mobile.de "GLC-Klasse (Alle)" (group-59), met daaronder GLC 200 t/m GLC 63 AMG.
-    // Teruggegeven als ";59", zodat merk + ';' + id de koppeling "merk;;59" geeft.
-    const kort = normTekst(doel);
-    for (let p = flight.indexOf('"optgroupLabel":'); p >= 0; p = flight.indexOf('"optgroupLabel":', p + 1)){
-      const lijst = jsonNa(flight, '"items":', p);
-      const g = Array.isArray(lijst) && lijst.find(x => x && x.isGroup && /^group-\d+$/.test(String(x.value)));
-      if (!g) continue;
-      const naam = normTekst(String(g.label || '').replace(/\(alle\)/i, ''));
-      if (naam === kort || naam.replace(/klasse|reihe|serie|class$/g, '') === kort) return ';' + String(g.value).slice(6);
-    }
     return null;
   };
   return {count, items, modelId};
@@ -1934,10 +1979,52 @@ function parseerGaspedaalZoek(html){
 // Gaspedaal kent een model alleen onder zijn eigen naam: GLC heet daar glc-klasse. Een onbekende naam negeert Gaspedaal
 // stil en toont het hele merk (live nagemeten 06-10-2026: /mercedes-benz/glc gaf alle 25.921 Mercedes-Benz, glc-klasse 1.231 GLC's).
 function gaspedaalModelSlug(modellen, model){
-  const doel = normTekst(model); if (!doel) return null;
-  const zoek = (past) => (modellen || []).find(m => past(normTekst(m.naam)) || past(normTekst(m.slug)));
-  const m = zoek(n => n === doel) || zoek(n => n === doel + 'klasse' || n === doel + 'serie') || zoek(n => n.replace(/klasse|serie|class/g, '') === doel);
-  return m ? m.slug : null;
+  const r = zoekModelIn((modellen || []).flatMap(m => [{id: m.slug, naam: m.naam}, {id: m.slug, naam: m.slug}]), model);
+  return r ? r.item.id : null;
+}
+// AutoScout24: modelnummer of reeks opzoeken in de modellijst van het merk (taxonomy in de pagina), één keer per sessie,
+// daarna bewaard. De nummers zijn dezelfde voor .de, .nl en .be (live nagemeten 06-10-2026: 47||114| = 3.932 GLE's).
+const as24Geleerd = new Map();
+async function leerAs24(url, merk, model){
+  if (!model || koppeling('as24', merk, model)) return false;
+  const sleutel = `as24|${slug(merk)}|${slug(model)}`;
+  if (!as24Geleerd.has(sleutel)) as24Geleerd.set(sleutel, (async () => {
+    const u = new URL(url), m = u.pathname.match(/^(.*\/lst)\/([^\/]+)/);
+    if (!m) return false;
+    const html = await haalViaProxy(`${u.origin}${m[1]}/${m[2]}?atype=C`);
+    const nd = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+    const tx = nd ? ((JSON.parse(nd[1]).props || {}).pageProps || {}).taxonomy : null;
+    if (!tx) return false;
+    const vlak = (x) => Array.isArray(x) ? x : Object.values(x || {}).flat();
+    const lijnen = vlak(tx.modelLines), modellen = vlak(tx.models);
+    const merkId = (lijnen[0] || modellen[0] || {}).makeId;
+    if (!merkId) return false;
+    const lijst = [...lijnen.map(x => ({id: `${merkId}||${x.id}|`, naam: String(x.label || '').replace(/\s*\(alle\)\s*/i, '')})),
+                   ...modellen.map(x => ({id: `${merkId}|${x.value}||`, naam: String(x.label || '')}))];
+    const r = zoekModelIn(lijst, model);
+    if (!r) return false;
+    S.instellingen.koppelingen[sleutel] = 'mmmv:' + r.item.id + (r.rest ? ';' + r.rest : ''); bewaar();
+    return true;
+  })().catch(() => { as24Geleerd.delete(sleutel); return false; }));
+  return as24Geleerd.get(sleutel);
+}
+// Marktplaats, 2dehands en 2ememain: modelnummer opzoeken in de modellijst van het merk (zelfde nummers op de drie sites).
+const lrpGeleerd = new Map();
+async function leerLrp(resolve, merk, model){
+  if (!resolve || !model || koppeling('marktplaats', merk, model)) return false;
+  const sleutel = `marktplaats|${slug(merk)}|${slug(model)}`;
+  if (!lrpGeleerd.has(sleutel)) lrpGeleerd.set(sleutel, (async () => {
+    const html = await haalViaProxy(`${resolve.host}/l/${resolve.pad}/${resolve.merkSlug}/`);
+    const i = html.indexOf('"facets"');
+    const g = i >= 0 && html.slice(i, i + 300000).match(/"key":"model","type":"AttributeGroupFacet","label":"[^"]+","attributeGroup":(\[[\s\S]*?\])/);
+    if (!g) return false;
+    const lijst = [...g[1].matchAll(/"attributeValueKey":"([^"]+)","attributeValueId":(\d+)/g)].map(x => ({id: `${slug(x[1])}/${x[2]}`, naam: x[1]}));
+    const r = zoekModelIn(lijst, model);
+    if (!r) return false;
+    S.instellingen.koppelingen[sleutel] = r.item.id + (r.rest ? '/' + r.rest : ''); bewaar();
+    return true;
+  })().catch(() => { lrpGeleerd.delete(sleutel); return false; }));
+  return lrpGeleerd.get(sleutel);
 }
 // Geeft de Gaspedaal-URL met de juiste modelnaam. Eén keer per sessie opzoeken in de pagina zelf; een gevonden naam is
 // bewaard als koppeling, zodat de zoeklinks daarna meteen kloppen.
@@ -2298,6 +2385,10 @@ async function zoekLive(){
     const l = links[i];
     try {
       let res;
+      // Model nog niet geleerd: eerst opzoeken in de modellijst van de site, daarna de link opnieuw opbouwen.
+      const opnieuw = () => bouwLinks(p).find(x => x.site === l.site && (x.model || '') === (l.model || '') && (x.variant || '') === (l.variant || '')) || l;
+      if (l.site.startsWith('as24') && await leerAs24(l.url, p.merk, l.model || p.model)){ Object.assign(l, opnieuw()); s.url = l.url; s.geleerd = l.model || p.model; }
+      if (l.apiUrl && l.resolve && await leerLrp(l.resolve, p.merk, l.model || p.model)){ Object.assign(l, opnieuw()); s.url = l.url; s.geleerd = l.model || p.model; }
       if (l.site.startsWith('as24')) res = parseerAs24(await haalViaProxy(l.url), new URL(l.url).origin);
       else if (l.apiUrl) {
         const q = [p.merk, l.model || p.model, l.variant].filter(Boolean).join(' ');
@@ -2807,6 +2898,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.64', 'Modelnamen leert de app nu zelf op alle sites: bij Zoeken zoekt hij het model op in de modellijst van mobile.de, Gaspedaal, AutoScout24, Marktplaats, 2dehands en 2ememain, en onthoudt het. Zo werken ook GLE Coupé en Q5 Sportback (model plus uitvoering, ook bij merken zonder reeksen zoals Audi op mobile.de) en zoekt 2dehands bij GLC geen GLE\u2019s meer. Titels als C 200 tellen voor C-Klasse en 530e voor 5-serie; Kleinanzeigen zoekt 5-serie als 5er. De verkoopprijs NL vergelijkt alleen met hetzelfde model (GLE Coupé niet met gewone GLE\u2019s).'],
   ['1.63', 'De app vindt een model nu zelf als een site het anders noemt. Gaspedaal: GLC heet daar glc-klasse; voorheen toonde Gaspedaal dan alle Mercedes-Benz. mobile.de: GLC is daar de reeks "GLC-Klasse (Alle)"; voorheen kende de app die niet. Gevonden namen worden onthouden; ook een geplakte mobile.de-link van een hele reeks werkt nu.'],
   ['1.62', 'Vermogen in pk in plaats van kW; AutoScout24 en mobile.de krijgen het omgerekend naar kW, Kleinanzeigen rekent zelf in pk. Bewaarde profielen zijn omgerekend. Prijs van en tot staan naast elkaar. Linksboven staat KAAP in vette letters in plaats van het logo.'],
   ['1.61', 'De ophaler op GitHub draait weer vanzelf, elke 2 uur. Het bolletje blijft groen tot 6 uur na de laatste run, omdat GitHub geplande taken vaak later start; daarna oranje.'],

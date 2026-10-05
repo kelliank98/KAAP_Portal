@@ -129,7 +129,7 @@ describe('Leescode zoekpagina mobile.de', () => {
     assert.equal(r.modelId('X5'), '49');
     assert.equal(r.modelId(' x5 m '), '53');
     assert.equal(r.modelId('m5'), '46', 'ook uit een andere reeks');
-    assert.equal(r.modelId('X-Reihe (Alle)'), null, 'een hele reeks heeft geen modelnummer');
+    assert.equal(r.modelId('X-Reihe (Alle)'), ';26', 'een hele reeks: merk;;reeks (sinds v1.63)');
     assert.equal(r.modelId('500'), null, 'de prijsoptie "500 €" is geen model');
     assert.equal(r.modelId('Bestaat Niet'), null);
     assert.equal(r.modelId(''), null);
@@ -1045,5 +1045,84 @@ describe('Model zelf vinden: mobile.de-reeks en Gaspedaal-modelnaam (v1.63)', ()
     const x5 = await w.gaspedaalUrl('https://www.gaspedaal.nl/bmw/x5/automatisch?srt=dt-d', 'BMW', 'X5', {haalEens: () => Promise.resolve({html: bekend})});
     assert.equal(x5, 'https://www.gaspedaal.nl/bmw/x5/automatisch?srt=dt-d');
     assert.equal(G('S').instellingen.koppelingen['gaspedaal|bmw|x5'], undefined, 'niets te bewaren');
+  });
+});
+
+describe('Modelnamen op alle sites (v1.64)', () => {
+  test('modelzoeker: reeks, model, Duitse reeksnaam en model met carrosseriewoord', () => {
+    const { w } = laadApp();
+    const as24 = [{id: '47||114|', naam: 'GLE'}, {id: '47||115|', naam: 'GLC'}, {id: '47|20920||', naam: 'GLE 350'}];
+    const plat = (r) => r ? [r.item.id, r.rest] : null;
+    assert.deepEqual(plat(w.zoekModelIn(as24, 'GLC')), ['47||115|', '']);
+    assert.deepEqual(plat(w.zoekModelIn(as24, 'GLE 350')), ['47|20920||', '']);
+    assert.deepEqual(plat(w.zoekModelIn(as24, 'GLE Coupé')), ['47||114|', 'coupe'], 'GLE-reeks met coupe als zoekwoord');
+    assert.deepEqual(plat(w.zoekModelIn([{id: ';29', naam: '5er Reihe (Alle)'}, {id: '13', naam: '530'}], '5-serie')), [';29', '']);
+    assert.deepEqual(plat(w.zoekModelIn([{id: '19155', naam: 'Q5'}, {id: '20164', naam: 'SQ5'}], 'Q5 Sportback')), ['19155', 'sportback']);
+    assert.deepEqual(plat(w.zoekModelIn([{id: 'x', naam: 'X-Reihe (Alle)'}, {id: '49', naam: 'X5'}], 'X5')), ['49', ''], 'een los model gaat voor de reeks');
+    assert.deepEqual(plat(w.zoekModelIn([{id: 'gle-klasse/11593', naam: 'gle-klasse'}, {id: 'gle-coupe/11594', naam: 'gle-coupe'}], 'GLE Coupé')), ['gle-coupe/11594', ''], 'site met een eigen coupémodel');
+    assert.equal(w.zoekModelIn(as24, 'A-Klasse'), null);
+  });
+  test('titelcontrole zoals sites titels schrijven', () => {
+    const { w } = laadApp();
+    const ja = [['Mercedes-Benz C 200 Avantgarde', 'C-Klasse'], ['Mercedes-Benz C300e AMG', 'C-Klasse'], ['BMW 530e Touring M Sport', '5-serie'], ['BMW 5er Touring', '5-serie'],
+      ['Mercedes-Benz GLC 300 e 4Matic', 'GLC'], ['Mercedes GLC300e', 'GLC'], ['Mercedes-Benz GLE 350 de Coupé', 'GLE Coupé'], ['BMW X5 M Competition', 'X5'], ['BMW X5M', 'X5'],
+      ['Audi Q5 Sportback 50 TFSI e', 'Q5 Sportback'], ['Audi RS6 Avant', 'RS 6'], ['BMW 330 e Touring', '330e']];
+    const nee = [['Mercedes-Benz CLA 250', 'C-Klasse'], ['Mercedes-Benz GLE 350', 'GLC'], ['Mercedes-Benz GLE 350 d', 'GLE Coupé'], ['BMW 320d Touring', '5-serie'], ['BMW X50', 'X5'], ['Audi Q5 50 TFSI e', 'Q5 Sportback']];
+    for (const [t, m] of ja) assert.equal(w.modelInTitel(t, m), true, `${t} hoort bij ${m}`);
+    for (const [t, m] of nee) assert.equal(w.modelInTitel(t, m), false, `${t} hoort niet bij ${m}`);
+  });
+  test('mobile.de: model met carrosseriewoord wordt reeks plus zoekwoord in ms', () => {
+    const { w } = laadApp();
+    const push = (obj) => `<script>self.__next_f.push([1, ${JSON.stringify(JSON.stringify(obj))}])</script>`;
+    const html = fixture('mobile-zoek.html').replace('</body>', push({optgroupLabel: 'GLE-Klasse', items: [{value: 'group-58', label: 'GLE-Klasse (Alle)', isGroup: true}, {value: '251', label: 'GLE 350'}]}) + '</body>');
+    const r = w.parseerMobileZoek(html);
+    assert.equal(r.modelId('GLE Coupé'), ';58;coupe');
+    assert.equal(r.modelId('GLE 350 Coupé'), '251;;coupe');
+    assert.equal(w.msVan('17200;' + r.modelId('GLE Coupé'), 'AMG Line'), '17200;;58;coupe AMG Line');
+  });
+  test('AutoScout24: model opzoeken in de modellijst, bewaren en de link op nummer opbouwen', async () => {
+    const tax = {props: {pageProps: {taxonomy: {modelLines: [{id: 114, label: 'GLE (alle)', makeId: 47}, {id: 115, label: 'GLC (alle)', makeId: 47}],
+      models: {47: [{value: 20920, label: 'GLE 350', makeId: 47, modelLineId: 114}]}}}}};
+    const gevraagd = [];
+    const { w, G } = laadApp({ fetch: (adres) => { const doel = new URL(String(adres)).searchParams.get('url'); gevraagd.push(doel);
+      return Promise.resolve({ ok: true, status: 200, text: async () => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify(tax) + '</script>' }); } });
+    assert.equal(await w.leerAs24('https://www.autoscout24.de/lst/mercedes-benz/gle-coupe?atype=C', 'Mercedes-Benz', 'GLE Coupé'), true);
+    assert.equal(gevraagd[0], 'https://www.autoscout24.de/lst/mercedes-benz?atype=C', 'modellijst van het merk');
+    assert.equal(G('S').instellingen.koppelingen['as24|mercedes-benz|gle-coupe'], 'mmmv:47||114|;coupe');
+    const p = {naam:'', merk:'Mercedes-Benz', model:'GLE Coupé', bjvan:2021, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'AMG Line', uitvDe:'', modelDe:'', uitvNiet:'', sites:{as24de:true}};
+    const u = new URL(w.bouwLinks(p).find(x => x.site === 'as24de').url);
+    assert.equal(u.pathname, '/lst/mercedes-benz');
+    assert.equal(u.searchParams.get('mmmv'), '47||114|');
+    assert.equal(u.searchParams.get('version'), 'coupe AMG Line');
+    assert.equal(await w.leerAs24('https://www.autoscout24.de/lst/mercedes-benz/gle-coupe?atype=C', 'Mercedes-Benz', 'GLE Coupé'), false, 'geleerd: niet opnieuw opzoeken');
+  });
+  test('Marktplaats en 2dehands: modelnummer uit de modellijst in plaats van losse zoektekst', async () => {
+    const facet = '{"facets":[{"key":"model","type":"AttributeGroupFacet","label":"Model","attributeGroup":[{"attributeValueKey":"GLC-klasse","attributeValueId":11690},{"attributeValueKey":"glc-coupe","attributeValueId":13775}]}]}';
+    const { w, G } = laadApp({ fetch: () => Promise.resolve({ ok: true, status: 200, text: async () => '<html>' + facet + '</html>' }) });
+    assert.equal(await w.leerLrp({host: 'https://www.2dehands.be', pad: 'auto-s', merkSlug: 'mercedes-benz', model: 'GLC'}, 'Mercedes-Benz', 'GLC'), true);
+    assert.equal(G('S').instellingen.koppelingen['marktplaats|mercedes-benz|glc'], 'glc-klasse/11690');
+    const p = {naam:'', merk:'Mercedes-Benz', model:'GLC', bjvan:2021, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'', uitvDe:'', modelDe:'', uitvNiet:'', sites:{twodehands:true}};
+    const l = w.bouwLinks(p).find(x => x.site === 'twodehands');
+    assert.match(l.apiUrl, /attributesById%5B%5D=11690/, 'modelnummer in de zoekopdracht');
+  });
+  test('Kleinanzeigen: 5-serie zoekt als 5er', () => {
+    const { w } = laadApp();
+    const p = {naam:'', merk:'BMW', model:'5-serie', bjvan:null, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'', uitvDe:'', modelDe:'', uitvNiet:'', sites:{kleinanzeigen:true}};
+    assert.match(w.bouwLinks(p).find(x => x.site === 'kleinanzeigen').url, /\/5er\/k0c216/);
+  });
+});
+
+describe('mobile.de: modellijst uit modelsCache, ook voor merken zonder reeksen (v1.64)', () => {
+  test('Audi Q5 Sportback: Q5 (32) met "sportback" als zoekwoord; prijzen elders in de pagina tellen niet mee', () => {
+    const { w } = laadApp();
+    const push = (obj) => `<script>self.__next_f.push([1, ${JSON.stringify('6f:' + JSON.stringify(obj))}])</script>`;
+    const audi = {modelsCache: {1900: [{value: '', label: 'Beliebig'}, {value: '45', label: 'Q2'}, {value: '32', label: 'Q5'}, {value: '63', label: 'Q6 e-tron'}, {optgroupLabel: 'TT (alle)', items: [{value: 'group-9', label: 'TT (alle)', isGroup: true}, {value: '30', label: 'TT'}]}]}};
+    const html = fixture('mobile-zoek.html').replace('</body>', push(audi) + push({prijzen: [{value: '500', label: '500 €'}]}) + '</body>');
+    const r = w.parseerMobileZoek(html);
+    assert.equal(r.modelId('Q5 Sportback'), '32;;sportback');
+    assert.equal(w.msVan('1900;' + r.modelId('Q5 Sportback'), ''), '1900;32;;sportback');
+    assert.equal(r.modelId('Q5'), '32');
+    assert.equal(r.modelId('TT'), '30');
+    assert.equal(r.modelId('500'), null, 'een prijs is geen model');
   });
 });
