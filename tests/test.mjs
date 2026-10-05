@@ -34,7 +34,7 @@ function boot(seed = {}) {
     .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck|logoDialoogVerversen)=/g, 'var $1='));
   return w;
 }
-const VER = '1.31';
+const VER = '1.32';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -394,6 +394,13 @@ t('klik op het logo opent het keuzevenster; Esc sluit; terugzetten alleen bij ee
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' })); eq(w.document.getElementById('logo-dialoog'), null);
   w.zetLogo(SVG1); w.document.getElementById('logo-wrap').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
   eq(w.document.getElementById('logo-dialoog').querySelector('#logo-reset').style.display, '');
+});
+t('printen: hele blokken, nooit half op pagina 1 en verder op pagina 2; marge op elke pagina (v1.32)', () => {
+  const print = html.slice(html.indexOf('@media print{'), html.indexOf('@media(max-width:640px)'));
+  if (!print.includes('.vcard,.panel,.iv,table.spec,tr,.totalrow,.pay,.section-h,.foot{break-inside:avoid;page-break-inside:avoid;}')) throw new Error('blokken niet heel');
+  if (!print.includes('.totalrow{break-before:avoid;page-break-before:avoid;}')) throw new Error('totaal los van tabel');
+  if (!print.includes('.section-h{break-after:avoid;page-break-after:avoid;}')) throw new Error('kop kan los staan');
+  if (!/\.sheet\{[^}]*box-decoration-break:clone/.test(print)) throw new Error('geen marge op vervolgpagina');
 });
 t('hint en stippelrand rond het logo komen niet op papier', () => {
   const print = html.slice(html.indexOf('@media print{'), html.indexOf('@media(max-width:640px)'));

@@ -156,7 +156,8 @@
     html,body{background:#fff;padding:0;}
     .nav,.actionbar,.hint,.view:not(.active),.vc-tools .seg,.add-btn,.vc-del,.autocomplete,.vk-add,.vk-del,.vk:not(.has){display:none!important;}
     .vc-tools::after{content:attr(data-print);font-size:8.5px;color:var(--grey);}
-    .sheet{box-shadow:none;max-width:none;margin:0;padding:14mm 16mm;border-top:2mm solid var(--gold);}
+    /* clone: elke pagina krijgt dezelfde marge boven en onder (en de gouden rand), niet alleen pagina 1 */
+    .sheet{box-shadow:none;max-width:none;margin:0;padding:14mm 16mm;border-top:2mm solid var(--gold);box-decoration-break:clone;-webkit-box-decoration-break:clone;}
     .foot{margin:18px -16mm 0;padding:12px 16mm;}
     /* Vervolgpagina's krijgen wat lucht bovenaan via de herhaalde tabelkop */
     table.spec thead th{padding-top:14px;}
@@ -165,10 +166,14 @@
     table.spec tfoot{display:table-footer-group;}
     input{background:transparent!important;}
     .logo-wrap{outline:none!important;cursor:auto!important;} .logo-wrap::after{display:none!important;}
-    /* Blokken niet midden op een paginagrens laten afbreken */
-    .vcard,.panel,tr,.totalrow,.pay,.section-h,.iv,.foot{break-inside:avoid;page-break-inside:avoid;}
-    /* Totaal en betaalblok niet losgescheurd van de tabel erboven */
-    .totalrow,.pay{break-before:avoid;page-break-before:avoid;}
+    /* Pagina 1 zo vol mogelijk met HELE blokken (v1.32). Een blok wordt nooit over twee pagina's
+       verdeeld: past het niet meer, dan gaat het in zijn geheel naar de volgende pagina.
+       Blokken: klantvakken, voertuigkaarten, inkoopverklaring, de specificatie met kop, tabel en
+       totaal, het betaalblok en de voettekst. Alleen een specificatie die langer is dan een hele
+       pagina wordt noodgedwongen per regel verdeeld, met de tabelkop opnieuw bovenaan. */
+    .vcard,.panel,.iv,table.spec,tr,.totalrow,.pay,.section-h,.foot{break-inside:avoid;page-break-inside:avoid;}
+    /* Het totaal blijft bij de tabel erboven */
+    .totalrow{break-before:avoid;page-break-before:avoid;}
     /* Sectiekop nooit los onderaan een pagina: altijd samen met wat eronder staat */
     .section-h{break-after:avoid;page-break-after:avoid;}
     /* ALLEEN OP PAPIER groter. Op het scherm blijft alles zoals het was:
@@ -421,9 +426,10 @@
    Het versienummer staat alleen HIER. Bij een nieuwe versie: VERSIE ophogen en
    bovenaan HISTORIE een regel toevoegen. Het label in de navigatiebalk, de
    paginatitel, het stempel in concepten en back-ups komen allemaal hieruit. */
-const VERSIE='1.31';
+const VERSIE='1.32';
 /* Updategeschiedenis. Nieuwste bovenaan. */
 const HISTORIE=[
+ ['1.32','Printen: pagina 1 wordt zo vol mogelijk gevuld met hele blokken. Een blok wordt nooit over twee pagina\'s verdeeld: klantvakken, voertuigkaarten, inkoopverklaring en de specificatie met totaal blijven altijd heel. Past een blok niet meer op pagina 1, dan gaat het in zijn geheel naar pagina 2. Elke pagina krijgt dezelfde marge boven en onder, zodat niets tegen de rand van het papier komt.'],
  ['1.31','Lettertype Montserrat in plaats van Poppins, op het scherm en op papier. Sluit aan bij de letters van het nieuwe logo. Alle gebruikte diktes en cursief worden echt geladen. Het logo zelf is een afbeelding en verandert niet. Op papier blijft een sectiekop zoals SPECIFICATIE altijd bij de inhoud eronder.'],
  ['1.30','Naam linksboven: KAAP | FACTUUR GENERATOR, met KAAP als merk in vet en iets meer letterafstand. Titel in het browsertabblad: KAAP | Factuur Generator.'],
  ['1.29','Nieuw logo op de factuur: KAAP vet, AUTO HOUSE dun, BV eronder. Het oude logo is vervangen. Klik op het logo om een eigen logo te kiezen (PNG, JPG, WebP of SVG) of het standaardlogo terug te zetten. Een eigen logo wordt in deze browser bewaard en gaat mee in het gekoppelde Drive-bestand, de back-ups en de export; het nieuwst gekozen logo wint. Nieuw adres: kelliank98.github.io/KAAP_Portal/factuur.html. Het oude adres stuurt automatisch door; facturen, voorraad en Drive-koppeling blijven gewoon staan.'],
