@@ -992,3 +992,58 @@ describe('Twee tabbladen overschrijven elkaar niet', () => {
     assert.equal(d.querySelector('#toast').textContent, '');
   });
 });
+
+describe('Model zelf vinden: mobile.de-reeks en Gaspedaal-modelnaam (v1.63)', () => {
+  const push = (obj) => `<script>self.__next_f.push([1, ${JSON.stringify(JSON.stringify(obj))}])</script>`;
+  const glcReeks = {optgroupLabel: 'GLC-Klasse', items: [{value: 'group-59', label: 'GLC-Klasse (Alle)', isGroup: true}, {value: '325', label: 'GLC 200'}, {value: '284', label: 'GLC 300'}]};
+  const gpModellen = [{value: '2814', slug: 'glc-klasse', name: 'GLC-klasse', label: 'GLC-klasse (1.233)', groupId: '115'},
+    {value: '5595', slug: 'glc-klasse-coupe', name: 'GLC-Klasse Coupe', label: 'GLC-Klasse Coupe (288)', groupId: '115'},
+    {value: '7446', slug: 'amg-glc', name: 'AMG GLC', label: 'AMG GLC (91)', groupId: '115'}];
+
+  test('mobile.de: "GLC" is de reeks "GLC-Klasse (Alle)"; een los model blijft een los model', () => {
+    const { w } = laadApp();
+    const html = fixture('mobile-zoek.html').replace('</body>', push(glcReeks) + '</body>');
+    const r = w.parseerMobileZoek(html);
+    assert.equal(r.modelId('Glc'), ';59');
+    assert.equal(r.modelId('GLC-Klasse'), ';59');
+    assert.equal(r.modelId('GLC 300'), '284');
+    assert.equal(r.modelId('GLE'), null);
+  });
+  test('mobile.de: zoeklink met een reeks (merk;;reeks), live nagemeten 06-10-2026', () => {
+    const { w } = laadApp();
+    assert.equal(w.msVan('3500;49', 'M Sport'), '3500;49;;M Sport');
+    assert.equal(w.msVan('17200;;59', ''), '17200;;59;');
+    assert.equal(w.msVan('17200;;59', 'AMG Line'), '17200;;59;AMG Line');
+    assert.equal(w.msVan('3500;', ''), '3500;;;');
+    const r = w.leerKoppeling('mobile', 'https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&ms=17200%3B%3B59%3B', 'Mercedes-Benz', 'GLC');
+    assert.equal(r.ok, true, r.msg);
+    const p = {naam:'', merk:'Mercedes-Benz', model:'GLC', bjvan:2021, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'AMG Line', uitvDe:'', modelDe:'', uitvNiet:'', sites:{mobile:true}};
+    const l = w.bouwLinks(p).find(x => x.site === 'mobile');
+    assert.equal(new URL(l.url).searchParams.get('ms'), '17200;;59;AMG Line');
+  });
+  test('Gaspedaal: modellijst uit de pagina en de juiste modelnaam', () => {
+    const { w } = laadApp();
+    const res = w.parseerGaspedaalZoek(fixture('gaspedaal-referentie.html').replace('</body>', push({models: gpModellen}) + '</body>'));
+    assert.deepEqual(JSON.parse(JSON.stringify(res.modellen.map(m => m.slug))), ['glc-klasse', 'glc-klasse-coupe', 'amg-glc']);
+    assert.equal(w.gaspedaalModelSlug(res.modellen, 'Glc'), 'glc-klasse');
+    assert.equal(w.gaspedaalModelSlug(res.modellen, 'GLC Coupé'), 'glc-klasse-coupe');
+    assert.equal(w.gaspedaalModelSlug(res.modellen, 'AMG GLC'), 'amg-glc');
+    assert.equal(w.gaspedaalModelSlug([{slug: 'x5', naam: 'X5'}], 'X5'), 'x5');
+    assert.equal(w.gaspedaalModelSlug(res.modellen, 'GLE'), null);
+  });
+  test('Gaspedaal: onbekende modelnaam wordt de naam van Gaspedaal en blijft bewaard; een bekende naam blijft zoals hij is', async () => {
+    const { w, G } = laadApp();
+    const merkpagina = fixture('gaspedaal-referentie.html').replace('</body>', push({models: gpModellen}) + '</body>');
+    const gevraagd = [];
+    const ctx = {haalEens: (url) => { gevraagd.push(url); return Promise.resolve({html: merkpagina}); }};
+    const url = await w.gaspedaalUrl('https://www.gaspedaal.nl/mercedes-benz/glc/automatisch?bmin=2021&srt=dt-d', 'Mercedes-Benz', 'Glc', ctx);
+    assert.equal(url, 'https://www.gaspedaal.nl/mercedes-benz/glc-klasse/automatisch?bmin=2021&srt=dt-d');
+    assert.equal(G('S').instellingen.koppelingen['gaspedaal|mercedes-benz|glc'], 'mercedes-benz/glc-klasse');
+    const p = {naam:'', merk:'Mercedes-Benz', model:'Glc', bjvan:null, bjtot:null, km:null, pk:null, pmin:null, pmax:null, aanbieder:'', deuren:'', btw:'', carr:[], brandstof:[], opties:[], uitv:'', uitvDe:'', modelDe:'', uitvNiet:'', sites:{gaspedaal:true}};
+    assert.match(w.bouwLinks(p).find(x => x.site === 'gaspedaal').url, /^https:\/\/www\.gaspedaal\.nl\/mercedes-benz\/glc-klasse\/automatisch\?/, 'zoeklink klopt daarna meteen');
+    const bekend = fixture('gaspedaal-referentie.html').replace('</body>', push({models: [{value: '1', slug: 'x5', name: 'X5', label: 'X5 (500)', groupId: '9'}]}) + '</body>');
+    const x5 = await w.gaspedaalUrl('https://www.gaspedaal.nl/bmw/x5/automatisch?srt=dt-d', 'BMW', 'X5', {haalEens: () => Promise.resolve({html: bekend})});
+    assert.equal(x5, 'https://www.gaspedaal.nl/bmw/x5/automatisch?srt=dt-d');
+    assert.equal(G('S').instellingen.koppelingen['gaspedaal|bmw|x5'], undefined, 'niets te bewaren');
+  });
+});

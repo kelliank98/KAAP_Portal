@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.12
+  KAAP Inkoop-radar – ophaler  v1.13
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md. Sinds v1.12 maakt
   de ophaler daarnaast een melding (melding.html, melding.txt) voor mail en WhatsApp, alleen bij
-  een nieuwe treffer die nog niet eerder gemeld is; zie tools/melding.mjs.
+  een nieuwe treffer die nog niet eerder gemeld is, en sinds v1.13 opnieuw bij een prijswijziging; zie tools/melding.mjs.
 
   Gebruik:  node tools/inkoop-fetch.mjs [profiles.json] [results.json]
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
@@ -321,7 +321,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.12', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.13', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
@@ -359,7 +359,9 @@ for (const p of (src.profiles || [])) {
       if (prevSite) {
         const bron = { profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), siteNaam: l.naam, land: l.land, model: l.model || '' };
         site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ ...bron, soort: 'nieuw', ...it }));
-        site.items.filter(it => prevMap.has(it.id) && it.price_prev && prevMap.get(it.id).price !== it.price).forEach(it => newItems.push({ ...bron, soort: 'prijs', ...it }));
+        // Prijs veranderd sinds de vorige ronde, omlaag of omhoog.
+        site.items.filter(it => { const o = prevMap.get(it.id); return o && o.price && it.price && o.price !== it.price; })
+          .forEach(it => newItems.push({ ...bron, soort: 'prijs', prijs_was: prevMap.get(it.id).price, ...it }));
       }
       console.log(`✓ ${p.naam} · ${l.naam}${l.model ? ' · ' + l.model : ''}${l.variant ? ' · ' + l.variant : ''}: ${site.items.length} opgehaald${res.count != null ? ' van ' + res.count : ''}${site.warn ? '  [!] ' + site.warn : ''}`);
     } catch (e) {

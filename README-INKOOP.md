@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.62
+# KAAP Inkoop Radar v1.63
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -16,13 +16,13 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `package.json` | alleen voor de test (`npm test`), de app heeft geen pakketten nodig | hoofdmap |
 | `profiles.json` | je zoekprofielen, geëxporteerd uit de app | hoofdmap |
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
-| `tools/inkoop-fetch.mjs` | de ophaler (v1.12, Node 22 in de workflow, geen pakketten) | `tools/` |
+| `tools/inkoop-fetch.mjs` | de ophaler (v1.13, Node 22 in de workflow, geen pakketten) | `tools/` |
 | `tools/melding.mjs` | maakt de mail en het WhatsApp-bericht bij een nieuwe treffer | `tools/` |
 | `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.62_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.63_2026-10-06.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -137,7 +137,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 207 punten:
+De tests draaien zonder netwerk en controleren 223 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -169,6 +169,7 @@ De BPM-referentiewaarden zijn met de hand uit de tarieftabellen uitgerekend en s
 Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hele merk) en mag meerdere modellen bevatten (`X3, X5`). Wat de app zelf regelt:
 
 - **AutoScout24** gebruikt Engelse modelnamen. De app rekent om: *5 Serie* wordt `5-series`, *V-Klasse* wordt `v-class`, *RS 6* wordt `rs6`. Klopt het toch niet, dan meldt de ophaler "0 resultaten" met de naam die AutoScout24 zelf gebruikt, en plak je die model-URL één keer.
+- **Gaspedaal en mobile.de noemen sommige modellen anders** (v1.63, live nagemeten 06-10-2026). Gaspedaal: *GLC* heet daar `glc-klasse`; een onbekende naam negeert Gaspedaal stil en toont dan het hele merk. mobile.de: *GLC* is daar de reeks *GLC-Klasse (Alle)*, in de link `ms=17200;;59;`. Bij Zoeken met de extensie zoekt de app de juiste naam op in de modellijst van de site zelf en onthoudt hem (Instellingen > Geleerde model-koppelingen). Een geplakte mobile.de-link van een hele reeks wordt ook herkend.
 - **Marktplaats, 2dehands, 2ememain**: de ophaler zoekt het model-id zelf op in de modellijst van de site. De app rekent elke advertentie zelf na op model, bouwjaar, km, prijs en automaat, omdat deze sites een deel van hun eigen filters negeren.
 - **Kleinanzeigen** heeft op 03-10-2026 een nieuwe pagina-opbouw gekregen; de app leest de oude en de nieuwe. Het zoekt het model als woord in de titel, want hun eigen modelveld is per merk anders gevuld en wordt bij een onbekende waarde stil genegeerd. Heet het model in Duitsland anders, vul dan *Model op Duitse sites* in: `5er` in plaats van `5 Serie`.
 - **mobile.de** werkt met interne modelnummers. Met de extensie zoekt de app het nummer zelf op en bewaart het. Zonder extensie plak je per model één keer de URL bij Model-koppeling. Merk-ID's staan in Instellingen.
@@ -210,12 +211,12 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Bladwijzer prijshistorie** (AutoScout24) heeft een eigen versienummer dat in zijn URL meegaat. Is de jouwe ouder, dan zegt de app dat bij gebruik en sleep je hem opnieuw.
 - **Alles wissen** downloadt eerst een reservekopie.
 
-## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.12)
+## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.13)
 
 Vindt de ophaler een nieuwe advertentie voor een opgeslagen zoekopdracht, dan stuurt hij een mail en/of een WhatsApp-bericht (`tools/melding.mjs`).
 
-- **Alleen bij een nieuwe treffer**: geen bericht als er niets nieuws is, niet bij een prijsdaling (die zie je in de app), niet bij een storing. Hooguit één bericht per ronde, dus hooguit elke 2 uur.
-- **Nooit twee keer dezelfde auto**: wat gemeld is, staat 90 dagen in `results.json` (`gemeld`), ook als een site een advertentie even kwijt is en weer terugzet. Dezelfde auto uit twee uitvoeringen (M Sport en M-Sport) telt één keer. Na een nieuw of gewijzigd profiel meldt de eerste ronde niets; die legt alleen vast wat er al staat.
+- **Alleen bij een nieuwe treffer**, of opnieuw als de prijs van een gemelde auto verandert (v1.13, met de oude prijs erbij). Geen bericht als er niets nieuws is of bij een storing. Hooguit één bericht per ronde, dus hooguit elke 2 uur.
+- **Niet twee keer dezelfde auto bij dezelfde prijs**: wat gemeld is, staat met de prijs 90 dagen in `results.json` (`gemeld`), ook als een site een advertentie even kwijt is en weer terugzet. Dezelfde auto uit twee uitvoeringen (M Sport en M-Sport) telt één keer. Na een nieuw of gewijzigd profiel meldt de eerste ronde niets; die legt alleen vast wat er al staat.
 - **Onderwerp** zonder codetaal: "Nieuw: BMW X5 xDrive45e M Sport · € 46.900" bij één auto, "2 nieuwe X5's" bij meer. In de mail per auto de titel, prijs, km, eerste toelating, site en een link.
 - De weekcontrole stuurt geen storingsberichten, tenzij je het secret `MELD_DIRECT` op `1` zet.
 - Alleen de sites van de ophaler: mobile.de en Gaspedaal niet (zie Beperkingen).

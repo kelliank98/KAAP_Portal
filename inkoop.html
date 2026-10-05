@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.62</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.63</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -470,7 +470,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.62';
+const APP_VERSIE = '1.63';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -809,6 +809,9 @@ function as24Slug(model){
 }
 
 const splitList = (s) => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
+// mobile.de: ms = merk;model;reeks;zoekwoord. Een gekoppeld model is "merk;model", een hele reeks zoals
+// "GLC-Klasse (Alle)" is "merk;;reeks" (live nagemeten 06-10-2026: ms=17200;;59; gaf 10.970 Mercedes-Benz GLC-Klasse).
+function msVan(kop, v){ const d = String(kop || '').split(';'); while (d.length < 3) d.push(''); return d.slice(0, 3).join(';') + ';' + (v || ''); }
 function koppeling(site, merk, model){ return S.instellingen.koppelingen[`${site}|${slug(merk)}|${slug(model)}`] || null; }
 function makeIdVoor(merk){
   const m = cap(merk).toLowerCase();
@@ -850,7 +853,7 @@ function bouwLink(s, p, v, c){
     }
     const q = new URLSearchParams();
     q.set('isSearchRequest','true'); q.set('s','Car'); q.set('vc','Car'); q.set('dam','false');
-    q.set('ms', kop + ';;' + v);
+    q.set('ms', msVan(kop, v));
     if (p.bjvan || p.bjtot) q.set('fr', yr(p.bjvan, p.bjtot));
     if (p.km) q.set('ml', ':' + p.km);
     if (p.pmin || p.pmax) q.set('p', yr(p.pmin, p.pmax));
@@ -994,10 +997,10 @@ function leerKoppeling(site, url, merk, model){
   let key = site, val = null, m;
   if (site === 'mobile'){
     const ms = u.searchParams.get('ms');
-    if (ms){ const pt = ms.split(';'); if (pt[0]) val = pt[0] + ';' + (pt[1]||''); }
+    if (ms){ const pt = ms.split(';'); if (pt[0]) val = !pt[1] && pt[2] ? pt[0] + ';;' + pt[2] : pt[0] + ';' + (pt[1]||''); }   // hele reeks: merk;;reeks
     else { const mk = u.searchParams.get('makeModelVariant1.makeId'), md = u.searchParams.get('makeModelVariant1.modelId'); if (mk) val = mk + ';' + (md||''); }
     if (!val) return {ok:false, msg:'Geen merk/model (ms=...) in deze mobile.de-URL. Kies merk én model op mobile.de en kopieer daarna de adresbalk.'};
-    if (!val.split(';')[1]) return {ok:false, msg:'Alleen het merk staat in de URL; kies ook het model.'};
+    if (!val.split(';')[1] && !val.split(';')[2]) return {ok:false, msg:'Alleen het merk staat in de URL; kies ook het model.'};
     S.instellingen.makeIds[cap(merk)] = +val.split(';')[0];
   } else if (site.startsWith('as24')){
     key = 'as24'; m = u.pathname.match(/\/lst\/([^\/?#]+)\/([^\/?#]+)/);
@@ -1536,11 +1539,12 @@ async function haalNlReferenties(p, live, ctx){
     pk: null, pmin: null, pmax: null, aanbieder: '', deuren: '', btw: '', carr: [], opties: [], uitv: '', uitvDe: '', uitvNiet: '', brandstof: [], sites: {gaspedaal: true}});
   const opties = {wachtOp: 'numberOfPages', geefOpBij: CONTROLE_KENMERK};
   await Promise.all(modellen.map(async (model) => {
-    const l = bouwLinks(Object.assign({}, ruim, {model})).find(x => x.site === 'gaspedaal' && x.url);
-    if (!l) return;
+    const l0 = bouwLinks(Object.assign({}, ruim, {model})).find(x => x.site === 'gaspedaal' && x.url);
+    if (!l0) return;
     const sleutel = normTekst(model);
-    live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'wacht', items: [], url: l.url};
+    live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'wacht', items: [], url: l0.url};
     try {
+      const l = {url: await gaspedaalUrl(l0.url, p.merk, model, ctx)};
       const bewaard = nlRefCache.get(l.url);
       let items;
       if (bewaard && Date.now() - bewaard.t < NL_REF_BEWAAR_MS) items = bewaard.items;
@@ -1554,7 +1558,7 @@ async function haalNlReferenties(p, live, ctx){
       }
       live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'klaar', items, url: l.url, facelift: p.facelift || null};
     } catch(e){
-      live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'fout', items: [], fout: String(e.message || e).slice(0, 120), url: l.url};
+      live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'fout', items: [], fout: String(e.message || e).slice(0, 120), url: l0.url};
     }
     if (LIVE === live) renderLive();
   }));
@@ -1871,6 +1875,16 @@ function parseerMobileZoek(html){
     }
     const re = /\{"value":"(\d+)","label":"([^"]{1,40})"\}/g; let m;   // merk zonder reeksen: losse opties
     while ((m = re.exec(flight))) if (m[2].trim().toLowerCase() === doel) return m[1];
+    // Een hele reeks: "GLC" is bij mobile.de "GLC-Klasse (Alle)" (group-59), met daaronder GLC 200 t/m GLC 63 AMG.
+    // Teruggegeven als ";59", zodat merk + ';' + id de koppeling "merk;;59" geeft.
+    const kort = normTekst(doel);
+    for (let p = flight.indexOf('"optgroupLabel":'); p >= 0; p = flight.indexOf('"optgroupLabel":', p + 1)){
+      const lijst = jsonNa(flight, '"items":', p);
+      const g = Array.isArray(lijst) && lijst.find(x => x && x.isGroup && /^group-\d+$/.test(String(x.value)));
+      if (!g) continue;
+      const naam = normTekst(String(g.label || '').replace(/\(alle\)/i, ''));
+      if (naam === kort || naam.replace(/klasse|reihe|serie|class$/g, '') === kort) return ';' + String(g.value).slice(6);
+    }
     return null;
   };
   return {count, items, modelId};
@@ -1912,7 +1926,38 @@ function parseerGaspedaalZoek(html){
     };
   }).filter(it => it.url);
   const pag = flight.match(/"numberOfPages":(\d+)/);
-  return {count: count != null ? count : items.length, items, paginas: pag ? +pag[1] : null};
+  // De modellen van het merk staan in dezelfde pagina (live nagemeten 06-10-2026):
+  // {"value":"2814","slug":"glc-klasse","name":"GLC-klasse","label":"GLC-klasse (1.233)","groupId":"115"}
+  const modellen = [...flight.matchAll(/\{"value":"\d+","slug":"([^"]+)","name":"([^"]+)","label":"[^"]*","groupId":"\d+"\}/g)].map(m => ({slug: m[1], naam: m[2]}));
+  return {count: count != null ? count : items.length, items, paginas: pag ? +pag[1] : null, modellen};
+}
+// Gaspedaal kent een model alleen onder zijn eigen naam: GLC heet daar glc-klasse. Een onbekende naam negeert Gaspedaal
+// stil en toont het hele merk (live nagemeten 06-10-2026: /mercedes-benz/glc gaf alle 25.921 Mercedes-Benz, glc-klasse 1.231 GLC's).
+function gaspedaalModelSlug(modellen, model){
+  const doel = normTekst(model); if (!doel) return null;
+  const zoek = (past) => (modellen || []).find(m => past(normTekst(m.naam)) || past(normTekst(m.slug)));
+  const m = zoek(n => n === doel) || zoek(n => n === doel + 'klasse' || n === doel + 'serie') || zoek(n => n.replace(/klasse|serie|class/g, '') === doel);
+  return m ? m.slug : null;
+}
+// Geeft de Gaspedaal-URL met de juiste modelnaam. Eén keer per sessie opzoeken in de pagina zelf; een gevonden naam is
+// bewaard als koppeling, zodat de zoeklinks daarna meteen kloppen.
+const gaspedaalPaden = new Map();
+async function gaspedaalUrl(url, merk, model, ctx){
+  if (!model || koppeling('gaspedaal', merk, model)) return url;
+  const sleutel = `gaspedaal|${slug(merk)}|${slug(model)}`;
+  if (!gaspedaalPaden.has(sleutel)) gaspedaalPaden.set(sleutel, ctx.haalEens(url, {wachtOp: 'numberOfPages', geefOpBij: CONTROLE_KENMERK}).then(r => {
+    const pad = new URL(url).pathname.match(/^\/([^\/]+)\/([^\/]+)\//);
+    const res = parseerGaspedaalZoek(r.html);
+    if (!pad || !res.modellen.length || res.modellen.some(x => x.slug === pad[2])) return null;   // Gaspedaal kent dit model al
+    const juist = gaspedaalModelSlug(res.modellen, model);
+    if (!juist) return null;
+    S.instellingen.koppelingen[sleutel] = pad[1] + '/' + juist; bewaar();
+    return pad[1] + '/' + juist;
+  }).catch(() => { gaspedaalPaden.delete(sleutel); return null; }));   // mislukt: de volgende zoekopdracht opnieuw
+  const nieuw = await gaspedaalPaden.get(sleutel);
+  if (!nieuw) return url;
+  const u = new URL(url); u.pathname = u.pathname.replace(/^\/[^\/]+\/[^\/]+\//, '/' + nieuw + '/');
+  return u.toString();
 }
 // Gaspedaal kent in de link geen zoekwoord en geen brandstof; daarom rekent de app die hier zelf na.
 function pastGaspedaal(it, p, variant){
@@ -1946,7 +1991,7 @@ async function zoekMobile(l, p, s, ctx){
   };
   const kop = await ctx.leer.get(sleutel);   // mislukt de merkpagina (bijv. controlepagina), dan is dat de fout van deze site
   if (!kop) return alleenModel(`mobile.de kent het model "${model}" niet onder die naam.`);
-  const u = new URL(l.url); u.searchParams.set('ms', kop + ';;' + (l.variant || ''));
+  const u = new URL(l.url); u.searchParams.set('ms', msVan(kop, l.variant));
   let res;
   try { res = await haal(u.toString()); }
   catch(e){ return alleenModel(`De pagina van ${model} op mobile.de kon niet worden opgehaald.`); }
@@ -2262,7 +2307,11 @@ async function zoekLive(){
       }
       else if (l.site === 'kleinanzeigen') res = parseerKleinanzeigen(await haalViaProxy(l.url));
       else if (l.site === 'mobile') res = await zoekMobile(l, p, s, ctx);
-      else if (l.site === 'gaspedaal') res = parseerGaspedaalZoek((await ctx.haalEens(l.url, {wachtOp: 'numberOfPages', geefOpBij: CONTROLE_KENMERK})).html);
+      else if (l.site === 'gaspedaal'){
+        const url = await gaspedaalUrl(l.url, p.merk, l.model || p.model, ctx);
+        if (url !== l.url){ s.url = url; s.geleerd = l.model || p.model; }
+        res = parseerGaspedaalZoek((await ctx.haalEens(url, {wachtOp: 'numberOfPages', geefOpBij: CONTROLE_KENMERK})).html);
+      }
       else throw new Error('deze site kan niet live worden opgehaald');
       const excl = splitList(p.uitvNiet).map(x => x.toLowerCase());
       const model = l.model || p.model;
@@ -2758,6 +2807,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.63', 'De app vindt een model nu zelf als een site het anders noemt. Gaspedaal: GLC heet daar glc-klasse; voorheen toonde Gaspedaal dan alle Mercedes-Benz. mobile.de: GLC is daar de reeks "GLC-Klasse (Alle)"; voorheen kende de app die niet. Gevonden namen worden onthouden; ook een geplakte mobile.de-link van een hele reeks werkt nu.'],
   ['1.62', 'Vermogen in pk in plaats van kW; AutoScout24 en mobile.de krijgen het omgerekend naar kW, Kleinanzeigen rekent zelf in pk. Bewaarde profielen zijn omgerekend. Prijs van en tot staan naast elkaar. Linksboven staat KAAP in vette letters in plaats van het logo.'],
   ['1.61', 'De ophaler op GitHub draait weer vanzelf, elke 2 uur. Het bolletje blijft groen tot 6 uur na de laatste run, omdat GitHub geplande taken vaak later start; daarna oranje.'],
   ['1.60', 'Het bolletje naast het versienummer is grijs als de ophaler op GitHub een week niet heeft gedraaid (automatisch draaien staat uit); rood alleen nog als hij 1 tot 7 dagen stil ligt. Live zoeken werkt los daarvan.'],

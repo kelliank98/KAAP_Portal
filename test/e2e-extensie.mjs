@@ -196,6 +196,22 @@ try {
   if (app.nl && app.nl.kaarten.length) check('Naar kandidaat neemt de verwachte verkoopprijs over', +app.verkoopIngevuld > 0, 'ingevuld: ' + app.verkoopIngevuld);
   check('knop Naar kandidaat vult het formulier', !!(app.kandidaat && app.kandidaat.tab && app.kandidaat.oms && app.kandidaat.prijs), JSON.stringify(app.kandidaat));
 
+  // 10. een model dat Gaspedaal anders noemt: GLC heet daar glc-klasse (v1.63). De app vindt dat zelf en onthoudt het.
+  const glc = await evalueer(b, sessionId, `(async () => {
+    const zet = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+    ['p_pmin', 'p_pmax', 'p_uitv', 'p_uitv_de', 'p_km'].forEach(id => zet(id, ''));
+    zet('p_merk', 'Mercedes-Benz'); zet('p_model', 'GLC'); zet('p_bjvan', '2021');
+    await zoekLive();
+    const s = LIVE.sites.find(x => x.site === 'gaspedaal');
+    const ref = Object.values(LIVE.nlRef || {})[0];
+    return { status: s && s.status, n: s ? s.items.length : 0, count: s && s.count, url: s && s.url, fout: s && s.error,
+      zonderGlc: s ? s.items.filter(it => !/glc/i.test(it.title)).map(it => it.title).slice(0, 3) : [],
+      koppeling: S.instellingen.koppelingen['gaspedaal|mercedes-benz|glc'] || null, refUrl: ref && ref.url, refN: ref ? ref.items.length : 0 };
+  })()`);
+  check('app: Gaspedaal-modelnaam zelf gevonden (GLC wordt glc-klasse) en onthouden',
+    glc.status === 'klaar' && glc.n > 0 && glc.zonderGlc.length === 0 && /\/mercedes-benz\/glc-klasse\//.test(glc.url || '') && glc.koppeling === 'mercedes-benz/glc-klasse' && /glc-klasse/.test(glc.refUrl || ''),
+    glc.status === 'klaar' ? `${glc.n} getoond van ${glc.count}, koppeling ${glc.koppeling}, vergelijking ${glc.refN} NL-auto's${glc.zonderGlc.length ? '; zonder GLC: ' + glc.zonderGlc.join(' / ') : ''}` : (glc.fout || glc.status));
+
   try { await b.stuur('Browser.close'); } catch (e) {}
 } catch (e) {
   check('test liep vast', false, e.message);
