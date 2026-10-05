@@ -1,13 +1,13 @@
 {
-  "generated": "2026-09-13T14:06:49.488Z",
-  "app": "1.07",
+  "generated": "2026-10-05T15:58:10.173Z",
+  "app": "1.60",
   "profiles": [
     {
-      "id": "rmohrms3a0v9",
-      "naam": "BMW X3 M Sport 2021-2023",
+      "id": "ko0svsbls65g",
+      "naam": "BMW X5 M Sport, M-Sport 2022+",
       "exclude": [
-        "xline",
-        "x-line"
+        "Xline",
+        "X-Line"
       ],
       "links": [
         {
@@ -15,18 +15,37 @@
           "naam": "mobile.de",
           "land": "DE",
           "poll": false,
-          "variant": "m sport",
-          "url": "https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&dam=false&ms=3500%3B%3B%3Bm+sport&fr=2021%3A2023&ml=%3A75000&p=%3A34000&tr=AUTOMATIC_GEAR&ft=HYBRID&fe=HYBRID_PLUGIN&st=DEALER&sb=doc&od=down",
+          "variant": "M Sport",
+          "url": "https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&dam=false&ms=3500%3B49%3B%3BM+Sport&fr=2022%3A2023&ml=%3A85000&p=%3A48000&tr=AUTOMATIC_GEAR&ft=HYBRID&fe=HYBRID_PLUGIN&sb=doc&od=down",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "mobile",
+          "naam": "mobile.de",
+          "land": "DE",
+          "poll": false,
+          "variant": "M-Sport",
+          "url": "https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&dam=false&ms=3500%3B49%3B%3BM-Sport&fr=2022%3A2023&ml=%3A85000&p=%3A48000&tr=AUTOMATIC_GEAR&ft=HYBRID&fe=HYBRID_PLUGIN&sb=doc&od=down",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -34,18 +53,37 @@
           "naam": "AutoScout24 DE",
           "land": "DE",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
+          "variant": "M Sport",
+          "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M+Sport",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "as24de",
+          "naam": "AutoScout24 DE",
+          "land": "DE",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M-Sport",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -53,18 +91,37 @@
           "naam": "Kleinanzeigen",
           "land": "DE",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::34000/x3-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2021,2023+autos.km_i:,75000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+          "variant": "M Sport",
+          "url": "https://www.kleinanzeigen.de/s-autos/preis::48000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "kleinanzeigen",
+          "naam": "Kleinanzeigen",
+          "land": "DE",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.kleinanzeigen.de/s-autos/preis::48000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -72,18 +129,37 @@
           "naam": "AutoScout24 NL",
           "land": "NL",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.autoscout24.nl/lst/bmw/x3?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
+          "variant": "M Sport",
+          "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M+Sport",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "as24nl",
+          "naam": "AutoScout24 NL",
+          "land": "NL",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M-Sport",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -91,18 +167,37 @@
           "naam": "Gaspedaal",
           "land": "NL",
           "poll": false,
-          "variant": "m sport",
-          "url": "https://www.gaspedaal.nl/bmw/x3?bmin=2021&bmax=2023&kmax=75000&pmax=34000&srt=dt-d",
+          "variant": "M Sport",
+          "url": "https://www.gaspedaal.nl/bmw/x5/automatisch?bmin=2022&bmax=2023&kmax=85000&pmax=48000&srt=dt-d",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "gaspedaal",
+          "naam": "Gaspedaal",
+          "land": "NL",
+          "poll": false,
+          "variant": "M-Sport",
+          "url": "https://www.gaspedaal.nl/bmw/x5/automatisch?bmin=2022&bmax=2023&kmax=85000&pmax=48000&srt=dt-d",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -110,23 +205,47 @@
           "naam": "Marktplaats",
           "land": "NL",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-          "apiUrl": "https://www.marktplaats.nl/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10899&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2021%3A2023&attributeRanges%5B%5D=mileage%3A%3A75000&attributeRanges%5B%5D=PriceCents%3A%3A3400000&query=x3+m+sport&limit=30&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "variant": "M Sport",
+          "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.marktplaats.nl/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M+Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
           "resolve": {
             "host": "https://www.marktplaats.nl",
             "pad": "auto-s",
             "merkSlug": "bmw",
-            "model": "x3"
+            "model": "X5"
           },
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "marktplaats",
+          "naam": "Marktplaats",
+          "land": "NL",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.marktplaats.nl/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M-Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "resolve": {
+            "host": "https://www.marktplaats.nl",
+            "pad": "auto-s",
+            "merkSlug": "bmw",
+            "model": "X5"
+          },
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -134,18 +253,37 @@
           "naam": "AutoScout24 BE",
           "land": "BE",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.autoscout24.be/nl/lst/bmw/x3?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&custtype=D&gear=A&fregfrom=2021&fregto=2023&kmto=75000&priceto=34000&fuel=2&version=m+sport",
+          "variant": "M Sport",
+          "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M+Sport",
           "apiUrl": null,
           "resolve": null,
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "as24be",
+          "naam": "AutoScout24 BE",
+          "land": "BE",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=48000&fuel=2&version=M-Sport",
+          "apiUrl": null,
+          "resolve": null,
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         },
         {
@@ -153,23 +291,95 @@
           "naam": "2dehands",
           "land": "BE",
           "poll": true,
-          "variant": "m sport",
-          "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10899,10882,13838|constructionYearFrom:2021|constructionYearTo:2023|mileageTo:75000|PriceCentsTo:3400000|q:x3+m+sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-          "apiUrl": "https://www.2dehands.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10899&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2021%3A2023&attributeRanges%5B%5D=mileage%3A%3A75000&attributeRanges%5B%5D=PriceCents%3A%3A3400000&query=x3+m+sport&limit=30&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "variant": "M Sport",
+          "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.2dehands.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M+Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
           "resolve": {
             "host": "https://www.2dehands.be",
             "pad": "auto-s",
             "merkSlug": "bmw",
-            "model": "x3"
+            "model": "X5"
           },
           "merk": "BMW",
-          "model": "x3",
+          "model": "X5",
           "criteria": {
-            "bjvan": 2021,
+            "bjvan": 2022,
             "bjtot": 2023,
-            "km": 75000,
+            "km": 85000,
             "pmin": null,
-            "pmax": 34000
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "twodehands",
+          "naam": "2dehands",
+          "land": "BE",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.2dehands.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M-Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "resolve": {
+            "host": "https://www.2dehands.be",
+            "pad": "auto-s",
+            "merkSlug": "bmw",
+            "model": "X5"
+          },
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "twoememain",
+          "naam": "2ememain",
+          "land": "BE",
+          "poll": true,
+          "variant": "M Sport",
+          "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.2ememain.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M+Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "resolve": {
+            "host": "https://www.2ememain.be",
+            "pad": "autos",
+            "merkSlug": "bmw",
+            "model": "X5"
+          },
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
+          }
+        },
+        {
+          "site": "twoememain",
+          "naam": "2ememain",
+          "land": "BE",
+          "poll": true,
+          "variant": "M-Sport",
+          "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4800000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+          "apiUrl": "https://www.2ememain.be/lrp/api/search?l1CategoryId=91&l2CategoryId=96&attributesById%5B%5D=534&attributesById%5B%5D=10882&attributesById%5B%5D=13838&attributeRanges%5B%5D=constructionYear%3A2022%3A2023&attributeRanges%5B%5D=mileage%3A%3A85000&attributeRanges%5B%5D=PriceCents%3A%3A4800000&query=X5+M-Sport&limit=50&sortBy=SORT_INDEX&sortOrder=DECREASING",
+          "resolve": {
+            "host": "https://www.2ememain.be",
+            "pad": "autos",
+            "merkSlug": "bmw",
+            "model": "X5"
+          },
+          "merk": "BMW",
+          "model": "X5",
+          "criteria": {
+            "bjvan": 2022,
+            "bjtot": 2023,
+            "km": 85000,
+            "pmin": null,
+            "pmax": 48000
           }
         }
       ]
