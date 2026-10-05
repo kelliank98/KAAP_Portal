@@ -1,6 +1,6 @@
 # KAAP Inkoop-radar – ophaler
 # Draait elke 2 uur, dag en nacht: leest profiles.json, schrijft results.json en stuurt
-# optioneel een e-mail bij nieuwe advertenties en prijsdalingen.
+# optioneel een mail en/of WhatsApp bij een nieuwe treffer.
 name: Inkoop-radar
 
 on:
@@ -8,8 +8,7 @@ on:
   # sneller; op het hele uur is het druk. Ook dan begint GitHub geplande taken vaak later en
   # slaat er bij drukte soms een over. Voor inkoop maakt dat niets uit.
   #
-  # Mail bij nieuw aanbod: zet de secrets MAIL_TO, MAIL_USERNAME en MAIL_PASSWORD
-  # (Settings > Secrets and variables > Actions). Zonder die secrets wordt de mailstap overgeslagen.
+  # Melding bij een nieuwe treffer per mail en/of WhatsApp: zie de stappen onderaan.
   schedule:
     - cron: "17 */2 * * *"
   workflow_dispatch:               # handmatig starten via Actions > Inkoop-radar > Run workflow
@@ -51,41 +50,36 @@ jobs:
           git pull --rebase --quiet   # er kan intussen iets gepusht zijn
           git push
 
-      # Optioneel: e-mail bij nieuwe advertenties.
-      # Zet in Settings > Secrets and variables > Actions de secrets MAIL_TO, MAIL_USERNAME, MAIL_PASSWORD
-      # (bijv. een Gmail-adres met een app-wachtwoord). Zonder MAIL_TO wordt deze stap overgeslagen.
-      - name: E-mail bij nieuwe advertenties
-        if: ${{ env.MAIL_TO != '' && steps.fetch.outputs.new == 'true' }}
-        uses: dawidd6/action-send-mail@v3
+      # Melding bij een nieuwe treffer: alleen als de ophaler een nieuwe advertentie vond die nog niet
+      # eerder gemeld is (zie tools/melding.mjs). Geen mail bij "niets nieuws" of bij een prijsdaling.
+      # Mail: secrets MAIL_TO (ontvanger), MAIL_USERNAME (Gmail-adres) en MAIL_PASSWORD (app-wachtwoord
+      # van dat Gmail-account, niet het gewone wachtwoord). Zonder MAIL_TO wordt deze stap overgeslagen.
+      # De mailactie staat vast op één versie (commit), zodat die later niet ongemerkt kan veranderen.
+      - name: Mail bij een nieuwe treffer
+        if: ${{ env.MAIL_TO != '' && steps.fetch.outputs.melding == 'true' }}
+        continue-on-error: true
+        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968   # v22
         with:
           server_address: smtp.gmail.com
           server_port: 465
           secure: true
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Inkoop-radar: ${{ steps.fetch.outputs.count }} nieuwe advertentie(s)"
+          subject: ${{ steps.fetch.outputs.onderwerp }}
           to: ${{ secrets.MAIL_TO }}
-          from: KAAP Inkoop-radar
-          convert_markdown: true
-          html_body: file://new_items.md
+          from: KAAP Inkoop Radar <${{ secrets.MAIL_USERNAME }}>
+          html_body: file://melding.html
 
-      # Optioneel: WhatsApp bij nieuwe advertenties, via de gratis dienst CallMeBot.
-      # Zet de secrets CALLMEBOT_PHONE (jouw nummer met landcode, bijv. +31612345678)
-      # en CALLMEBOT_APIKEY (die je van de bot krijgt). Zonder CALLMEBOT_PHONE
-      # wordt deze stap overgeslagen.
-      - name: WhatsApp bij nieuwe advertenties
-        if: ${{ env.CALLMEBOT_PHONE != '' && steps.fetch.outputs.new == 'true' }}
+      # WhatsApp bij een nieuwe treffer, via de gratis dienst CallMeBot. Secrets CALLMEBOT_PHONE
+      # (jouw nummer met landcode, bijv. +31612345678) en CALLMEBOT_APIKEY (die je van de bot krijgt).
+      - name: WhatsApp bij een nieuwe treffer
+        if: ${{ env.CALLMEBOT_PHONE != '' && steps.fetch.outputs.melding == 'true' }}
+        continue-on-error: true
         env:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: |
-          tekst="$(node tools/wa-bericht.mjs new_items.md)"
-          if [ -z "$tekst" ]; then
-            echo "Niets te melden."
-            exit 0
-          fi
-          antwoord=$(curl -s -G "https://api.callmebot.com/whatsapp.php" \
+          curl -s -G "https://api.callmebot.com/whatsapp.php" \
             --data-urlencode "phone=$CALLMEBOT_PHONE" \
             --data-urlencode "apikey=$CALLMEBOT_APIKEY" \
-            --data-urlencode "text=$tekst" \
-            -w "\n[status %{http_code}]")
-          echo "$antwoord" | tail -3
+            --data-urlencode "text@melding.txt" \
+            -o /dev/null -w "CallMeBot: HTTP %{http_code}\n"

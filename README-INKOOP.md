@@ -16,7 +16,8 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `package.json` | alleen voor de test (`npm test`), de app heeft geen pakketten nodig | hoofdmap |
 | `profiles.json` | je zoekprofielen, geëxporteerd uit de app | hoofdmap |
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
-| `tools/inkoop-fetch.mjs` | de ophaler (Node 22 in de workflow, geen pakketten) | `tools/` |
+| `tools/inkoop-fetch.mjs` | de ophaler (v1.12, Node 22 in de workflow, geen pakketten) | `tools/` |
+| `tools/melding.mjs` | maakt de mail en het WhatsApp-bericht bij een nieuwe treffer | `tools/` |
 | `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
@@ -209,16 +210,36 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Bladwijzer prijshistorie** (AutoScout24) heeft een eigen versienummer dat in zijn URL meegaat. Is de jouwe ouder, dan zegt de app dat bij gebruik en sleep je hem opnieuw.
 - **Alles wissen** downloadt eerst een reservekopie.
 
-## E-mail bij nieuwe advertenties (optioneel)
+## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.12)
 
-*Settings > Secrets and variables > Actions*: `MAIL_TO` (ontvanger), `MAIL_USERNAME` en `MAIL_PASSWORD` (Gmail-adres met app-wachtwoord). Zonder `MAIL_TO` wordt de mailstap overgeslagen. De eerste run mailt niet: alles is dan "nieuw".
+Vindt de ophaler een nieuwe advertentie voor een opgeslagen zoekopdracht, dan stuurt hij een mail en/of een WhatsApp-bericht (`tools/melding.mjs`).
+
+- **Alleen bij een nieuwe treffer**: geen bericht als er niets nieuws is, niet bij een prijsdaling (die zie je in de app), niet bij een storing. Hooguit één bericht per ronde, dus hooguit elke 2 uur.
+- **Nooit twee keer dezelfde auto**: wat gemeld is, staat 90 dagen in `results.json` (`gemeld`), ook als een site een advertentie even kwijt is en weer terugzet. Dezelfde auto uit twee uitvoeringen (M Sport en M-Sport) telt één keer. Na een nieuw of gewijzigd profiel meldt de eerste ronde niets; die legt alleen vast wat er al staat.
+- **Onderwerp** zonder codetaal: "Nieuw: BMW X5 xDrive45e M Sport · € 46.900" bij één auto, "2 nieuwe X5's" bij meer. In de mail per auto de titel, prijs, km, eerste toelating, site en een link.
+- De weekcontrole stuurt geen storingsberichten, tenzij je het secret `MELD_DIRECT` op `1` zet.
+- Alleen de sites van de ophaler: mobile.de en Gaspedaal niet (zie Beperkingen).
+
+**Instellen** (eenmalig, in de repo: *Settings > Secrets and variables > Actions > New repository secret*):
+
+Mail via Gmail:
+1. Gebruik een Gmail-adres, liefst een apart adres alleen voor de radar. Zet bij dat account *Verificatie in 2 stappen* aan (myaccount.google.com > Beveiliging).
+2. Maak een app-wachtwoord: myaccount.google.com/apppasswords, naam bijvoorbeeld "KAAP radar". Je krijgt een code van 16 letters.
+3. Drie secrets: `MAIL_USERNAME` = het Gmail-adres, `MAIL_PASSWORD` = de code van 16 letters (zonder spaties), `MAIL_TO` = het adres waar je de mail wilt ontvangen.
+
+WhatsApp via CallMeBot (gratis, voor persoonlijk gebruik; nagezocht op 05-10-2026):
+1. Zet het nummer van de bot, +34 644 99 26 98, in je telefooncontacten.
+2. Stuur via WhatsApp aan dat contact: `I allow callmebot to send me messages`. Je krijgt een bericht terug met je APIKEY (lukt het niet binnen 2 minuten, probeer het na 24 uur opnieuw).
+3. Twee secrets: `CALLMEBOT_PHONE` = je nummer met landcode (bijv. +31612345678), `CALLMEBOT_APIKEY` = de sleutel uit het bericht.
+
+**Veiligheid**: secrets zijn versleuteld en na het opslaan voor niemand meer leesbaar, ook niet in een openbare repo of in de logboeken van GitHub. Het app-wachtwoord is niet je Google-wachtwoord en kan alleen mail versturen; intrekken kan altijd op dezelfde pagina. De CallMeBot-sleutel kan alleen berichten naar jouw nummer sturen; CallMeBot ziet wel de tekst van het bericht. De mailactie staat vast op één versie (commit), zodat die niet ongemerkt kan veranderen. Gaat de ophaler zelf stuk, dan stuurt GitHub een eigen mail "Run failed"; uitzetten kan in GitHub onder *Settings > Notifications > Actions*.
 
 ## Beperkingen die je moet kennen
 
 - Ophalen is scraping. Het breekt zodra een site zijn pagina verandert; de fout komt dan in het rood in de app te staan en de vorige resultaten blijven staan. Repareren kost een sessie. Weigert een site (403 of 429), dan probeert de app het na 2,5 seconde nog een keer; Kleinanzeigen blokkeert hele IP-reeksen tijdelijk en dat treft de proxy, niet jou.
 - De teller van Kleinanzeigen is ruimer dan wat de pagina toont (gemeten: "1 - 25 von 30" met 13 advertenties in de pagina); de app toont wat in de pagina staat.
 - Kleinanzeigen en AutoScout24: 60 nieuwste per zoekopdracht; Marktplaats/2dehands/2ememain: 50 nieuwste; Gaspedaal: 100 nieuwste; mobile.de: de eerste pagina. Voor alerts is dat ruim; voor marktanalyse niet.
-- mobile.de en Gaspedaal komen alleen binnen via de extensie, dus alleen in Chrome op de computer en alleen als je zelf zoekt. De e-mail bij nieuwe advertenties dekt deze twee niet.
+- mobile.de en Gaspedaal komen alleen binnen via de extensie, dus alleen in Chrome op de computer en alleen als je zelf zoekt. De melding bij een nieuwe treffer dekt deze twee niet.
 - BPM is een indicatie: gunstigste tarief tussen 2 maanden vóór eerste toelating en keuringsdatum, tabellen 2017 t/m 2026. De geschatte bandbreedte bij advertenties zonder CO2 is een bereik, nooit één bedrag: reserveer het hoogste.
 - De paginalezers, de extensie en de bladwijzer prijshistorie hangen aan de opmaak van de sites en breken onaangekondigd. Controleer bij een kandidaat altijd de prijs en de eerste toelating tegen de advertentie voordat je biedt.
 - Auctiekanalen (OPENLANE, BCA, Autorola) zitten er niet in: die vereisen een handelaarslogin en verbieden geautomatiseerd uitlezen.

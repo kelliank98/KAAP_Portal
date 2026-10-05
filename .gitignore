@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+# Gemaakt door de ophaler bij elke ronde; niet in de repo
+new_items.md
+melding.html
+melding.txt

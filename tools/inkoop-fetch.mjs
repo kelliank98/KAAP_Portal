@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.11
+  KAAP Inkoop-radar – ophaler  v1.12
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
-  Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md.
+  Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md. Sinds v1.12 maakt
+  de ophaler daarnaast een melding (melding.html, melding.txt) voor mail en WhatsApp, alleen bij
+  een nieuwe treffer die nog niet eerder gemeld is; zie tools/melding.mjs.
 
   Gebruik:  node tools/inkoop-fetch.mjs [profiles.json] [results.json]
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
 */
 import fs from 'node:fs';
 import { apifyAan, haalViaApify } from './bron-apify.mjs';
+import { bouwMelding } from './melding.mjs';
 
 const [, , PROFILES = 'profiles.json', RESULTS = 'results.json'] = process.argv;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -318,7 +321,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.09', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.12', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
@@ -354,8 +357,9 @@ for (const p of (src.profiles || [])) {
         return o;
       });
       if (prevSite) {
-        site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), soort: 'nieuw', ...it }));
-        site.items.filter(it => prevMap.has(it.id) && it.price_prev && prevMap.get(it.id).price !== it.price).forEach(it => newItems.push({ profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), soort: 'prijs', ...it }));
+        const bron = { profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), siteNaam: l.naam, land: l.land, model: l.model || '' };
+        site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ ...bron, soort: 'nieuw', ...it }));
+        site.items.filter(it => prevMap.has(it.id) && it.price_prev && prevMap.get(it.id).price !== it.price).forEach(it => newItems.push({ ...bron, soort: 'prijs', ...it }));
       }
       console.log(`✓ ${p.naam} · ${l.naam}${l.model ? ' · ' + l.model : ''}${l.variant ? ' · ' + l.variant : ''}: ${site.items.length} opgehaald${res.count != null ? ' van ' + res.count : ''}${site.warn ? '  [!] ' + site.warn : ''}`);
     } catch (e) {
@@ -373,7 +377,11 @@ for (const p of (src.profiles || [])) {
 // Hoeveel advertenties deze ronde opleverde; bij een betaalde bron is dit je kostenbasis.
 const opgehaald = Object.values(out.profiles).reduce((n, pr) => n + Object.values(pr.sites).reduce((m, s2) => m + (s2.items?.length || 0), 0), 0);
 out.volume = {opgehaald, moment: new Date().toISOString()};
+// Melding voor mail en WhatsApp: alleen nieuwe treffers die nog niet eerder gemeld zijn.
+const melding = bouwMelding(newItems, prev.gemeld);
+out.gemeld = melding.gemeld;
 fs.writeFileSync(RESULTS, JSON.stringify(out, null, 1));
+if (melding.melding) { fs.writeFileSync('melding.html', melding.html); fs.writeFileSync('melding.txt', melding.tekst); }
 const regel = (n) => `- **${n.profiel}** · ${n.site}: [${n.title}](${n.url}) – ${n.price ? '€ ' + n.price.toLocaleString('nl-NL') : 'prijs onbekend'}${n.price_prev ? ' (was € ' + n.price_prev.toLocaleString('nl-NL') + ')' : ''}${n.km ? ', ' + n.km.toLocaleString('nl-NL') + ' km' : ''}${n.ez ? ', EZ ' + n.ez : ''}${n.co2 ? ', ' + n.co2 + ' g/km' : ''}`;
 const nieuw = newItems.filter(n => n.soort === 'nieuw'), prijs = newItems.filter(n => n.soort === 'prijs');
 const md = newItems.length
@@ -382,5 +390,6 @@ const md = newItems.length
     (prijs.length ? `## ${prijs.length} prijsverlaging${prijs.length === 1 ? '' : 'en'}\n\n` + prijs.map(regel).join('\n') + '\n' : '')
   : '';
 fs.writeFileSync('new_items.md', md);
-if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `new=${newItems.length ? 'true' : 'false'}\ncount=${newItems.length}\n`);
+if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `new=${newItems.length ? 'true' : 'false'}\ncount=${newItems.length}\nmelding=${melding.melding ? 'true' : 'false'}\nonderwerp=${melding.melding ? melding.onderwerp.replace(/[\r\n]+/g, ' ') : ''}\n`);
+if (melding.melding) console.log(`Melding: ${melding.onderwerp}`);
 console.log(`Klaar: ${Object.keys(out.profiles).length} profielen, ${newItems.length} nieuw, ${fouten} fout(en). Opgehaald: ${opgehaald} advertenties.`);
