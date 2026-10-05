@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.60
+# KAAP Inkoop Radar v1.61
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -16,12 +16,12 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `package.json` | alleen voor de test (`npm test`), de app heeft geen pakketten nodig | hoofdmap |
 | `profiles.json` | je zoekprofielen, geëxporteerd uit de app | hoofdmap |
 | `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
-| `tools/inkoop-fetch.mjs` | de ophaler (Node 20, geen pakketten) | `tools/` |
+| `tools/inkoop-fetch.mjs` | de ophaler (Node 22 in de workflow, geen pakketten) | `tools/` |
 | `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
-| `.github/workflows/inkoop-radar.yml` | draait de ophaler; automatisch draaien staat sinds 14-09-2026 uit, starten via *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
+| `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.60_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.61_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -34,7 +34,7 @@ Donker thema met dezelfde kleuren, kaarten en knoppen als KAAP Studio, en het KA
 
 ## Stand van zaken (03-10-2026)
 
-Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/` (workflow alleen handmatig sinds 14-09-2026; laatste run 13-09-2026), schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. De proxy is sinds 03-10-2026 afgeschermd (zie hieronder). Nog niet gedaan: de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
+Alles draait in `kelliank98/KAAP_Portal`: app op GitHub Pages, ophaler in `tools/` (workflow elke 2 uur, op 17 minuten over het uur UTC), schrijfrechten aan, en de proxy op `https://kaap-proxy.kelliankaap.workers.dev/` (staat standaard ingevuld in de app). Nieuw in v1.44 t/m v1.47: de KAAP-extensie (door de gebruiker geïnstalleerd en getest op 03-10-2026), de knop *Naar kandidaat*, het gelijk houden van twee tabbladen, en in v1.47 twee reparaties aan mobile.de en Kleinanzeigen. De proxy is sinds 03-10-2026 afgeschermd (zie hieronder). Nog niet gedaan: de mailsecrets `MAIL_TO`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
 
 **Proxy (afgeschermd sinds 03-10-2026):**
 
@@ -202,7 +202,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 
 ## Onderhoud
 
-- **Bolletje in de kop** naast het versienummer: groen als de ophaler minder dan 3 uur geleden draaide, oranje tot 24 uur of bij een site met een fout, rood tot een week, en grijs als hij langer dan een week niet draaide (automatisch draaien staat dan uit; v1.60) of zonder `results.json`. Live zoeken werkt los daarvan. Klik erop voor Instellingen.
+- **Bolletje in de kop** naast het versienummer: groen als de ophaler minder dan 6 uur geleden draaide (hij staat op elke 2 uur, maar GitHub start vaak later; v1.61), oranje tot 24 uur of bij een site met een fout, rood tot een week, en grijs als hij langer dan een week niet draaide (automatisch draaien staat dan uit; v1.60) of zonder `results.json`. Live zoeken werkt los daarvan. Klik erop voor Instellingen.
 - **Label extensie in de kop**: staat er alleen als de KAAP-extensie in deze browser actief is. Ontbreekt het na een update van Chrome of na het verplaatsen van de map, laad de extensie dan opnieuw via `chrome://extensions`.
 - **Status live zoeken per site** (Instellingen): wanneer het ophalen via de proxy of de extensie voor het laatst lukte en wat de laatste fout was. Een parserfout zegt of de pagina-opbouw is gewijzigd.
 - **Twee tabbladen**: staat de app in twee tabbladen open, dan neemt het ene tabblad over wat je in het andere bewaart. Een formulier dat je aan het invullen bent blijft staan.

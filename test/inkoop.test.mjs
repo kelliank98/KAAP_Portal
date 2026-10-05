@@ -190,9 +190,10 @@ describe('Ophaler-status en bladwijzerversie (v1.41, v1.42)', () => {
   const nu = new Date('2026-09-22T12:00:00Z').getTime();
   const res = (urenGeleden, fouten) => ({generated: new Date(nu - urenGeleden * 3600000).toISOString(),
     profiles: {p1: {sites: {'as24nl:0': {items: [], error: fouten ? 'HTTP 503' : null}, 'marktplaats:0': {items: []}}}}});
-  test('groen binnen 3 uur, oranje tot 24 uur, rood tot een week, daarna grijs: ophaler staat uit (v1.60)', () => {
+  test('groen tot 6 uur (v1.61), oranje tot 24 uur, rood tot een week, daarna grijs: ophaler staat uit (v1.60)', () => {
     assert.equal(w.ophaalStatus(res(1), nu).klasse, 'ok');
-    assert.equal(w.ophaalStatus(res(5), nu).klasse, 'warn');
+    assert.equal(w.ophaalStatus(res(5), nu).klasse, 'ok', 'elke 2 uur, maar GitHub start vaak uren later');
+    assert.equal(w.ophaalStatus(res(8), nu).klasse, 'warn');
     assert.equal(w.ophaalStatus(res(30), nu).klasse, 'bad');
     assert.equal(w.ophaalStatus(res(6 * 24), nu).klasse, 'bad');
     const uit = w.ophaalStatus(res(8 * 24), nu);
