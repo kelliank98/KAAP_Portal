@@ -1009,7 +1009,7 @@ describe('Model zelf vinden: mobile.de-reeks en Gaspedaal-modelnaam (v1.63)', ()
     assert.equal(r.modelId('GLC 300'), '284');
     assert.equal(r.modelId('GLE'), null);
   });
-  test('mobile.de: zoeklink met een reeks (merk;;reeks), live nagemeten 06-10-2026', () => {
+  test('mobile.de: zoeklink met een reeks (merk;;reeks), live nagemeten 05-10-2026', () => {
     const { w } = laadApp();
     assert.equal(w.msVan('3500;49', 'M Sport'), '3500;49;;M Sport');
     assert.equal(w.msVan('17200;;59', ''), '17200;;59;');

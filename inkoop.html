@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.64</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.65</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -470,7 +470,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.64';
+const APP_VERSIE = '1.65';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -811,7 +811,7 @@ function as24Slug(model){
 
 const splitList = (s) => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
 // mobile.de: ms = merk;model;reeks;zoekwoord. Een gekoppeld model is "merk;model", een hele reeks zoals
-// "GLC-Klasse (Alle)" is "merk;;reeks" (live nagemeten 06-10-2026: ms=17200;;59; gaf 10.970 Mercedes-Benz GLC-Klasse).
+// "GLC-Klasse (Alle)" is "merk;;reeks" (live nagemeten 05-10-2026: ms=17200;;59; gaf 10.970 Mercedes-Benz GLC-Klasse).
 // Een vierde deel is een zoekwoord dat bij het model hoort (GLE Coupé: reeks GLE-Klasse + "coupe").
 function msVan(kop, v){ const d = String(kop || '').split(';'); while (d.length < 4) d.push(''); return d.slice(0, 3).join(';') + ';' + [d[3], v].filter(Boolean).join(' '); }
 function koppeling(site, merk, model){ return S.instellingen.koppelingen[`${site}|${slug(merk)}|${slug(model)}`] || null; }
@@ -1565,7 +1565,7 @@ async function haalNlReferenties(p, live, ctx){
         items = [eerste.items, ...(await Promise.all(verder))].flat().filter(it => it.price && !gezien.has(it.id) && gezien.add(it.id));
         nlRefCache.set(l.url, {t: Date.now(), items});
       }
-      // Alleen auto's van dit model: GLE Coupé zit bij Gaspedaal in gle-klasse, tussen de gewone GLE's (live nagemeten 06-10-2026).
+      // Alleen auto's van dit model: GLE Coupé zit bij Gaspedaal in gle-klasse, tussen de gewone GLE's (live nagemeten 05-10-2026).
       live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'klaar', items: items.filter(it => modelInTitel(it.title, model)), url: l.url, facelift: p.facelift || null};
     } catch(e){
       live.nlRef[sleutel] = {model, bron: 'Gaspedaal', status: 'fout', items: [], fout: String(e.message || e).slice(0, 120), url: l0.url};
@@ -1639,7 +1639,7 @@ const normTekst = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u03
 // ---------- Modelnamen: elke site noemt een model anders (v1.64) ----------
 // GLC heet bij Gaspedaal glc-klasse, bij mobile.de "GLC-Klasse (Alle)", bij AutoScout24 "GLC (alle)", bij Marktplaats
 // "GLC-klasse"; "Q5 Sportback" bestaat bij AutoScout24 niet als model (Q5, met Sportback als uitvoering). De app zoekt
-// het model op in de modellijst van de site zelf (live nagemeten 06-10-2026) en onthoudt wat hij vond als koppeling.
+// het model op in de modellijst van de site zelf (live nagemeten 05-10-2026) en onthoudt wat hij vond als koppeling.
 const MODEL_REEKS = /klasse|class|series|serie|reihe|reeks|alle/g;
 const MODEL_CARR = ['coupe', 'cabrio', 'cabriolet', 'sportback', 'touring', 'avant', 'estate', 'kombi', 'limousine', 'sedan', 'variant', 'shooting', 'brake', 'gran', 'tourer', 'allroad', 'roadster', 'spider', 'spyder', 'crossback', 'sportwagon'];
 const modelWoorden = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
@@ -1916,7 +1916,7 @@ function parseerMobileZoek(html){
       else if (/^\d+$/.test(String(x.value))) lijst.push({id: String(x.value), naam: String(x.label || '')});
     };
     // De modellen van het gekozen merk: "modelsCache":{"1900":[{"value":"32","label":"Q5"},...]}, bij merken met reeksen
-    // met {"optgroupLabel":...,"items":[...]} erin (live nagemeten 06-10-2026). Alleen deze lijst, geen andere keuzelijsten.
+    // met {"optgroupLabel":...,"items":[...]} erin (live nagemeten 05-10-2026). Alleen deze lijst, geen andere keuzelijsten.
     const cache = jsonNa(flight, '"modelsCache":');
     if (cache && typeof cache === 'object') Object.values(cache).forEach(a => Array.isArray(a) && a.forEach(voeg));
     if (!lijst.length) for (let p = flight.indexOf('"optgroupLabel":'); p >= 0; p = flight.indexOf('"optgroupLabel":', p + 1)){
@@ -1971,19 +1971,19 @@ function parseerGaspedaalZoek(html){
     };
   }).filter(it => it.url);
   const pag = flight.match(/"numberOfPages":(\d+)/);
-  // De modellen van het merk staan in dezelfde pagina (live nagemeten 06-10-2026):
+  // De modellen van het merk staan in dezelfde pagina (live nagemeten 05-10-2026):
   // {"value":"2814","slug":"glc-klasse","name":"GLC-klasse","label":"GLC-klasse (1.233)","groupId":"115"}
   const modellen = [...flight.matchAll(/\{"value":"\d+","slug":"([^"]+)","name":"([^"]+)","label":"[^"]*","groupId":"\d+"\}/g)].map(m => ({slug: m[1], naam: m[2]}));
   return {count: count != null ? count : items.length, items, paginas: pag ? +pag[1] : null, modellen};
 }
 // Gaspedaal kent een model alleen onder zijn eigen naam: GLC heet daar glc-klasse. Een onbekende naam negeert Gaspedaal
-// stil en toont het hele merk (live nagemeten 06-10-2026: /mercedes-benz/glc gaf alle 25.921 Mercedes-Benz, glc-klasse 1.231 GLC's).
+// stil en toont het hele merk (live nagemeten 05-10-2026: /mercedes-benz/glc gaf alle 25.921 Mercedes-Benz, glc-klasse 1.231 GLC's).
 function gaspedaalModelSlug(modellen, model){
   const r = zoekModelIn((modellen || []).flatMap(m => [{id: m.slug, naam: m.naam}, {id: m.slug, naam: m.slug}]), model);
   return r ? r.item.id : null;
 }
 // AutoScout24: modelnummer of reeks opzoeken in de modellijst van het merk (taxonomy in de pagina), één keer per sessie,
-// daarna bewaard. De nummers zijn dezelfde voor .de, .nl en .be (live nagemeten 06-10-2026: 47||114| = 3.932 GLE's).
+// daarna bewaard. De nummers zijn dezelfde voor .de, .nl en .be (live nagemeten 05-10-2026: 47||114| = 3.932 GLE's).
 const as24Geleerd = new Map();
 async function leerAs24(url, merk, model){
   if (!model || koppeling('as24', merk, model)) return false;
@@ -2898,6 +2898,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.65', 'Alleen een correctie in de toelichting in de code: de live metingen van v1.63 en v1.64 waren op 05-10-2026, niet op 06-10-2026. Verder niets veranderd.'],
   ['1.64', 'Modelnamen leert de app nu zelf op alle sites: bij Zoeken zoekt hij het model op in de modellijst van mobile.de, Gaspedaal, AutoScout24, Marktplaats, 2dehands en 2ememain, en onthoudt het. Zo werken ook GLE Coupé en Q5 Sportback (model plus uitvoering, ook bij merken zonder reeksen zoals Audi op mobile.de) en zoekt 2dehands bij GLC geen GLE\u2019s meer. Titels als C 200 tellen voor C-Klasse en 530e voor 5-serie; Kleinanzeigen zoekt 5-serie als 5er. De verkoopprijs NL vergelijkt alleen met hetzelfde model (GLE Coupé niet met gewone GLE\u2019s).'],
   ['1.63', 'De app vindt een model nu zelf als een site het anders noemt. Gaspedaal: GLC heet daar glc-klasse; voorheen toonde Gaspedaal dan alle Mercedes-Benz. mobile.de: GLC is daar de reeks "GLC-Klasse (Alle)"; voorheen kende de app die niet. Gevonden namen worden onthouden; ook een geplakte mobile.de-link van een hele reeks werkt nu.'],
   ['1.62', 'Vermogen in pk in plaats van kW; AutoScout24 en mobile.de krijgen het omgerekend naar kW, Kleinanzeigen rekent zelf in pk. Bewaarde profielen zijn omgerekend. Prijs van en tot staan naast elkaar. Linksboven staat KAAP in vette letters in plaats van het logo.'],

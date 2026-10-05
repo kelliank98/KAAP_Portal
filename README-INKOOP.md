@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.64
+# KAAP Inkoop Radar v1.65
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -22,7 +22,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.64_2026-10-06.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.65_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -169,7 +169,7 @@ De BPM-referentiewaarden zijn met de hand uit de tarieftabellen uitgerekend en s
 Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hele merk) en mag meerdere modellen bevatten (`X3, X5`). Wat de app zelf regelt:
 
 - **AutoScout24** gebruikt Engelse modelnamen. De app rekent om: *5 Serie* wordt `5-series`, *V-Klasse* wordt `v-class`, *RS 6* wordt `rs6`. Klopt het toch niet, dan meldt de ophaler "0 resultaten" met de naam die AutoScout24 zelf gebruikt, en plak je die model-URL één keer.
-- **Modelnamen leert de app zelf, op alle sites** (v1.63/v1.64, live nagemeten 06-10-2026). Elke site noemt modellen anders: *GLC* is bij Gaspedaal `glc-klasse`, bij mobile.de de reeks *GLC-Klasse (Alle)*, bij AutoScout24 *GLC (alle)*, bij Marktplaats *GLC-klasse*; *Q5 Sportback* bestaat bij AutoScout24 en mobile.de niet als model (Q5 met "Sportback" als zoekwoord), *GLE Coupé* bij Gaspedaal en mobile.de ook niet (GLE met "Coupé"). Bij Zoeken zoekt de app het model op in de modellijst van de site zelf: mobile.de (`modelsCache` in de pagina), Gaspedaal (modellijst in de pagina), AutoScout24 (`taxonomy`: modellen en reeksen, gezocht op nummer met `mmmv`), Marktplaats/2dehands/2ememain (modellijst van het merk, gezocht op modelnummer). Wat hij vindt, onthoudt hij (Instellingen > Geleerde model-koppelingen), dus hij zoekt het per model maar één keer op. Titels tellen zoals sites ze schrijven: *C 200* voor C-Klasse, *530e* of *5er* voor 5-serie. Kleinanzeigen zoekt op een woord in de titel; *5-serie* wordt daar *5er*. Gemeten met de app zelf: GLC, GLE Coupé, C-Klasse, Q5 Sportback, 5-serie en X5 geven op alle sites alleen het juiste model.
+- **Modelnamen leert de app zelf, op alle sites** (v1.63/v1.64, live nagemeten 05-10-2026). Elke site noemt modellen anders: *GLC* is bij Gaspedaal `glc-klasse`, bij mobile.de de reeks *GLC-Klasse (Alle)*, bij AutoScout24 *GLC (alle)*, bij Marktplaats *GLC-klasse*; *Q5 Sportback* bestaat bij AutoScout24 en mobile.de niet als model (Q5 met "Sportback" als zoekwoord), *GLE Coupé* bij Gaspedaal en mobile.de ook niet (GLE met "Coupé"). Bij Zoeken zoekt de app het model op in de modellijst van de site zelf: mobile.de (`modelsCache` in de pagina), Gaspedaal (modellijst in de pagina), AutoScout24 (`taxonomy`: modellen en reeksen, gezocht op nummer met `mmmv`), Marktplaats/2dehands/2ememain (modellijst van het merk, gezocht op modelnummer). Wat hij vindt, onthoudt hij (Instellingen > Geleerde model-koppelingen), dus hij zoekt het per model maar één keer op. Titels tellen zoals sites ze schrijven: *C 200* voor C-Klasse, *530e* of *5er* voor 5-serie. Kleinanzeigen zoekt op een woord in de titel; *5-serie* wordt daar *5er*. Gemeten met de app zelf: GLC, GLE Coupé, C-Klasse, Q5 Sportback, 5-serie en X5 geven op alle sites alleen het juiste model.
 - **Marktplaats, 2dehands, 2ememain**: de ophaler zoekt het model-id zelf op in de modellijst van de site. De app rekent elke advertentie zelf na op model, bouwjaar, km, prijs en automaat, omdat deze sites een deel van hun eigen filters negeren.
 - **Kleinanzeigen** heeft op 03-10-2026 een nieuwe pagina-opbouw gekregen; de app leest de oude en de nieuwe. Het zoekt het model als woord in de titel, want hun eigen modelveld is per merk anders gevuld en wordt bij een onbekende waarde stil genegeerd. Heet het model in Duitsland anders, vul dan *Model op Duitse sites* in: `5er` in plaats van `5 Serie`.
 - **mobile.de** werkt met interne modelnummers. Met de extensie zoekt de app het nummer zelf op en bewaart het. Zonder extensie plak je per model één keer de URL bij Model-koppeling. Merk-ID's staan in Instellingen.
