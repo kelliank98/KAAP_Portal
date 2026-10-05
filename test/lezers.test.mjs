@@ -707,7 +707,7 @@ describe('Kandidaten bijwerken', () => {
 });
 
 // ---------------------------------------------------------------- Verwachte verkoopprijs NL
-describe('Verwachte verkoopprijs NL', () => {
+describe('Verwachte verkoopprijs NL: 3e van de 5 goedkoopste vergelijkbare op Gaspedaal', () => {
   test('motorcode uit de titel', () => {
     const { w } = laadApp();
     const gevallen = {
@@ -718,84 +718,110 @@ describe('Verwachte verkoopprijs NL', () => {
     for (const [titel, code] of Object.entries(gevallen)) assert.equal(w.motorCode(titel), code, titel);
   });
 
-  test('mediaan van vergelijkbare NL-auto\'s: zelfde brandstof en motor, bouwjaar ±1, km binnen 25.000 of 30%', () => {
+  const auto = (jaar, km, prijs, extra) => Object.assign({ id: 'r' + jaar + '-' + km, title: 'BMW X5 xDrive45e', price: prijs, km, ez: String(jaar), fuel: 'hybride', url: 'https://api.gaspedaal.nl/redirect/vehicle/' + jaar + km }, extra || {});
+  const doel = (jaar, km, extra) => Object.assign({ title: 'BMW X5 xDrive45e M Sport', ez: String(jaar), km, fuel: 'hybride', kw: 290 }, extra || {});
+
+  test('referentiepagina: zelfde motor en brandstof, km ±30.000, eerst hetzelfde bouwjaar, aangevuld met een jaar ouder of nieuwer', () => {
     const { w } = laadApp();
     const ref = { bron: 'Gaspedaal', items: w.parseerGaspedaalZoek(fixture('gaspedaal-referentie.html')).items };
-    assert.equal(ref.items.length, 12);
-    // Zeven van de twaalf passen: twee te oud of te veel km, een andere motor (50e), diesel en benzine vallen af.
-    // Ook een 45e waarbij de verkoper alleen het vermogen van de benzinemotor noemde (210 kW) telt mee: de motorcode beslist.
-    // Prijzen: 59.950 61.500 62.450 63.000 64.950 66.000 69.950 -> mediaan 63.000; middelste helft 61.975 tot 65.475.
-    const { autos, ...uitkomst } = plain(w.nlVerkoop({ title: 'BMW X5 xDrive45e M Sport', ez: '2022-03', km: 60000, fuel: 'hybride', kw: 290 }, ref));
-    assert.deepEqual(uitkomst, { mediaan: 63000, laag: 61975, hoog: 65475, n: 7, bron: 'Gaspedaal' });
-    assert.deepEqual(autos.map(a => a.price), [66000, 61500, 64950, 62450, 59950, 63000, 69950], 'meest vergelijkbare eerst');
-    assert.equal(w.nlVerkoop({ title: 'BMW X5 xDrive30d', ez: '2022', km: 58000, fuel: 'diesel', kw: 210 }, ref), null, 'minder dan drie vergelijkbare: geen bedrag');
-    assert.equal(w.nlVerkoop({ title: 'BMW X5 xDrive45e', km: 60000, fuel: 'hybride' }, ref), null, 'zonder bouwjaar geen schatting');
+    assert.equal(ref.items.length, 16);
+    // 2022, 60.000 km: vier uit 2022 tellen mee (de 2022 met 120.000 km niet: 60.000 km verschil), aangevuld met de
+    // goedkoopste uit 2021/2023 (2021, 82.000 km, € 58.500). De 50e, diesel en benzine vallen af. Derde van vijf: € 62.450.
+    const nl = w.nlVerkoop(doel(2022, 60000), ref);
+    assert.equal(nl.prijs, 62450); assert.equal(nl.n, 8);
+    assert.deepEqual(plain(nl.autos.map(a => a.price)), [58500, 61500, 62450, 64950, 66000]);
+    assert.equal(w.nlVerkoop(doel(2022, 58000, { title: 'BMW X5 xDrive30d', fuel: 'diesel', kw: 210 }), ref), null, 'minder dan vijf: geen bedrag');
+    assert.equal(w.nlVerkoop({ title: 'BMW X5 xDrive45e', km: 60000, fuel: 'hybride' }, ref), null, 'zonder bouwjaar geen bedrag');
     const zelf = ref.items.find(x => x.price === 64950);
-    assert.equal(w.nlVerkoop(zelf, ref).n, 6, 'een NL-advertentie telt niet als zijn eigen vergelijking');
+    assert.ok(!w.nlVerkoop(zelf, ref).autos.includes(zelf), 'een NL-advertentie telt niet als zijn eigen vergelijking');
   });
 
-  test('alleen de zeven auto\'s die in bouwjaar en km het dichtst bij liggen tellen mee', () => {
+  test('vijf of meer uit hetzelfde bouwjaar: alleen die tellen, ook als een jaar ouder goedkoper is', () => {
     const { w } = laadApp();
-    const auto = (km, prijs, jaar = 2021) => ({ id: 'r' + km, title: 'BMW X5 xDrive45e', price: prijs, km, ez: String(jaar), fuel: 'hybride', url: 'https://api.gaspedaal.nl/redirect/vehicle/' + km });
-    // Tien vergelijkbare auto's; de drie verste (125.000, 75.000 en 128.000 km) hebben afwijkende prijzen en mogen niet meetellen.
-    const ref = { bron: 'Gaspedaal', items: [auto(100000, 50000), auto(102000, 51000), auto(95000, 49000), auto(110000, 48000), auto(90000, 52000), auto(115000, 47000), auto(85000, 53000), auto(125000, 46000), auto(75000, 60000), auto(128000, 45000)] };
-    const nl = w.nlVerkoop({ title: 'BMW X5 xDrive45e M Sport', ez: '2021-05', km: 100000, fuel: 'hybride' }, ref);
-    assert.equal(nl.n, 7); assert.equal(nl.mediaan, 50000);
-    assert.deepEqual(plain(nl.autos.map(a => a.km)), [100000, 102000, 95000, 110000, 90000, 115000, 85000], 'dichtstbijzijnde eerst');
-    // Een jaar verschil weegt als 20.000 km: een auto uit hetzelfde jaar met 18.000 km meer gaat voor een jaar oudere met gelijke km.
-    const jaar = w.nlVerkoop({ title: 'BMW X5 xDrive45e', ez: '2021', km: 100000, fuel: 'hybride' }, { bron: 'Gaspedaal', items: [auto(118000, 40000), auto(101000, 70000, 2020), auto(99000, 41000), auto(97000, 42000)] });
-    assert.deepEqual(plain(jaar.autos.map(a => a.price)), [41000, 42000, 40000, 70000]);
+    const ref = { bron: 'Gaspedaal', items: [auto(2021, 100000, 60000), auto(2021, 105000, 61000), auto(2021, 95000, 62000), auto(2021, 110000, 63000), auto(2021, 90000, 64000), auto(2021, 99000, 70000), auto(2020, 100000, 40000), auto(2020, 98000, 41000)] };
+    const nl = w.nlVerkoop(doel(2021, 100000), ref);
+    assert.deepEqual(plain(nl.autos.map(a => a.price)), [60000, 61000, 62000, 63000, 64000]);
+    assert.equal(nl.prijs, 62000);
   });
 
-  test('zoeken met extensie: per model één Gaspedaal-pagina zonder prijsfilters, bedrag op de kaart en bij Naar kandidaat', async () => {
+  test('km ±30.000 vast, ook bij veel kilometers; minder dan vijf vergelijkbare: geen bedrag', () => {
+    const { w } = laadApp();
+    const ref = { bron: 'Gaspedaal', items: [auto(2020, 150000, 40000), auto(2020, 170000, 39000), auto(2020, 125000, 42000), auto(2020, 180000, 38000), auto(2020, 185000, 30000), auto(2020, 115000, 45000)] };
+    // 185.000 en 115.000 km liggen 35.000 km van 150.000 af: die tellen niet mee (met 30% zouden ze wel meetellen).
+    assert.equal(w.nlVerkoop(doel(2020, 150000), ref), null, 'vier over: geen bedrag');
+    ref.items.push(auto(2020, 140000, 41000));
+    const nl = w.nlVerkoop(doel(2020, 150000), ref);
+    assert.deepEqual(plain(nl.autos.map(a => a.price)), [38000, 39000, 40000, 41000, 42000]);
+    assert.equal(nl.prijs, 40000);
+  });
+
+  test('dezelfde auto twee keer op Gaspedaal (zelfde bouwjaar, km en prijs) telt één keer', () => {
+    const { w } = laadApp();
+    const ref = { bron: 'Gaspedaal', items: [auto(2021, 100000, 41000), auto(2021, 100000, 41000, { id: 'dubbel', title: 'BMW X5 xDrive 45e M Sport', url: 'https://api.gaspedaal.nl/redirect/vehicle/2' }), auto(2021, 105000, 42000), auto(2021, 95000, 43000), auto(2021, 110000, 44000), auto(2021, 90000, 45000)] };
+    const nl = w.nlVerkoop(doel(2021, 100000), ref);
+    assert.deepEqual(plain(nl.autos.map(a => a.price)), [41000, 42000, 43000, 44000, 45000]);
+    assert.equal(nl.prijs, 43000);
+  });
+
+  test('facelift: auto\'s van voor en na het faceliftjaar worden niet vergeleken', () => {
+    const { w } = laadApp();
+    const items = [auto(2022, 60000, 60000), auto(2022, 62000, 62000), auto(2021, 60000, 50000), auto(2021, 61000, 51000), auto(2021, 59000, 52000), auto(2023, 60000, 65000), auto(2023, 58000, 66000), auto(2023, 61000, 67000)];
+    const zonder = w.nlVerkoop(doel(2022, 60000), { bron: 'Gaspedaal', items });
+    assert.deepEqual(plain(zonder.autos.map(a => a.price)), [50000, 51000, 52000, 60000, 62000]); assert.equal(zonder.prijs, 52000);
+    const met = w.nlVerkoop(doel(2022, 60000), { bron: 'Gaspedaal', items, facelift: 2022 });   // 2022 is na de facelift, 2021 ervoor
+    assert.deepEqual(plain(met.autos.map(a => a.price)), [60000, 62000, 65000, 66000, 67000]); assert.equal(met.prijs, 65000);
+  });
+
+  test('zoeken met extensie: Gaspedaal zonder prijsfilters, bedrag op de kaart, lijst bij een klik, ook bij Naar kandidaat', async () => {
     const { w, d, G } = laadApp();
     const pagina = (url) => /gaspedaal\.nl/.test(url) && /bmin=2019/.test(url) ? fixture('gaspedaal-referentie.html') : paginas(url);
     const verzoeken = nepExtensie(w, pagina);
     w.hulpPing(); await wachtOpHulp(w);
     w.eval("S.instellingen.proxy = ''");
-    zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5'); zet(w, 'p_bjvan', '2020'); zet(w, 'p_pmax', '90000');
+    zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5'); zet(w, 'p_bjvan', '2020'); zet(w, 'p_pmax', '90000'); zet(w, 'p_km', '100000'); zet(w, 'p_facelift', '2023');
     d.querySelector('#p_sites input[value="mobile"]').click();   // alleen Gaspedaal als resultaat
     await w.zoekLive();
 
-    const gp = verzoeken.filter(v => /gaspedaal\.nl/.test(v.url)).map(v => v.url);
-    assert.equal(gp.length, 2, 'resultaten en vergelijkingsmateriaal');
-    const ref = gp.find(u => /bmin=2019/.test(u));
-    assert.ok(ref, 'vergelijkingsmateriaal: bouwjaar een jaar ruimer'); assert.doesNotMatch(ref, /pmax|pmin|kmax/, 'zonder je filters op prijs en km');
-    assert.match(ref, /\/bmw\/x5\/automatisch\?/);
+    const ref = verzoeken.map(v => v.url).find(u => /gaspedaal\.nl/.test(u) && /bmin=2019/.test(u));
+    assert.ok(ref, 'vergelijkingsmateriaal: bouwjaar een jaar ruimer');
+    assert.doesNotMatch(ref, /pmax|pmin/, 'zonder je prijsfilters'); assert.match(ref, /kmax=130000/, 'kilometergrens 30.000 km ruimer');
     const nl = G('LIVE').nlRef.x5;
-    assert.equal(nl.status, 'klaar'); assert.equal(nl.items.length, 12); assert.equal(nl.bron, 'Gaspedaal');
+    assert.equal(nl.status, 'klaar'); assert.equal(nl.items.length, 16); assert.equal(nl.facelift, 2023, 'faceliftjaar uit het zoekprofiel');
 
     const kaarten = [...d.querySelectorAll('#resLijst .res')];
     const eerste = kaarten.find(k => /XDrive45e High Executive M-SPORT/.test(k.textContent));
-    // 2021, 89.901 km, 45e: vergelijkbaar zijn 2021/70.000 (59.950), 2020/65.000 (54.950) en 2022/75.000 (62.450) -> mediaan 59.950
-    assert.match(eerste.querySelector('.nlv').textContent, /verkoop NL ≈ €\s59\.950/);
-    assert.match(eerste.querySelector('.nlv').getAttribute('title'), /de 3 meest vergelijkbare auto's die nu op Gaspedaal te koop staan.*inclusief BPM/);
+    // 2021, 89.901 km: vijf uit 2021 binnen 30.000 km -> € 53.950, 55.500, 56.950, 58.500, 59.950; de derde is € 56.950
+    assert.match(eerste.querySelector('.nlv').textContent, /^verkoop NL ≈ €\s56\.950$/);
+    assert.doesNotMatch(eerste.textContent, /waarop gebaseerd/i, 'geen extra uitlegtekst op de kaart');
     const lijst = eerste.querySelector('.nlvlijst');
-    assert.match(lijst.querySelector('summary').textContent, /waarop gebaseerd\? \(3 auto's op Gaspedaal\)/);
+    assert.equal(lijst.hidden, true, 'lijst pas bij een klik');
+    eerste.querySelector('.nlv').click();
+    assert.equal(lijst.hidden, false);
     const regels = [...lijst.querySelectorAll('li')].map(li => li.textContent);
-    assert.equal(regels.length, 3);
-    [/^2021 · 70\.000 km · €\s59\.950 · BMW X5 xDrive45e M Sport$/, /^2022 · 75\.000 km · €\s62\.450 · BMW X5 xDrive45e M-Sport Laser$/, /^2020 · 65\.000 km · €\s54\.950 · BMW X5 xDrive45e$/]
-      .forEach((re, n) => assert.match(regels[n], re, 'dichtstbijzijnde eerst'));
-    assert.ok([...lijst.querySelectorAll('a')].every(a => /api\.gaspedaal\.nl\/redirect\/vehicle\//.test(a.href)), 'elke auto met een link naar de advertentie');
-    assert.match(d.querySelector('#resLijst').textContent, /Verwachte verkoopprijs NL per auto.*X5: 12 auto's op Gaspedaal/);
-    const zonder = kaarten.find(k => /Head-Up Display - Lederen/.test(k.textContent));
-    assert.equal(zonder.querySelector('.nlv'), null, 'te weinig vergelijkbare auto\'s: geen bedrag');
+    assert.equal(regels.length, 5);
+    assert.match(regels[0], /^2021 · 110\.000 km · €\s53\.950 · BMW X5 xDrive45e$/);
+    assert.match(lijst.querySelector('li.gekozen').textContent, /€\s56\.950/, 'de derde is de verkoopprijs');
+    assert.ok([...lijst.querySelectorAll('a')].every(a => /api\.gaspedaal\.nl\/redirect\/vehicle\//.test(a.href)));
+    eerste.querySelector('.nlv').click();
+    assert.equal(lijst.hidden, true, 'nog een klik: weer dicht');
+    assert.match(d.querySelector('#resLijst').textContent, /Verkoop NL: 3e van de 5 goedkoopste vergelijkbare op Gaspedaal \(klik op het bedrag\)\. X5: 16 auto's\./);
+    const zonder = kaarten.find(k => /xDrive40i \| M-Sportpakket/.test(k.textContent));
+    assert.equal(zonder.querySelector('.nlv'), null, 'minder dan vijf vergelijkbare: geen bedrag');
 
     eerste.querySelector('.naarkand').click();
-    assert.equal(veld(w, 'k_verkoop'), '59950', 'Naar kandidaat vult de verwachte verkoopprijs in');
+    assert.equal(veld(w, 'k_verkoop'), '56950', 'Naar kandidaat vult de verkoopprijs in');
 
     // Nog een keer zoeken binnen twee uur: het vergelijkingsmateriaal komt uit het geheugen.
     verzoeken.length = 0;
     await w.zoekLive();
     assert.equal(verzoeken.filter(v => /bmin=2019/.test(v.url)).length, 0);
-    assert.equal(G('LIVE').nlRef.x5.items.length, 12);
   });
 
-  test('zonder extensie: geen verkoopprijs (die komt altijd van Gaspedaal), wel uitleg', async () => {
+  test('zonder extensie: geen verkoopprijs (die komt altijd van Gaspedaal), wel een korte melding', async () => {
     const aanvragen = [];
     const { w, d, G } = laadApp({ fetch: (adres) => {
       const doel = new URL(String(adres)).searchParams.get('url') || ''; aanvragen.push(doel);
-      if (/autoscout24\.de\/angebote/.test(doel) || /autoscout24\.de\/lst/.test(doel)) return Promise.resolve({ ok: true, status: 200, text: async () => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { numberOfResults: 1, listings: [{ id: 'de1', url: '/angebote/x', price: { priceRaw: 52000 }, tracking: { mileage: '50000', firstRegistration: '06-2022' }, vehicle: { make: 'BMW', model: 'X5', modelVersionInput: 'xDrive45e M Sport', fuel: 'Elektro/Benzine' } }] } } }) + '</script>' });
+      if (/autoscout24\.de\/lst/.test(doel)) return Promise.resolve({ ok: true, status: 200, text: async () => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { numberOfResults: 1, listings: [{ id: 'de1', url: '/angebote/x', price: { priceRaw: 52000 }, tracking: { mileage: '50000', firstRegistration: '06-2022' }, vehicle: { make: 'BMW', model: 'X5', modelVersionInput: 'xDrive45e M Sport', fuel: 'Elektro/Benzine' } }] } } }) + '</script>' });
       return Promise.reject(new Error('onverwacht adres in de test: ' + doel));
     } });
     w.eval("S.instellingen.proxy = 'https://proxy.test/'");
@@ -805,7 +831,7 @@ describe('Verwachte verkoopprijs NL', () => {
     assert.ok(!aanvragen.some(a => /autoscout24\.nl|gaspedaal/.test(a)), 'geen andere bron voor de verkoopprijs');
     assert.deepEqual(plain(G('LIVE').nlRef), {});
     assert.equal(d.querySelector('#resLijst .nlv'), null);
-    assert.match(d.querySelector('#resLijst').textContent, /Verwachte verkoopprijs NL: alleen met de KAAP-extensie, want die komt van Gaspedaal/);
+    assert.match(d.querySelector('#resLijst').textContent, /Verkoop NL: alleen met de KAAP-extensie \(Gaspedaal\)\./);
   });
 
   test('zonder extensie en zonder proxy: geen vergelijkingsmateriaal en geen fout', async () => {
@@ -814,7 +840,7 @@ describe('Verwachte verkoopprijs NL', () => {
     zet(w, 'p_merk', 'BMW'); zet(w, 'p_model', 'X5');
     await w.zoekLive();
     assert.deepEqual(plain(G('LIVE').nlRef), {});
-    assert.doesNotMatch(d.querySelector('#resLijst').textContent, /Verwachte verkoopprijs NL/);
+    assert.doesNotMatch(d.querySelector('#resLijst').textContent, /Verkoop NL/);
   });
 });
 

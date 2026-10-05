@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.50
+# KAAP Inkoop Radar v1.51
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -21,7 +21,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.50_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.51_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -100,18 +100,19 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - "Niet meer online" betekent dat de site zelf zegt dat de advertentie weg is: AutoScout24, Marktplaats en 2dehands geven dan HTTP 410, en AutoScout24 en Kleinanzeigen sturen een verdwenen advertentie door naar zoekresultaten (nagemeten op 05-10-2026). Bij mobile.de herkent de app dat nog niet zeker; dan staat er "kon niet lezen".
 - Werkt voor dezelfde sites als *Gegevens ophalen*: AutoScout24, Marktplaats, 2dehands, 2ememain en Kleinanzeigen via de proxy, mobile.de via de extensie.
 
-## Verwachte verkoopprijs NL (v1.49, verbeterd in v1.50)
+## Verwachte verkoopprijs NL (v1.51)
 
-- Bij elk resultaat van *Zoeken* staat onder de prijs **verkoop NL ≈ € …**. Klik bij de auto op **waarop gebaseerd?** voor de lijst met de auto's waarop het bedrag rust, met links naar de advertenties.
-- Bron is altijd Gaspedaal (zo bepaal je zelf ook een verkoopprijs), dus alleen met de KAAP-extensie. Per model haalt de app de eerste drie pagina's op: tot 300 auto's die nu in Nederland te koop staan, zonder je filters op prijs en uitvoering, met een bouwjaar ruimer en een kilometergrens 30% ruimer. Gaspedaal bladert met `&page=N` (nagemeten 05-10-2026). Twee uur bewaard, zodat opnieuw zoeken snel is.
-- Vergelijkbaar is: zelfde brandstof, zelfde motor (de motorcode in de titel, zoals 45e of 30d; anders het vermogen ±12%), bouwjaar ±1 en een kilometerstand binnen 25.000 km of 30%. Daarvan tellen de zeven die in bouwjaar en kilometerstand het dichtst bij de auto liggen (een jaar weegt als 20.000 km). Het bedrag is de mediaan van die zeven; pas vanaf drie auto's staat er een bedrag.
-- Waarom v1.50: in v1.49 telden alle auto's binnen een ruim venster mee, uit maar 100 advertenties. Een auto met veel kilometers kreeg zo een te hoge verkoopprijs. Nagemeten op 05-10-2026 voor een X5 45e uit 2020 met 165.000 km: v1.49 gaf € 43.749, v1.50 geeft € 38.700, en de zeven auto's eronder stonden te koop voor € 36.499 tot € 41.950.
-- **Naar kandidaat** vult de verwachte verkoopprijs in het kandidaatformulier in; daarmee rekent de app de marge uit. Pas hem aan als je het beter weet.
-- Het zijn vraagprijzen van dealers en particulieren, inclusief BPM, geen verkochte prijzen. Bij modellen die in Nederland weinig te koop staan (bijvoorbeeld diesels) zijn er vaak minder dan drie vergelijkbare auto's; dan staat er geen bedrag.
+- Bij elk resultaat van *Zoeken* staat onder de prijs **verkoop NL ≈ € …**. Klik op het bedrag voor de vijf auto's waarop het rust, met links; de vetgedrukte is de verkoopprijs.
+- Regel, zoals de gebruiker zelf prijst (goedgekeurd op 05-10-2026 na voorbeelden): je auto staat in de top 5 goedkoopste vergelijkbare auto's op Gaspedaal, en de verkoopprijs is de **3e van die 5**.
+- Vergelijkbaar: zelfde motor (motorcode in de titel, zoals 45e of 30d; anders het vermogen ±12%), zelfde brandstof, km ±30.000, en niet over de facelift heen. Eerst auto's uit hetzelfde bouwjaar; zijn dat er minder dan 5, dan aangevuld met de goedkoopste uit een jaar ouder of nieuwer. Minder dan 5 vergelijkbare: geen bedrag. Dezelfde auto die twee keer op Gaspedaal staat (zelfde bouwjaar, km en prijs) telt één keer.
+- **Facelift vanaf bouwjaar** vul je in bij het zoekprofiel (bijvoorbeeld X5: 2023). Gaspedaal noemt alleen het bouwjaar, dus het faceliftjaar zelf telt als "na de facelift". Bij de X5-hybrides houdt de motorcode het al uit elkaar (45e voor, 50e na); bij een motor die na de facelift dezelfde naam houdt (zoals de 30d) is het veld nodig.
+- Bron is altijd Gaspedaal, dus alleen met de KAAP-extensie. Per model de eerste drie pagina's (tot 300 auto's), zonder je filters op prijs en uitvoering, met een bouwjaar ruimer en een kilometergrens 30.000 km ruimer. Twee uur bewaard.
+- Voorbeelden op echte Gaspedaal-data (500 nieuwste X5's, 05-10-2026, facelift 2023): 45e 2020/165.000 km € 36.950; 45e 2021/120.000 km € 43.749; 45e 2022/60.000 km € 53.899; 50e 2024/30.000 km € 79.695; 30d 2020/150.000 km geen bedrag (2 vergelijkbare).
+- **Naar kandidaat** vult de verkoopprijs in het kandidaatformulier in. Het zijn Nederlandse vraagprijzen, inclusief BPM.
 
 ## BPM volgens Autotelex (v1.50)
 
-- In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**. Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
+- In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**, direct onder Vraagprijs (v1.51). Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
 - Leeg laten betekent: de indicatie van de app, zoals voorheen.
 - Automatisch ophalen uit Autotelex kan alleen via hun API. Die is niet gratis: Autotelex noemt de kosten alleen op aanvraag, en een BPM-berekening voor import staat niet tussen hun openbaar beschreven API's (nagezocht op 05-10-2026). Daarom vul je het bedrag zelf in.
 
@@ -128,7 +129,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 170 punten:
+De tests draaien zonder netwerk en controleren 173 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
