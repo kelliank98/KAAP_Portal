@@ -99,7 +99,7 @@ jobs:
           code=$(printf '%s' "$antwoord" | tail -n1)
           tekst=$(printf '%s' "$antwoord" | sed '$d' | sed 's/<[^>]*>/ /g' | tr -s ' \n' ' ' | sed -E 's/[+]?[0-9]{6,}/[nummer]/g')
           # CallMeBot herhaalt eerst het bericht zelf; de status staat aan het eind ("Your Account is ...").
-          tekst=$(printf '%s' "$tekst" | sed -E 's/.*Text to send:.*\)\. ?//' | tail -c 300)
+          tekst=$(printf '%s' "$tekst" | tail -c 450)
           if [ "$code" = "200" ] && ! printf '%s' "$tekst" | grep -qiE 'invalid|error|blocked|not allowed|limit|wait'; then
             echo "CallMeBot: bericht aangenomen (HTTP 200)."
           else
