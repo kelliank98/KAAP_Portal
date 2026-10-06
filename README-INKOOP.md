@@ -230,7 +230,7 @@ Mail via Gmail:
 3. Drie secrets: `MAIL_USERNAME` = het Gmail-adres, `MAIL_PASSWORD` = de code van 16 letters (zonder spaties), `MAIL_TO` = het adres waar je de mail wilt ontvangen.
 
 WhatsApp via CallMeBot (gratis, voor persoonlijk gebruik; nagezocht op 05-10-2026):
-1. Zet het nummer van de bot, +34 644 99 26 98, in je telefooncontacten.
+1. Zet het nummer van de bot in je telefooncontacten. CallMeBot wisselt soms van nummer (op 06-10-2026 van +34 644 99 26 98 naar +34 623 75 84 18): kijk altijd eerst op callmebot.com/blog/free-api-whatsapp-messages welk nummer er nu staat. Blijft je bericht aan de bot op één vinkje staan, dan is het nummer veranderd. Zet de bot bij WhatsApp Business ook buiten je begroetings- en afwezigheidsbericht.
 2. Stuur via WhatsApp aan dat contact: `I allow callmebot to send me messages`. Je krijgt een bericht terug met je APIKEY (lukt het niet binnen 2 minuten, probeer het na 24 uur opnieuw).
 3. Twee secrets: `CALLMEBOT_PHONE` = je nummer met landcode (bijv. +31612345678), `CALLMEBOT_APIKEY` = de sleutel uit het bericht.
 
