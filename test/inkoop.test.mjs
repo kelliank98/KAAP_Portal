@@ -1003,3 +1003,17 @@ describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testberic
   });
 });
 
+describe('Ophaler: nooit een gevulde lijst op GitHub vervangen door een lege (v1.68)', () => {
+  test('lege opslag in deze browser, op GitHub 1 profiel: niets geschreven, duidelijke melding', async () => {
+    const verzoeken = [];
+    const opGithub = Buffer.from(JSON.stringify({ profiles: [{ id: 'ko0', naam: 'BMW X5 M Sport, M-Sport 2022+', links: [] }] })).toString('base64');
+    const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(x){ x.scrollTo = () => {}; x.localStorage.setItem('kaap_github', JSON.stringify({ sleutel: 'github_pat_TEST' }));
+        x.fetch = (adres, o = {}) => { verzoeken.push({ u: String(adres), methode: o.method || 'GET' });
+          if (String(adres).endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc', content: opGithub }) });
+          return Promise.resolve({ ok: true, status: 200, json: async () => ({}) }); }; } }).window;
+    await assert.rejects(win.syncProfielen(true), /in deze browser staan geen bewaarde zoekopdrachten, op GitHub staan er 1/);
+    assert.equal(verzoeken.filter(v => v.methode === 'PUT').length, 0, 'profiles.json niet overschreven');
+  });
+});
+

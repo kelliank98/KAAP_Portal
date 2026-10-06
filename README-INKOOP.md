@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.67
+# KAAP Inkoop Radar v1.68
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -22,7 +22,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.67_2026-10-05.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.68_2026-10-06.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -137,7 +137,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 236 punten:
+De tests draaien zonder netwerk en controleren 237 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -234,7 +234,7 @@ WhatsApp via CallMeBot (gratis, voor persoonlijk gebruik; nagezocht op 05-10-202
 2. Stuur via WhatsApp aan dat contact: `I allow callmebot to send me messages`. Je krijgt een bericht terug met je APIKEY (lukt het niet binnen 2 minuten, probeer het na 24 uur opnieuw).
 3. Twee secrets: `CALLMEBOT_PHONE` = je nummer met landcode (bijv. +31612345678), `CALLMEBOT_APIKEY` = de sleutel uit het bericht.
 
-**Vanuit de app** (v1.67): *Instellingen > Ophaler en meldingen*. Zet daar eenmalig een fijnmazige GitHub-sleutel (github.com/settings/personal-access-tokens/new: alleen de repository KAAP_Portal, permissions *Contents* en *Actions* op *Read and write*). Daarna schrijft de app `profiles.json` zelf in de repo zodra je bewaarde zoekopdrachten veranderen (ook als Zoeken een modelnaam heeft geleerd), en starten de knoppen *Ophaler nu starten* en *Testbericht sturen* de workflow. De sleutel staat alleen in die browser (eigen opslag `kaap_github`), niet in de reservekopie.
+**Vanuit de app** (v1.67): *Instellingen > Ophaler en meldingen*. Zet daar eenmalig een fijnmazige GitHub-sleutel (github.com/settings/personal-access-tokens/new: alleen de repository KAAP_Portal, permissions *Contents* en *Actions* op *Read and write*). Daarna schrijft de app `profiles.json` zelf in de repo zodra je bewaarde zoekopdrachten veranderen (ook als Zoeken een modelnaam heeft geleerd), en starten de knoppen *Ophaler nu starten* en *Testbericht sturen* de workflow. De sleutel staat alleen in die browser (eigen opslag `kaap_github`), niet in de reservekopie. Sinds v1.68 vervangt de app een gevulde lijst op GitHub nooit door een lege, en stuurt een lokale kopie van de app (geopend als bestand) niets door: gebruik de app via kelliank98.github.io/KAAP_Portal/inkoop.html.
 
 **Testbericht** (v1.14): *Actions > Inkoop-radar > Run workflow*, vink *Stuur een testbericht* aan en klik op *Run workflow*. Binnen een paar minuten komt er een mail en/of WhatsApp "testbericht", ook als er niets nieuws is. Er wordt niets als gemeld onthouden.
 
