@@ -1126,3 +1126,21 @@ describe('mobile.de: modellijst uit modelsCache, ook voor merken zonder reeksen 
     assert.equal(r.modelId('500'), null, 'een prijs is geen model');
   });
 });
+
+describe('Alleen het gezochte model, ook als geen enkele titel klopt (v1.69)', () => {
+  test('GLC gezocht, de site geeft alleen een CLA: niets tonen, wel het aantal weggelaten', async () => {
+    const listing = { id: 'cla1', url: '/angebote/cla', price: { priceRaw: 35000 }, tracking: { mileage: '20000', firstRegistration: '03-2023' },
+      vehicle: { make: 'Mercedes-Benz', model: 'CLA', modelVersionInput: 'Shooting Brake AMG Line plug-in hybride', fuel: 'Elektro/Benzin' } };
+    const { w, d, G } = laadApp({ fetch: (adres) => Promise.resolve({ ok: true, status: 200, text: async () => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { numberOfResults: 1, listings: [listing] } } }) + '</script>' }) });
+    w.eval("S.instellingen.proxy = 'https://proxy.test/'");
+    zet(w, 'p_merk', 'Mercedes-Benz'); zet(w, 'p_model', 'GLC');
+    for (const i of d.querySelectorAll('#p_sites input')) if (i.checked !== (i.value === 'as24de')) i.click();
+    await w.zoekLive();
+    const s = G('LIVE').sites.find(x => x.site === 'as24de');
+    assert.equal(s.status, 'klaar');
+    assert.equal(s.items.length, 0, 'geen CLA bij GLC');
+    assert.equal(s.weggefilterd, 1);
+    assert.doesNotMatch(d.querySelector('#resLijst').textContent, /niet op model gecontroleerd/);
+    assert.match(d.querySelector('#resLijst').textContent, /1 resultaat voldeed niet aan je zoekopdracht/);
+  });
+});

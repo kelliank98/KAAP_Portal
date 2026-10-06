@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.68</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.69</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -480,7 +480,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.68';
+const APP_VERSIE = '1.69';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -2447,13 +2447,11 @@ async function zoekLive(){
       const excl = splitList(p.uitvNiet).map(x => x.toLowerCase());
       const model = l.model || p.model;
       const binnen = res.items.filter(it => !excl.some(t => (it.title||'').toLowerCase().includes(t)) && pastCriteria(it, p) && (l.site !== 'gaspedaal' || pastGaspedaal(it, p, l.variant)));
+      // Alleen auto's van het model. Tot v1.68 toonde de app alles als het model in geen enkele titel stond; sinds de
+      // titelcontrole van v1.64 (520d bij 5-serie, C 200 bij C-Klasse) leverde dat alleen nog verkeerde modellen op,
+      // zoals een CLA bij GLC op 2dehands (06-10-2026).
       const opModel = model ? binnen.filter(it => modelInTitel(it.title, model)) : binnen;
-      if (model && !opModel.length && binnen.length && !res.striktModel) {
-        // Het model komt kennelijk niet in de titels voor (bijv. "5 Serie" bij een 520d).
-        s.items = binnen; s.modelOngecontroleerd = true;
-      } else {
-        s.items = opModel; s.weggefilterd = res.striktModel ? 0 : res.items.length - opModel.length;   // bij striktModel legt de melding het uit
-      }
+      s.items = opModel; s.weggefilterd = res.striktModel ? 0 : res.items.length - opModel.length;   // bij striktModel legt de melding het uit
       s.count = res.count; s.status = 'klaar';
       noteerSiteStatus(l.site, null);
     } catch(e){
@@ -2490,7 +2488,7 @@ function renderLive(){
   const groepen = new Map();
   LIVE.sites.forEach(s => {
     const k = s.site + '|' + (s.model || '');
-    if (!groepen.has(k)) groepen.set(k, {naam:s.naam, land:s.land, model:s.model, url:s.url, delen:[], count:0, urls:new Set(), fouten:[], meldingen:[], weg:0, ongecontroleerd:false, bezig:false, geleerd:null});
+    if (!groepen.has(k)) groepen.set(k, {naam:s.naam, land:s.land, model:s.model, url:s.url, delen:[], count:0, urls:new Set(), fouten:[], meldingen:[], weg:0, bezig:false, geleerd:null});
     const g = groepen.get(k);
     g.delen.push(s);
     if (!g.urls.has(s.url)){ g.urls.add(s.url); g.count += (s.count || 0); }   // twee uitvoeringen op dezelfde pagina tellen één keer
@@ -2498,7 +2496,6 @@ function renderLive(){
     if (s.melding && !g.meldingen.includes(s.melding)) g.meldingen.push(s.melding);
     if (s.error) g.fouten.push(s.error);
     g.weg += (s.weggefilterd || 0);
-    if (s.modelOngecontroleerd) g.ongecontroleerd = true;
     if (s.status === 'wacht') g.bezig = true;
   });
   const alle = LIVE.sites.flatMap(x => x.items);
@@ -2521,7 +2518,6 @@ function renderLive(){
       + (g.fouten.length ? `<div class="note warn" style="margin-top:6px">${esc(g.fouten[0])}</div>` : '')
       + g.meldingen.map(m => `<div class="note warn" style="margin-top:6px">${esc(m)}</div>`).join('')
       + (g.weg ? `<div class="help" style="margin-top:4px">${g.weg} resulta${g.weg === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
-      + (g.ongecontroleerd ? `<div class="help" style="margin-top:4px">Let op: "${esc(g.model || '')}" komt niet in de titels voor, dus niet op model gecontroleerd.</div>` : '')
       + (g.geleerd ? `<div class="help" style="margin-top:4px">De app heeft het modelnummer van ${esc(g.geleerd)} op mobile.de zelf opgezocht en bewaard.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const TOON = 60;
@@ -3024,6 +3020,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.69', 'Geen verkeerde modellen meer: staat het model in geen enkele titel, dan toont de app niets meer van die site (voorheen alles, met \u201cniet op model gecontroleerd\u201d; zo verscheen een CLA bij GLC). Wat wegvalt, staat eronder als aantal.'],
   ['1.68', 'Veiligheid voor de ophaler: de app vervangt een gevulde lijst zoekopdrachten op GitHub nooit meer door een lege, en een lokale kopie van de app stuurt niets door. Op 05-10-2026 zette een lokale kopie zo per ongeluk een lege lijst op GitHub; je X5-zoekopdracht is teruggezet.'],
   ['1.67', 'Instellingen > Ophaler en meldingen: met een GitHub-sleutel zet de app je bewaarde zoekopdrachten zelf klaar voor de ophaler (geen export meer), en start je de ophaler of een testbericht met één klik. '],
   ['1.66', 'Model is nu een keuzelijst, net als Merk: na het kiezen van een merk staan alle modellen van dat merk erin met het aantal auto\u2019s (uit Marktplaats, per merk 30 dagen onthouden). Vrij typen kan nog steeds, ook meer modellen met een komma.'],
