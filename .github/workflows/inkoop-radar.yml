@@ -36,9 +36,13 @@ jobs:
       MAIL_TO: ${{ secrets.MAIL_TO }}
       CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
     steps:
-      - uses: actions/checkout@v4
+      # Altijd de nieuwste stand van main, niet die van het moment van starten: een run die moest wachten op een
+      # andere run begint anders met oude resultaten en botst bij het wegzetten (run #14, 06-10-2026).
+      - uses: actions/checkout@v7
+        with:
+          ref: main
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -54,7 +58,7 @@ jobs:
           git config user.email "inkoop-radar@users.noreply.github.com"
           git add "$RESULTS"
           git diff --cached --quiet || git commit -m "Inkoop-radar: resultaten $(date -u +'%Y-%m-%d %H:%M') UTC"
-          git pull --rebase --quiet   # er kan intussen iets gepusht zijn
+          git pull --rebase -X theirs --quiet   # er kan intussen iets gepusht zijn; bij results.json wint deze, nieuwere ronde
           git push
 
       # Melding bij een nieuwe treffer: alleen als de ophaler een nieuwe advertentie vond die nog niet
