@@ -88,9 +88,19 @@ jobs:
         continue-on-error: true
         env:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+        # CallMeBot antwoordt bij een fout met HTTP 203 en een tekst als "APIKey is invalid" (nagemeten 06-10-2026).
+        # Dan faalt deze stap met een waarschuwing in de samenvatting van de run; de rest van de run gaat door.
         run: |
-          curl -s -G "https://api.callmebot.com/whatsapp.php" \
+          antwoord=$(curl -s -G "https://api.callmebot.com/whatsapp.php" \
             --data-urlencode "phone=$CALLMEBOT_PHONE" \
             --data-urlencode "apikey=$CALLMEBOT_APIKEY" \
             --data-urlencode "text@melding.txt" \
-            -o /dev/null -w "CallMeBot: HTTP %{http_code}\n"
+            -w "\n%{http_code}")
+          code=$(printf '%s' "$antwoord" | tail -n1)
+          tekst=$(printf '%s' "$antwoord" | sed '$d' | sed 's/<[^>]*>/ /g' | tr -s ' \n' ' ' | sed -E 's/[+]?[0-9]{6,}/[nummer]/g' | cut -c1-200)
+          if [ "$code" = "200" ] && ! printf '%s' "$tekst" | grep -qiE 'invalid|error|blocked|not allowed|limit|wait'; then
+            echo "CallMeBot: bericht aangenomen (HTTP 200)."
+          else
+            echo "::warning title=WhatsApp niet verstuurd::CallMeBot gaf HTTP $code: $tekst"
+            exit 1
+          fi
