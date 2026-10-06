@@ -34,7 +34,7 @@ function boot(seed = {}) {
     .replace(/\blet (saleItems|adminMode|vuil|regMode|voorFilter|fileHandle|bundelTijd|nrVergrendeld|regSort|laatsteDriveCheck|logoDialoogVerversen)=/g, 'var $1='));
   return w;
 }
-const VER = '1.32';
+const VER = '1.33';
 const w0 = () => boot();
 const sale = o => Object.assign({ merk: 'BMW 545E', kenteken: 'X-123-YZ', bj: '', km: '', ch: 'WBA000000000000AA', kl: '', gar: '', prijs: '€ 12.100,00', restbpm: '€ 0,00', regime: 'btw', price: 'incl', kosten: [] }, o);
 const inruil = o => Object.assign({ merk: 'AUDI A4', kenteken: 'A-456-BC', bj: '', km: '', ch: 'WAU000000000000BB', kl: '', gar: '', bedrag: '€ 5.000,00', regime: 'btw' }, o);
@@ -288,9 +288,16 @@ t('schrijven zet het tijdstempel, zodat eigen schrijfacties niet als "ander appa
 
 console.log('\n15. Lettertype (v1.27, v1.31)');
 t('terugvalstack aanwezig', () => { if (!html.includes("font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif")) throw new Error('stack mist'); });
-t('Montserrat geladen in alle gebruikte diktes en cursief; Poppins nergens meer in de opmaak', () => {
-  if (!html.includes("family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400")) throw new Error('import mist of onvolledig');
-  const css = html.slice(0, html.indexOf('</style>')); if (css.includes('Poppins')) throw new Error('Poppins nog in de CSS');
+t('Montserrat ingebouwd: normaal en cursief, dikte 300-700, geen lettertype van internet (v1.33)', () => {
+  const css = html.slice(0, html.indexOf('</style>'));
+  if (css.includes('Poppins')) throw new Error('Poppins nog in de CSS');
+  if (/fonts\.(googleapis|gstatic)\.com/.test(html)) throw new Error('nog een lettertype van internet');
+  const faces = [...css.matchAll(/@font-face\{font-family:'Montserrat';font-style:(normal|italic);font-weight:300 700;font-display:block;src:url\(data:font\/woff2;base64,([A-Za-z0-9+\/=]+)\) format\('woff2'\);unicode-range:([^;]+);\}/g)];
+  eq(faces.map(f => f[1]).sort().join(','), 'italic,normal', 'stijlen');
+  faces.forEach(f => {
+    eq(Buffer.from(f[2], 'base64').subarray(0, 4).toString('latin1'), 'wOF2', f[1] + ' is geen woff2');
+    if (!f[3].includes('U+20AC')) throw new Error(f[1] + ': euroteken valt buiten het bereik');
+  });
   const w = boot(); eq(w.getComputedStyle(w.document.body).fontFamily.split(',')[0].replace(/["']/g, ''), 'Montserrat');
 });
 
@@ -405,6 +412,37 @@ t('printen: hele blokken, nooit half op pagina 1 en verder op pagina 2; marge op
 t('hint en stippelrand rond het logo komen niet op papier', () => {
   const print = html.slice(html.indexOf('@media print{'), html.indexOf('@media(max-width:640px)'));
   if (!print.includes('.logo-wrap{outline:none!important;cursor:auto!important;} .logo-wrap::after{display:none!important;}')) throw new Error('printregel mist');
+});
+
+console.log('\n19. Lege inruil niet op papier (v1.33)');
+t('leeg formulier: inruilkaart en kop gemarkeerd om niet te printen, verkoopkaart niet', () => {
+  const w = boot();
+  eq(w.document.querySelector('#inruil-container .vcard').classList.contains('inruil-leeg'), true, 'kaart');
+  eq(w.document.getElementById('sheet').classList.contains('geen-inruil'), true, 'vel');
+  eq(w.document.querySelector('#sale-container .vcard').classList.contains('inruil-leeg'), false, 'verkoopkaart');
+});
+t('zodra iets is ingevuld, gaat de inruil wel mee op papier', () => {
+  const w = boot(); const inp = w.document.querySelector('#inruil-container input[data-f="kenteken"]');
+  inp.value = 'A-456-BC'; inp.dispatchEvent(new w.Event('input', { bubbles: true }));
+  eq(w.document.querySelector('#inruil-container .vcard').classList.contains('inruil-leeg'), false, 'kaart');
+  eq(w.document.getElementById('sheet').classList.contains('geen-inruil'), false, 'vel');
+  const w2 = boot(); w2.inruilItems = [w2.blankInruil()]; w2.inruilItems[0].bedrag = '€ 500,00'; w2.renderInruil(); w2.recalc();
+  eq(w2.document.getElementById('sheet').classList.contains('geen-inruil'), false, 'alleen een bedrag telt ook');
+});
+t('twee inruilkaarten: alleen de lege valt weg, de kop blijft', () => {
+  const w = boot(); w.inruilItems = [w.blankInruil(), inruil()]; w.renderInruil(); w.recalc();
+  const k = w.document.querySelectorAll('#inruil-container .vcard');
+  eq(k[0].classList.contains('inruil-leeg'), true, 'lege'); eq(k[1].classList.contains('inruil-leeg'), false, 'gevulde');
+  eq(w.document.getElementById('sheet').classList.contains('geen-inruil'), false, 'kop');
+});
+t('geopende factuur zonder inruil: niets van de inruil op papier', () => {
+  const w = boot({ kaap_facturen_v2: [factuur(1001, [sale()], [])] }); w.fillForm(w.loadDB()[0]);
+  eq(w.document.getElementById('sheet').classList.contains('geen-inruil'), true);
+});
+t('alleen op papier verborgen, op het scherm blijft de kaart staan', () => {
+  const print = html.slice(html.indexOf('@media print{'), html.indexOf('@media(max-width:640px)'));
+  if (!print.includes('.vcard.inruil-leeg,.sheet.geen-inruil .inruil-kop{display:none!important;}')) throw new Error('printregel mist');
+  if (html.slice(0, html.indexOf('@media print{')).includes('inruil-leeg')) throw new Error('ook op het scherm verborgen');
 });
 
 const naast = path.join(path.dirname(FILE), 'index.html');
