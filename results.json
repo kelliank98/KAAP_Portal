@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-06T21:01:37.977Z",
+ "generated": "2026-10-07T01:37:07.690Z",
  "tool": "inkoop-fetch 1.14",
  "profiles": {
   "srg94noru15d": {
@@ -11,11 +11,11 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-06T21:01:37.977Z",
+     "checked": "2026-10-07T01:37:07.690Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (3840 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (3838 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "as24de:X5|M-Sport": {
      "naam": "AutoScout24 DE",
@@ -23,11 +23,11 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-06T21:01:40.917Z",
+     "checked": "2026-10-07T01:37:12.109Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (3840 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (3838 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "kleinanzeigen:X5|M Sport": {
      "naam": "Kleinanzeigen",
@@ -35,7 +35,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-06T21:01:44.155Z",
+     "checked": "2026-10-07T01:37:15.530Z",
      "count": null,
      "items": [],
      "error": null,
@@ -47,7 +47,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-06T21:01:49.747Z",
+     "checked": "2026-10-07T01:37:21.325Z",
      "count": null,
      "items": [],
      "error": null,
@@ -59,11 +59,11 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-06T21:01:55.149Z",
+     "checked": "2026-10-07T01:37:26.933Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (1757 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (1758 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "as24nl:X5|M-Sport": {
      "naam": "AutoScout24 NL",
@@ -71,11 +71,11 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-06T21:01:58.034Z",
+     "checked": "2026-10-07T01:37:30.455Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (1757 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (1758 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "marktplaats:X5|M Sport": {
      "naam": "Marktplaats",
@@ -83,7 +83,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:00.829Z",
+     "checked": "2026-10-07T01:37:33.974Z",
      "count": 1,
      "items": [
       {
@@ -117,7 +117,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:03.214Z",
+     "checked": "2026-10-07T01:37:36.053Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -129,11 +129,11 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-06T21:02:05.371Z",
+     "checked": "2026-10-07T01:37:38.187Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (723 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (725 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "as24be:X5|M-Sport": {
      "naam": "AutoScout24 BE",
@@ -141,11 +141,11 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-06T21:02:08.333Z",
+     "checked": "2026-10-07T01:37:42.274Z",
      "count": 0,
      "items": [],
      "error": null,
-     "warn": "model klopt (723 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
+     "warn": "model klopt (725 van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering."
     },
     "twodehands:X5|M Sport": {
      "naam": "2dehands",
@@ -153,7 +153,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:12.638Z",
+     "checked": "2026-10-07T01:37:46.119Z",
      "count": 2,
      "items": [],
      "error": null,
@@ -165,7 +165,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:14.894Z",
+     "checked": "2026-10-07T01:37:48.409Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -177,7 +177,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:16.920Z",
+     "checked": "2026-10-07T01:37:50.509Z",
      "count": 2,
      "items": [],
      "error": null,
@@ -189,7 +189,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-06T21:02:19.514Z",
+     "checked": "2026-10-07T01:37:53.088Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -200,7 +200,7 @@
  },
  "volume": {
   "opgehaald": 1,
-  "moment": "2026-10-06T21:02:21.774Z"
+  "moment": "2026-10-07T01:37:55.414Z"
  },
  "gemeld": {
   "m2450639879": {
