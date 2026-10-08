@@ -217,7 +217,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Bladwijzer prijshistorie** (AutoScout24) heeft een eigen versienummer dat in zijn URL meegaat. Is de jouwe ouder, dan zegt de app dat bij gebruik en sleep je hem opnieuw.
 - **Alles wissen** downloadt eerst een reservekopie.
 
-## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.15)
+## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.16)
 
 Vindt de ophaler een nieuwe advertentie voor een opgeslagen zoekopdracht, dan stuurt hij een mail en/of een WhatsApp-bericht (`tools/melding.mjs`).
 

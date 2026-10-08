@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.15
+  KAAP Inkoop-radar – ophaler  v1.16
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md. Sinds v1.12 maakt
   de ophaler daarnaast een melding (melding.html, melding.txt) voor mail en WhatsApp, alleen bij
   een nieuwe treffer die nog niet eerder gemeld is, en sinds v1.13 opnieuw bij een prijswijziging; zie tools/melding.mjs.
   Sinds v1.15 geen melding meer bij een prijs onder € 2.500: dat is een maandbedrag of bod (melding.mjs v1.2).
+  v1.16: kortere meldingen. AutoScout24 met nul resultaten terwijl het model bestaat: "Versoepel prijs, bouwjaar, km of uitvoering."
+  Marktplaats/2dehands: "2 van 2 weggelaten: passen niet bij je zoekopdracht."
 
   Gebruik:  node tools/inkoop-fetch.mjs [profiles.json] [results.json]
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
@@ -172,7 +174,8 @@ async function fetchAs24(l) {
       const kd = JSON.parse((kh.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s) || [, '{}'])[1]);
       const kaalAantal = kd?.props?.pageProps?.numberOfResults ?? 0;
       if (kaalAantal > 0) {
-        warn = `model klopt (${kaalAantal} van dit model op de site), maar deze combinatie van filters levert 0 resultaten. Versoepel prijs, bouwjaar, km of uitvoering.`;
+        // Het model bestaat hier wel; je filters laten niets over. Kort gehouden op verzoek (v1.16, 08-10-2026).
+        warn = 'Versoepel prijs, bouwjaar, km of uitvoering.';
       } else {
         const bh = await get(l.url.replace(/\/lst\/([^\/?]+)\/[^\/?]+/, '/lst/$1').split('?')[0] + '?atype=C');
         const bd = JSON.parse((bh.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s) || [, '{}'])[1]);
@@ -253,7 +256,10 @@ async function fetchLrp(l) {
   };
   const alle = dedupe(items);
   const ok = alle.filter(past);
-  if (alle.length && ok.length < alle.length / 2) extra = `deze site negeerde een deel van de filters; ${alle.length - ok.length} van ${alle.length} advertenties hier weggefilterd`;
+  // Kort, en zonder te zeggen waarom: vaak negeert de site filters, maar soms staat de uitvoering gewoon niet in de titel
+  // (08-10-2026: twee X5's op 2dehands met alleen sportstoelen en sportstuur).
+  const weg = alle.length - ok.length;
+  if (alle.length && ok.length < alle.length / 2) extra = `${weg} van ${alle.length} weggelaten: ${weg === 1 ? 'past' : 'passen'} niet bij je zoekopdracht.`;
   return { count: d.totalResultCount ?? null, items: ok.slice(0, MAX_ITEMS), warn: extra };
 }
 // Alle woorden van s moeten in de titel staan; cijfers/letters aan elkaar toegestaan (RS 6 ~ RS6).
@@ -322,7 +328,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.15', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.16', profiles: {} };
 const newItems = [];
 let fouten = 0;
 

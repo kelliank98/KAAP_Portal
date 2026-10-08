@@ -124,7 +124,7 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13, melding v1.2)', () => {
     const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
     execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer }, stdio: 'pipe' });
     const res = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
-    assert.equal(res.tool, 'inkoop-fetch 1.15');
+    assert.equal(res.tool, 'inkoop-fetch 1.16');
     assert.deepEqual(Object.keys(res.gemeld), ['a1'], 'eerder gemelde auto\'s blijven onthouden');
     assert.match(readFileSync(uitvoer, 'utf8'), /melding=false\nonderwerp=\n/);
     assert.equal(existsSync(join(map, 'melding.html')), false);
