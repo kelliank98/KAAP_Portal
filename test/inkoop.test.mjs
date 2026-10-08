@@ -165,21 +165,27 @@ describe('Forfaitaire afschrijving', () => {
 });
 
 describe('Kostprijs', () => {
-  test('BTW-auto uit Duitsland: prijs gedeeld door 1,19 plus transport, import en BPM', () => {
+  test('BTW-auto uit Duitsland: prijs gedeeld door 1,19 plus transport, import, advertenties en BPM', () => {
     const kp = w.kostprijs({prijs:60000, land:'DE', btw:'btw'}, {netto:5838});
     assert.ok(Math.abs(kp.netto - 60000 / 1.19) < 0.01);
     assert.equal(kp.transport, 400);
     assert.equal(kp.imp, 250);
+    assert.equal(kp.adv, 42, 'vaste advertentiekosten per auto (v1.70)');
     assert.equal(kp.bpm, 5838);
-    assert.ok(Math.abs(kp.totaal - (60000 / 1.19 + 400 + 250 + 5838)) < 0.01);
+    assert.ok(Math.abs(kp.totaal - (60000 / 1.19 + 400 + 250 + 42 + 5838)) < 0.01);
+  });
+  test('advertentiekosten volgen de instelling, ook 0 (v1.70)', () => {
+    G('S').instellingen.advertentiekosten = 0;
+    assert.equal(w.kostprijs({prijs:60000, land:'DE', btw:'btw'}, {netto:5838}).adv, 0);
+    G('S').instellingen.advertentiekosten = 42;
   });
   test('margeauto: geen BTW-aftrek', () => {
     assert.equal(w.kostprijs({prijs:60000, land:'BE', btw:'marge'}, {netto:1000}).netto, 60000);
   });
-  test('NL-auto: geen BPM, geen importkosten', () => {
+  test('NL-auto: geen BPM, geen importkosten, wel advertentiekosten', () => {
     const kp = w.kostprijs({prijs:50000, land:'NL', btw:'btw'}, {fout:'x'});
-    assert.equal(kp.bpm, 0); assert.equal(kp.imp, 0); assert.equal(kp.transport, 0);
-    assert.ok(Math.abs(kp.totaal - 50000 / 1.21) < 0.01);
+    assert.equal(kp.bpm, 0); assert.equal(kp.imp, 0); assert.equal(kp.transport, 0); assert.equal(kp.adv, 42);
+    assert.ok(Math.abs(kp.totaal - (50000 / 1.21 + 42)) < 0.01);
   });
   test('BPM onbekend: geen totaal', () => {
     assert.equal(w.kostprijs({prijs:50000, land:'DE', btw:'btw'}, {fout:'x'}).totaal, null);
@@ -701,14 +707,14 @@ describe('UI en opslag', () => {
     const met = d.querySelector('#bpmOut').textContent;
     assert.match(met, /^Marge/, 'de marge staat bovenaan');
     const blokje = d.querySelector('#bpmOut .margeregel .tag.pct');
-    assert.equal(blokje.textContent, '16%', 'percentage in een blokje bovenaan');   // 9.166 / 56.908
+    assert.equal(blokje.textContent, '16%', 'percentage in een blokje bovenaan');   // 9.124 / 56.950
     assert.ok(blokje.classList.contains('bod'), '16% is onder de doelmarge van 20% maar boven 10%: oranje');
-    assert.ok(d.querySelector('#bpmOut .margeregel .bedrag').textContent.includes('9.166'), 'bedrag ernaast: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 5838)
-    assert.equal(d.querySelector('#bpmOut .margeregel').textContent.replace(/\s+/g, ' '), 'Marge16%€ 9.166', 'naast elkaar op één regel');
+    assert.ok(d.querySelector('#bpmOut .margeregel .bedrag').textContent.includes('9.124'), 'bedrag ernaast: ' + met.slice(0, 120));   // 79950/1,21 − (60000/1,19 + 400 + 250 + 42 + 5838)
+    assert.equal(d.querySelector('#bpmOut .margeregel').textContent.replace(/\s+/g, ' '), 'Marge16%€ 9.124', 'naast elkaar op één regel');
     const regels = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.deepEqual(regels, ['Inkoop', 'Vraagprijs (DE)€ 60.000', 'BTW 19% eraf− € 9.580', 'Inkoop excl. BTW€ 50.420', 'Kosten', 'Transport DE€ 400',
-      'Import, RDW, kenteken€ 250', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.908', 'Verkoop', 'Verkoopprijs NL€ 79.950', 'BTW 21% eraf− € 13.876',
-      'Verkoop excl. BTW€ 66.074', 'Marge€ 9.166 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
+      'Import, RDW, kenteken€ 250', 'Advertenties€ 42', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.950', 'Verkoop', 'Verkoopprijs NL€ 79.950', 'BTW 21% eraf− € 13.876',
+      'Verkoop excl. BTW€ 66.074', 'Marge€ 9.124 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
     zet('k_btw', 'marge', 'change');
     const marge = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.ok(marge.includes('Geen BTW-aftrek€ 0') && marge.includes('Inkoop€ 60.000'), 'margeauto: geen BTW eraf bij inkoop');
@@ -716,7 +722,7 @@ describe('UI en opslag', () => {
     zet('k_btw', 'btw', 'change');
     d.querySelector('#btnBewaarKand').click();
     assert.equal(d.querySelectorAll('#kandTabel tbody tr').length, 1);
-    assert.ok(d.querySelector('#kandTabel tbody tr').textContent.includes('9.166'), 'marge in de tabel');
+    assert.ok(d.querySelector('#kandTabel tbody tr').textContent.includes('9.124'), 'marge in de tabel');
     const k = JSON.parse(w.localStorage.getItem('kaap_inkoop_v1')).kandidaten;
     assert.equal(k.length, 1);
     assert.equal(k[0].verkoop, 79950);

@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.69</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.70</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -375,6 +375,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>Transport DK</span><input type="number" id="s_tr_DK" step="50"></label>
           <label class="f"><span>Transport NL</span><input type="number" id="s_tr_NL" step="50"></label>
           <label class="f"><span>Importkosten</span><input type="number" id="s_import" step="25"></label>
+          <label class="f"><span>Advertenties per auto</span><input type="number" id="s_adv" step="1" min="0"></label>
           <label class="f"><span>Dagen tot keuring</span><input type="number" id="s_keuring" step="1"></label>
           <label class="f"><span>Doelmarge (% van de kostprijs)</span><input type="number" id="s_doelmarge" step="1" min="0" max="100"></label>
           <label class="f"><span>Scherp geprijsd vanaf (% onder 5 goedkoopste NL)</span><input type="number" id="s_scherp" step="1" min="1" max="90"></label>
@@ -480,7 +481,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.69';
+const APP_VERSIE = '1.70';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -603,6 +604,8 @@ function laad(){
   delete s.instellingen.doelmarge;                                                     // het oude bedrag in euro's (t/m v1.49)
   // Scherp geprijsd sinds v1.59: t.o.v. de 5 goedkoopste NL-advertenties, standaard 10%. De oude drempel (t.o.v. de mediaan) vervalt.
   if (s.instellingen.scherpRegel !== 2){ s.instellingen.scherpPct = 10; s.instellingen.scherpRegel = 2; }
+  // Vaste advertentiekosten (Mobilox, Marktplaats, Gaspedaal: € 252 per maand) als vast bedrag per auto; keuze gebruiker 08-10-2026.
+  if (s.instellingen.advertentiekosten === undefined) s.instellingen.advertentiekosten = 42;
   return s;
 }
 let stilBewaren = false;
@@ -777,16 +780,17 @@ function kostprijs(k, bpm){
   const netto = k.btw === 'btw' ? prijs / (1 + (BTW_PCT[land]||0.21)) : prijs;
   const transport = +(S.instellingen.transport[land] || 0);
   const imp = land === 'NL' ? 0 : +(S.instellingen.importkosten||0);
+  const adv = +(S.instellingen.advertentiekosten || 0);   // vaste advertentiekosten per auto, ook bij een NL-auto
   // BPM volgens Autotelex (ingevuld door de gebruiker) gaat voor de indicatie van de app.
   const atx = k.bpmAtx != null && k.bpmAtx !== '' && isFinite(+k.bpmAtx) ? +k.bpmAtx : null;
   const bpmBedrag = land === 'NL' ? 0 : (atx != null ? atx : bpmTeBetalen(bpm));
-  const totaal = (bpmBedrag==null) ? null : netto + transport + imp + bpmBedrag;
-  return {netto, transport, imp, bpm:bpmBedrag, bpmBron: land === 'NL' ? 'nl' : (atx != null ? 'autotelex' : 'app'), totaal};
+  const totaal = (bpmBedrag==null) ? null : netto + transport + imp + adv + bpmBedrag;
+  return {netto, transport, imp, adv, bpm:bpmBedrag, bpmBron: land === 'NL' ? 'nl' : (atx != null ? 'autotelex' : 'app'), totaal};
 }
 // ---------- Marge ----------
 // Verkoop in Nederland. BTW-auto: 21% over de hele verkoopprijs. Margeauto: BTW alleen over
 // de winstmarge (verkoop − inkoopprijs van de auto), volgens de margeregeling.
-// Marge = verkoop − af te dragen BTW − kostprijs (inkoop excl., transport, import, BPM).
+// Marge = verkoop − af te dragen BTW − kostprijs (inkoop excl., transport, import, advertenties, BPM).
 function margeVoor(k, kp){
   const verkoop = +k.verkoop || 0;
   if (!verkoop || !kp || kp.totaal == null) return null;
@@ -1302,7 +1306,7 @@ function renderBpm(){
   let t = kop('Inkoop') + rij(`Vraagprijs (${esc(k.land)}${btwAuto ? '' : ', marge'})`, eur(k.prijs))
     + (btwAuto ? rij(`BTW ${btwp}% eraf`, k.prijs ? '− ' + eur(k.prijs - kp.netto) : '–', 'min') : rij('Geen BTW-aftrek', eur(0), 'min'))
     + rij(btwAuto ? 'Inkoop excl. BTW' : 'Inkoop', eur(k.prijs ? kp.netto : null))
-    + kop('Kosten') + rij(`Transport ${esc(k.land)}`, eur(kp.transport)) + rij('Import, RDW, kenteken', eur(kp.imp)) + rij(bpmLabel, kp.bpm == null ? '–' : eur(kp.bpm))
+    + kop('Kosten') + rij(`Transport ${esc(k.land)}`, eur(kp.transport)) + rij('Import, RDW, kenteken', eur(kp.imp)) + rij('Advertenties', eur(kp.adv)) + rij(bpmLabel, kp.bpm == null ? '–' : eur(kp.bpm))
     + rij('Kostprijs', (k.prijs && kp.totaal != null) ? eur(kp.totaal) : '–', 'som');
   if (k.verkoop){
     t += kop('Verkoop') + rij('Verkoopprijs NL', eur(k.verkoop))
@@ -1388,7 +1392,7 @@ function renderKandTabel(){
 function renderInstellingen(){
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => $('#s_tr_'+l).value = i.transport[l] ?? '');
-  $('#s_import').value = i.importkosten; $('#s_keuring').value = i.keuringDagen; $('#s_doelmarge').value = i.doelmargePct; $('#s_scherp').value = i.scherpPct;
+  $('#s_import').value = i.importkosten; $('#s_adv').value = i.advertentiekosten; $('#s_keuring').value = i.keuringDagen; $('#s_doelmarge').value = i.doelmargePct; $('#s_scherp').value = i.scherpPct;
   renderChips($('#s_sites'), Object.keys(SITES).map(k=>({k, l:siteLabel(k)})), Object.keys(i.sites).filter(k=>i.sites[k]));
   // make ids
   const tb = $('#makeIdTabel tbody'); tb.innerHTML = '';
@@ -2938,7 +2942,7 @@ $('#btnAtx').addEventListener('click', bpmUitAutotelex);
 $('#btnBewaarInst').addEventListener('click', () => {
   const i = S.instellingen;
   ['DE','BE','DK','NL'].forEach(l => i.transport[l] = +$('#s_tr_'+l).value || 0);
-  i.importkosten = +$('#s_import').value || 0; i.keuringDagen = +$('#s_keuring').value || 14; i.doelmargePct = isNaN(parseInt($('#s_doelmarge').value, 10)) ? 20 : Math.max(0, parseInt($('#s_doelmarge').value, 10)); i.scherpPct = +$('#s_scherp').value || 10;
+  i.importkosten = +$('#s_import').value || 0; i.advertentiekosten = isNaN(parseFloat($('#s_adv').value)) ? 42 : Math.max(0, parseFloat($('#s_adv').value)); i.keuringDagen = +$('#s_keuring').value || 14; i.doelmargePct = isNaN(parseInt($('#s_doelmarge').value, 10)) ? 20 : Math.max(0, parseInt($('#s_doelmarge').value, 10)); i.scherpPct = +$('#s_scherp').value || 10;
   bewaar(); renderBpm(); renderKandTabel(); if (LIVE) renderLive(); else renderResultaten(); toast('Instellingen bewaard');
 });
 $('#btnMakeIdAdd').addEventListener('click', () => { const n = cap($('#mk_naam').value), id = +$('#mk_id').value; if (!n || !id){ toast('Merk en ID invullen'); return; } S.instellingen.makeIds[n] = id; bewaar(); $('#mk_naam').value=''; $('#mk_id').value=''; renderInstellingen(); vulMerkenlijst(); renderLinks(); });
@@ -3020,6 +3024,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.70', 'Advertentiekosten in de kostprijs: een vast bedrag per auto (standaard \u20ac 42, uit \u20ac 252 per maand voor Mobilox, Marktplaats en Gaspedaal), in te stellen bij Kosten en aannames. Staat als regel Advertenties in Marge en kostprijs en telt mee in de marge.'],
   ['1.69', 'Geen verkeerde modellen meer: staat het model in geen enkele titel, dan toont de app niets meer van die site (voorheen alles, met \u201cniet op model gecontroleerd\u201d; zo verscheen een CLA bij GLC). Wat wegvalt, staat eronder als aantal.'],
   ['1.68', 'Veiligheid voor de ophaler: de app vervangt een gevulde lijst zoekopdrachten op GitHub nooit meer door een lege, en een lokale kopie van de app stuurt niets door. Op 05-10-2026 zette een lokale kopie zo per ongeluk een lege lijst op GitHub; je X5-zoekopdracht is teruggezet.'],
   ['1.67', 'Instellingen > Ophaler en meldingen: met een GitHub-sleutel zet de app je bewaarde zoekopdrachten zelf klaar voor de ophaler (geen export meer), en start je de ophaler of een testbericht met één klik. '],
