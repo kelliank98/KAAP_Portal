@@ -1,14 +1,19 @@
 /*
-  KAAP Inkoop-radar – melding bij een nieuwe treffer  v1.1
+  KAAP Inkoop-radar – melding bij een nieuwe treffer  v1.2
   Maakt van de nieuwe advertenties van één ronde van de ophaler een kort mailonderwerp, een mail (HTML)
   en een WhatsApp-tekst. Geen bericht bij "niets nieuws". Dezelfde auto wordt alleen opnieuw gemeld als
   de prijs veranderd is (v1.1, op verzoek: "alleen bij prijswijziging"); wat gemeld is, staat met de
   prijs in results.json (gemeld).
+  v1.2: geen melding bij een prijs onder € 2.500. Dat is bij deze auto's een maandbedrag, een bod of prijs
+  op aanvraag (op 06-10-2026 kwam zo een X5 voor € 1.372 binnen). Zelfde grens als GEEN_PRIJS_ONDER in
+  inkoop.html. Krijgt zo'n advertentie later een echte prijs, dan volgt een melding als nieuwe treffer.
 */
 const APP_URL = 'https://kelliank98.github.io/KAAP_Portal/inkoop.html';
 const BEWAAR_DAGEN = 90;     // zo lang onthoudt de ophaler wat hij meldde
 const MAX_WA = 6;            // meer wordt onleesbaar op een telefoon
 const MAX_WA_TEKENS = 900;   // CallMeBot knipt lange berichten af
+export const GEEN_PRIJS_ONDER = 2500;   // gelijk aan inkoop.html
+export const geenEchtePrijs = (prijs) => +prijs > 0 && +prijs < GEEN_PRIJS_ONDER;
 
 const eur = (n) => '€ ' + Math.round(n).toLocaleString('nl-NL');
 const kmTekst = (n) => Math.round(n).toLocaleString('nl-NL') + ' km';
@@ -50,7 +55,8 @@ export function bouwMelding(items, gemeld = {}, nu = new Date()) {
   const deze = new Set(), lijst = [];
   for (const n of items || []) {
     const sleutel = n.id || n.url;
-    if (!sleutel || deze.has(sleutel)) continue;   // dezelfde auto uit twee uitvoeringen
+    if (!sleutel || deze.has(sleutel)) continue;   // dezelfde auto uit twee uitvoeringen (of van 2dehands en 2ememain)
+    if (geenEchtePrijs(n.price)) continue;          // maandbedrag of bod: geen melding (v1.2)
     const g = bewaard[sleutel];
     let was = null;
     if (n.soort === 'nieuw') {
@@ -60,6 +66,7 @@ export function bouwMelding(items, gemeld = {}, nu = new Date()) {
       was = (g && g.p) || n.prijs_was || null;
       if (!was || !n.price || n.price === was) continue;
     } else continue;
+    if (geenEchtePrijs(was)) was = null;            // eerst een nep-prijs, nu een echte: melden als nieuwe treffer
     deze.add(sleutel); lijst.push(Object.assign({}, n, { was }));
   }
   if (!lijst.length) return { melding: false, gemeld: bewaard };

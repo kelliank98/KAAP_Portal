@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { GEEN_PRIJS_ONDER as GRENS_OPHALER } from '../tools/melding.mjs';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const fixture = (naam) => readFileSync(resolve(hier, 'fixtures', naam), 'utf8');
@@ -1023,3 +1024,79 @@ describe('Ophaler: nooit een gevulde lijst op GitHub vervangen door een lege (v1
   });
 });
 
+describe('Geen echte prijs, 2ememain één keer, juiste site bij een opgezocht model (v1.71)', () => {
+  const x5 = (extra) => Object.assign({title: 'BMW X5 xDrive45e M Sport', ez: '2021-03', km: 80000, fuel: 'hybride'}, extra);
+  test('grens: onder € 2.500 is geen echte prijs; zelfde grens als de ophaler', () => {
+    assert.equal(G('GEEN_PRIJS_ONDER'), 2500);
+    assert.equal(G('GEEN_PRIJS_ONDER'), GRENS_OPHALER, 'app en ophaler (tools/melding.mjs) gelijk');
+    assert.deepEqual([1, 1372, 2499].map(w.geenEchtePrijs), [true, true, true]);
+    assert.deepEqual([2500, 41990, null, 0, undefined].map(w.geenEchtePrijs), [false, false, false, false, false]);
+  });
+  test('kaart: grijs met "geen echte prijs", geen scherp-label, Naar kandidaat neemt de prijs niet over', () => {
+    const items = [52950, 51740, 48909, 44900, 42909].map((p, i) => x5({url: 'https://x.test/s' + i, price: p, km: 80000 + i}));
+    const idx = w.prijsIndex([{model: 'X5', land: 'NL', items}]);
+    const nep = w.resKaart(x5({url: 'https://www.marktplaats.nl/v/1', price: 1372, title: 'BMW X5 50e 490PK xDrive M Sport Individual'}), 'NL', true, null, {}, {model: 'X5', prijsIdx: idx});
+    assert.ok(nep.classList.contains('geenprijs'));
+    assert.match(nep.querySelector('h4').textContent, /^nieuw geen echte prijs BMW X5 50e/);
+    assert.ok(!nep.textContent.includes('scherp'), 'ver onder de 5 goedkoopste, toch geen scherp-label');
+    assert.equal(nep.querySelector('.geld b').textContent.replace(/\s/g, ' '), '€ 1.372');
+    assert.match(nep.querySelector('.geld b').getAttribute('title'), /maandbedrag \(lease of financiering\), een bod of prijs op aanvraag/);
+    assert.equal(JSON.parse(nep.dataset.it).prijs, null);
+    const echt = w.resKaart(x5({url: 'https://x.test/2', price: 41990}), 'BE', false, null, {}, {model: 'X5'});
+    assert.ok(!echt.classList.contains('geenprijs'));
+    assert.ok(!echt.textContent.includes('geen echte prijs'));
+    assert.equal(JSON.parse(echt.dataset.it).prijs, 41990);
+    const verlaagd = w.resKaart(x5({url: 'https://x.test/3', price: 1372, price_prev: 46900}), 'NL', false, null, {}, {model: 'X5'});
+    assert.ok(!verlaagd.textContent.includes('prijs verlaagd'), 'van € 46.900 naar € 1.372 is geen prijsverlaging');
+    assert.match(verlaagd.querySelector('.geld').textContent.replace(/\s/g, ' '), /was € 46\.900(?! \()/);
+  });
+  test('telt niet mee als vergelijking: scherp geprijsd en verwachte verkoopprijs NL', () => {
+    const items = [52950, 51740, 48909, 44900, 42909].map((p, i) => x5({url: 'https://x.test/v' + i, price: p, km: 80000 + i}));
+    const nep = x5({url: 'https://x.test/nep', price: 1372, km: 64000});
+    const idx = w.prijsIndex([{model: 'X5', land: 'NL', items: items.concat([nep])}]);
+    assert.deepEqual(plain(idx['x5|2021'].vijf), [42909, 44900, 48909, 51740, 52950]);
+    assert.equal(w.scherpPrijs(nep, 'X5', idx, 'NL'), null);
+    const v = w.nlVerkoop(x5({url: 'https://x.test/eigen', price: 45000, ez: '2021-06', title: 'BMW X5 xDrive45e'}), {bron: 'Gaspedaal', items: items.concat([nep])});
+    assert.equal(v.prijs, 48909, '3e van de 5 goedkoopste echte prijzen (met de nep-prijs erbij zou het € 44.900 zijn)');
+    assert.ok(!v.autos.some(a => a.price === 1372));
+  });
+  test('volgorde in een blok: echte prijzen oplopend, dan geen echte prijs, dan zonder prijs', () => {
+    const r = w.voegSamen([{items: [{id: 'a', price: 1372}, {id: 'b', price: null}, {id: 'c', price: 44990}]}, {items: [{id: 'd', price: 41990}, {id: 'c', price: 44990}]}]);
+    assert.deepEqual(plain(r.map(x => x.id)), ['d', 'c', 'a', 'b']);
+  });
+  const be = (id, prijs, host) => ({id, title: '(2CEU441) BMW X5', price: prijs, ez: '2022', km: 83482, fuel: 'hybride', url: `https://www.${host}.be/v/auto-s/bmw/${id}`});
+  const blok = (naam) => [...d.querySelectorAll('#resLijst > .mt')].find(b => b.querySelector('h3').textContent.startsWith(naam));
+  test('live zoeken: 2ememain toont niet nog eens wat bij 2dehands staat; opgezocht model met de juiste site', () => {
+    const live = (ememain) => w.eval('LIVE = ' + JSON.stringify({bezig: false, naam: 'BMW X5 M Sport', model: 'X5', zonderHulp: [], nlRef: {}, sites: [
+      {site: 'marktplaats', naam: 'Marktplaats', land: 'NL', model: 'X5', url: 'https://www.marktplaats.nl/l/auto-s/bmw/', status: 'klaar', items: [x5({id: 'm9', url: 'https://www.marktplaats.nl/v/m9', price: 1372, ez: '2023'})], count: 1, geleerd: 'X5'},
+      {site: 'twodehands', naam: '2dehands', land: 'BE', model: 'X5', url: 'https://www.2dehands.be/l/auto-s/bmw/', status: 'klaar', items: [be('m1', 41990, '2dehands'), be('m2', 44990, '2dehands')], count: 2},
+      {site: 'twoememain', naam: '2ememain', land: 'BE', model: 'X5', url: 'https://www.2ememain.be/l/autos/bmw/', status: 'klaar', items: ememain, count: ememain.length},
+    ]}) + '; renderLive(); true');
+    live([be('m1', 41990, '2ememain'), be('m2', 44990, '2ememain'), be('m3', 39990, '2ememain')]);
+    assert.equal(blok('2dehands').querySelectorAll('.res').length, 2);
+    assert.equal(blok('2ememain').querySelectorAll('.res').length, 1, 'alleen m3 staat niet bij 2dehands');
+    assert.match(blok('2ememain').querySelector('.res a').getAttribute('href'), /m3$/);
+    assert.match(blok('2ememain').textContent, /2 advertenties van 2ememain staan ook bij 2dehands en worden daar getoond: 2ememain is dezelfde site in het Frans/);
+    assert.match(d.querySelector('#resMeta').textContent, /, 4 resultaten\./);
+    assert.match(blok('Marktplaats').textContent, /De app heeft opgezocht hoe Marktplaats het model X5 noemt, en dat bewaard voor de volgende keer/);
+    assert.ok(!d.querySelector('#resLijst').textContent.includes('mobile.de'), 'geen mobile.de bij andere sites');
+    assert.ok(blok('Marktplaats').querySelector('.res').classList.contains('geenprijs'));
+    live([be('m1', 41990, '2ememain')]);
+    assert.equal(blok('2ememain').querySelectorAll('.res').length, 0);
+    assert.match(blok('2ememain').textContent, /1 advertentie van 2ememain staat ook bij 2dehands en wordt daar getoond/);
+    assert.ok(!blok('2ememain').textContent.includes('Geen resultaten'), 'niet "geen resultaten" als ze bij 2dehands staan');
+    w.eval('LIVE = null');
+  });
+  test('resultaten van de ophaler: 2ememain ook daar één keer, nieuw telt één keer', () => {
+    const sites = {
+      'twodehands:X5|M Sport': {naam: '2dehands', land: 'BE', model: 'X5', url: 'https://www.2dehands.be/l/auto-s/bmw/', count: 2, items: [be('m1', 41990, '2dehands'), be('m2', 44990, '2dehands')]},
+      'twoememain:X5|M Sport': {naam: '2ememain', land: 'BE', model: 'X5', url: 'https://www.2ememain.be/l/autos/bmw/', count: 2, items: [be('m1', 41990, '2ememain'), be('m2', 44990, '2ememain')]},
+    };
+    w.eval(`LIVE = null; profielId = 'p71'; RES = ${JSON.stringify({generated: new Date().toISOString(), profiles: {p71: {naam: 'X5', sites}}})}; renderResultaten(); true`);
+    assert.equal(blok('2dehands').querySelectorAll('.res').length, 2);
+    assert.equal(blok('2ememain').querySelectorAll('.res').length, 0);
+    assert.match(blok('2ememain').textContent, /2 advertenties van 2ememain staan ook bij 2dehands/);
+    assert.match(d.querySelector('#resMeta').textContent, /^2 blokken, 2 resultaten, 2 nieuw/);
+    w.eval('profielId = null; RES = null; true');
+  });
+});

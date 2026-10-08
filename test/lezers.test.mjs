@@ -395,7 +395,7 @@ describe('Zoeken met de KAAP-extensie', () => {
     const kaarten = d.querySelectorAll('#resLijst .res');
     assert.equal(kaarten.length, mob.items.length + gp.items.length);
     assert.ok([...kaarten].every(k => k.querySelector('.naarkand').textContent === 'Naar kandidaat'), 'elke kaart heeft de knop');
-    assert.match(d.querySelector('#resLijst').textContent, /De app heeft het modelnummer van X5 op mobile\.de zelf opgezocht en bewaard/);
+    assert.match(d.querySelector('#resLijst').textContent, /De app heeft opgezocht hoe mobile\.de het model X5 noemt, en dat bewaard voor de volgende keer/);
     assert.match(d.querySelector('#resLijst').textContent, /1\.231 op de site/);
 
     // tweede keer zoeken: het nummer is bekend, dus maar één pagina van mobile.de

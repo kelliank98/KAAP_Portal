@@ -178,6 +178,8 @@ table.t tr.on td{background:var(--sel-bg)}
 .res .nlvlijst{font-size:12.5px;color:var(--muted);margin:4px 0 2px 18px;padding:0}
 .res .nlvlijst a{color:inherit}
 .res .nlvlijst .gekozen{color:var(--text);font-weight:600}
+.res.geenprijs{opacity:.55}
+.res.geenprijs .geld b{color:var(--muted);font-weight:500}
 @media (max-width:560px){.res{gap:10px;flex-wrap:wrap}.res .foto{flex:0 0 84px;width:84px;height:64px}.res .geld{text-align:left;padding-left:0}}
 
 /* BPM-blok */
@@ -219,7 +221,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.70</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.71</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -481,7 +483,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.70';
+const APP_VERSIE = '1.71';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -1513,12 +1515,20 @@ function bpmBereik(it, land, idx){
 // Marktplaats en AutoScout24 NL) tellen één keer; spotprijzen (lease, onderdelen: minder dan de helft van de
 // mediaan) tellen niet mee. Minder dan 5 auto's: geen oordeel.
 const SCHERP_AANTAL = 5;
+// ---------- Geen echte prijs (v1.71) ----------
+// Een prijs onder € 2.500 is bij deze auto's geen verkoopprijs maar een maandbedrag, een bod of een prijs op aanvraag.
+// Aanleiding: een BMW X5 50e uit 2023 voor € 1.372 bij Marktplaats (06-10-2026). Live nagekeken: de verkoper vulde dat
+// bedrag echt als vaste prijs in en vraagt € 77.995 en € 84.995 voor vergelijkbare X5's. Besluit van de gebruiker
+// (08-10-2026): zo'n advertentie grijs tonen met "geen echte prijs", nooit als scherp geprijsd, en de ophaler stuurt er
+// geen WhatsApp voor (tools/melding.mjs, zelfde grens). Als vergelijking telt zo'n bedrag dus ook niet mee.
+const GEEN_PRIJS_ONDER = 2500;
+function geenEchtePrijs(prijs){ return +prijs > 0 && +prijs < GEEN_PRIJS_ONDER; }
 function prijsIndex(groepen){   // groepen: [{model, land, items}]
   const per = {};
   groepen.forEach(g => {
     if (g.land !== 'NL') return;
     (g.items || []).forEach(it => {
-      if (!it.price || !it.ez) return;
+      if (!it.price || !it.ez || geenEchtePrijs(it.price)) return;
       const k = normTekst(g.model || '') + '|' + String(it.ez).slice(0, 4);
       (per[k] = per[k] || new Map()).set(String(it.ez).slice(0, 7) + '|' + (it.km || '') + '|' + it.price, +it.price);
     });
@@ -1535,7 +1545,7 @@ function prijsIndex(groepen){   // groepen: [{model, land, items}]
   return idx;
 }
 function scherpPrijs(it, model, idx, land){
-  if (land !== 'NL' || !it.price || !it.ez || !idx) return null;
+  if (land !== 'NL' || !it.price || !it.ez || !idx || geenEchtePrijs(it.price)) return null;
   const jaar = String(it.ez).slice(0, 4);
   const r = idx[normTekst(model || '') + '|' + jaar];
   if (!r || it.price < r.ondergrens) return null;
@@ -1555,7 +1565,7 @@ function motorCode(titel){
   return m ? m[1] + m[2] : null;
 }
 function nlVergelijkbaar(it, r, facelift){
-  if (!r.price || (it.id && r.id === it.id) || (it.url && r.url === it.url)) return false;
+  if (!r.price || geenEchtePrijs(r.price) || (it.id && r.id === it.id) || (it.url && r.url === it.url)) return false;
   if (it.fuel && r.fuel && it.fuel !== r.fuel) return false;
   const j1 = +String(it.ez).slice(0, 4), j2 = r.ez ? +String(r.ez).slice(0, 4) : null;
   if (!j2 || Math.abs(j1 - j2) > 1) return false;
@@ -1623,7 +1633,9 @@ function resKaart(it, land, isNew, prevPrijs, idx, ctx){
   const band = bpm ? null : bpmBereik(it, land, idx);
   const scherp = ctx ? scherpPrijs(it, ctx.model, ctx.prijsIdx, land) : null;
   const nl = ctx && ctx.nlRef ? nlVerkoop(it, ctx.nlRef) : null;
-  const r = document.createElement('div'); r.className = 'res';
+  const nep = geenEchtePrijs(it.price);
+  const nepUitleg = `Prijs onder ${eur(GEEN_PRIJS_ONDER)}: bij een auto als deze bijna altijd een maandbedrag (lease of financiering), een bod of prijs op aanvraag. Kijk in de advertentie voor de echte prijs. De ophaler stuurt hier geen melding voor.`;
+  const r = document.createElement('div'); r.className = 'res' + (nep ? ' geenprijs' : '');
   const dagenOnline = (() => {
     const g = it.geplaatst;
     if (!g) return null;
@@ -1637,10 +1649,10 @@ function resKaart(it, land, isNew, prevPrijs, idx, ctx){
   if (it.first_seen){ const d = Math.floor((Date.now() - new Date(it.first_seen)) / 86400000); if (d >= 1) dagen = d; }
   const meta = [it.ez ? 'EZ ' + esc(it.ez) : '', it.km ? num(it.km) + ' km' : '', it.fuel ? esc(it.fuel) : '', it.co2 ? it.co2 + ' g/km' + (it.co2_geschat ? ' (geschat)' : '') : '', it.seller ? esc(it.seller) : '', it.city ? esc(it.city) : '', dagenOnline != null ? `<b title="zolang staat de advertentie online volgens de site">${dagenOnline === 0 ? 'vandaag online' : dagenOnline === 1 ? '1 dag online' : dagenOnline + ' dagen online'}</b>` : (dagen ? `<b title="zolang staat deze advertentie al in je radar">${dagen} dgn in beeld</b>` : ''),
     it.btw === true ? '<span class="tag btw">BTW</span>' : (it.btw === false ? '<span class="tag">Marge</span>' : '')].filter(Boolean).join(' · ');
-  r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, btw: it.btw, land, verkoop: nl ? nl.prijs : null});
+  r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: nep ? null : it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, btw: it.btw, land, verkoop: nl ? nl.prijs : null});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
-    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${it.price_prev ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}${scherp ? `<span class="tag marge" title="Gemiddelde van de 5 goedkoopste NL-advertenties van dit model uit ${scherp.jaar} in deze zoekopdracht: ${eur(scherp.ref)} (${scherp.vijf.map(eur).join(', ')})">scherp: −${scherp.pct}% t.o.v. 5 goedkoopste NL</span> ` : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div>${nl ? `<ol class="nlvlijst" hidden>${nl.autos.map((r, n) => `<li${n === NL_PLEK - 1 ? ' class="gekozen"' : ''}>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">` : ''}${esc(String(r.ez || '').slice(0, 4))} · ${r.km != null ? num(r.km) + ' km' : 'km onbekend'} · ${eur(r.price)}${r.url ? '</a>' : ''} · ${esc((r.title || '').slice(0, 60))}</li>`).join('')}</ol>` : ''}</div>
-    <div class="geld"><b>${it.price ? eur(it.price) : '–'}</b>${nl ? `<br><a href="#" class="nlv" title="3e van de 5 goedkoopste vergelijkbare op ${esc(nl.bron)}. Klik voor de auto's.">verkoop NL ≈ ${eur(nl.prijs)}</a>` : ''}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}<br><button class="btn sec sm naarkand" style="margin-top:4px">Naar kandidaat</button></div>`;
+    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${nep ? `<span class="tag" title="${esc(nepUitleg)}">geen echte prijs</span> ` : ''}${it.price_prev && !nep ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}${scherp ? `<span class="tag marge" title="Gemiddelde van de 5 goedkoopste NL-advertenties van dit model uit ${scherp.jaar} in deze zoekopdracht: ${eur(scherp.ref)} (${scherp.vijf.map(eur).join(', ')})">scherp: −${scherp.pct}% t.o.v. 5 goedkoopste NL</span> ` : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div>${nl ? `<ol class="nlvlijst" hidden>${nl.autos.map((r, n) => `<li${n === NL_PLEK - 1 ? ' class="gekozen"' : ''}>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">` : ''}${esc(String(r.ez || '').slice(0, 4))} · ${r.km != null ? num(r.km) + ' km' : 'km onbekend'} · ${eur(r.price)}${r.url ? '</a>' : ''} · ${esc((r.title || '').slice(0, 60))}</li>`).join('')}</ol>` : ''}</div>
+    <div class="geld"><b${nep ? ` title="${esc(nepUitleg)}"` : ''}>${it.price ? eur(it.price) : '–'}</b>${nl ?`<br><a href="#" class="nlv" title="3e van de 5 goedkoopste vergelijkbare op ${esc(nl.bron)}. Klik voor de auto's.">verkoop NL ≈ ${eur(nl.prijs)}</a>` : ''}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price && !nep ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}<br><button class="btn sec sm naarkand" style="margin-top:4px">Naar kandidaat</button></div>`;
   return r;
 }
 
@@ -2471,7 +2483,7 @@ async function zoekLive(){
 }
 
 // Resultaten van dezelfde site en hetzelfde model samenvoegen: uitvoeringen bij elkaar,
-// dubbele advertenties eruit, goedkoopste bovenaan.
+// dubbele advertenties eruit, goedkoopste bovenaan. Geen echte prijs (v1.71) onderaan, vóór zonder prijs.
 function voegSamen(delen){
   const items = [], gezien = new Set();
   delen.forEach(d => (d.items || []).forEach(it => {
@@ -2480,9 +2492,25 @@ function voegSamen(delen){
     if (sleutel) gezien.add(sleutel);
     items.push(it);
   }));
-  items.sort((a, b) => (a.price == null ? Infinity : a.price) - (b.price == null ? Infinity : b.price));
+  const volgorde = (it) => it.price == null ? Infinity : geenEchtePrijs(it.price) ? 1e12 + it.price : it.price;
+  items.sort((a, b) => volgorde(a) - volgorde(b));
   return items;
 }
+// 2ememain is 2dehands in het Frans: dezelfde advertenties met hetzelfde nummer (live nagemeten 08-10-2026: allebei
+// 533 BMW X5's, de eerste 100 precies dezelfde). Staan beide in de zoekopdracht, dan toont de app elke advertentie
+// één keer, bij 2dehands (v1.71). blokken: [{site, items}]; zet per blok items en dubbel (aantal weggelaten).
+function zonderDubbeleSites(blokken){
+  const bij2dehands = new Set(blokken.filter(b => b.site === 'twodehands').flatMap(b => b.items).map(it => it.id || it.url).filter(Boolean));
+  blokken.forEach(b => {
+    b.dubbel = 0;
+    if (b.site !== 'twoememain' || !bij2dehands.size) return;
+    const voor = b.items.length;
+    b.items = b.items.filter(it => !bij2dehands.has(it.id || it.url));
+    b.dubbel = voor - b.items.length;
+  });
+  return blokken;
+}
+const dubbelTekst = (n) => `${n} advertentie${n === 1 ? ' van 2ememain staat' : 's van 2ememain staan'} ook bij 2dehands en ${n === 1 ? 'wordt' : 'worden'} daar getoond: 2ememain is dezelfde site in het Frans.`;
 
 function renderLive(){
   const el = $('#resLijst'), meta = $('#resMeta');
@@ -2492,7 +2520,7 @@ function renderLive(){
   const groepen = new Map();
   LIVE.sites.forEach(s => {
     const k = s.site + '|' + (s.model || '');
-    if (!groepen.has(k)) groepen.set(k, {naam:s.naam, land:s.land, model:s.model, url:s.url, delen:[], count:0, urls:new Set(), fouten:[], meldingen:[], weg:0, bezig:false, geleerd:null});
+    if (!groepen.has(k)) groepen.set(k, {site:s.site, naam:s.naam, land:s.land, model:s.model, url:s.url, delen:[], count:0, urls:new Set(), fouten:[], meldingen:[], weg:0, bezig:false, geleerd:null});
     const g = groepen.get(k);
     g.delen.push(s);
     if (!g.urls.has(s.url)){ g.urls.add(s.url); g.count += (s.count || 0); }   // twee uitvoeringen op dezelfde pagina tellen één keer
@@ -2504,8 +2532,10 @@ function renderLive(){
   });
   const alle = LIVE.sites.flatMap(x => x.items);
   const idx = co2Index(alle);
-  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, land: g.land, items: voegSamen(g.delen)})));
-  const totaal = [...groepen.values()].reduce((n, g) => n + voegSamen(g.delen).length, 0);
+  groepen.forEach(g => { g.items = voegSamen(g.delen); });
+  zonderDubbeleSites([...groepen.values()]);
+  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, land: g.land, items: g.items})));
+  const totaal = [...groepen.values()].reduce((n, g) => n + g.items.length, 0);
   meta.innerHTML = `Live gezocht op ${groepen.size} blok${groepen.size===1?'':'ken'} voor <b>${esc(LIVE.naam)}</b> — ${klaar}/${LIVE.sites.length} zoekopdrachten klaar, ${totaal} resultaten. Niets bewaard.`;
   el.innerHTML = '';
   const refs = Object.values(LIVE.nlRef || {});
@@ -2513,7 +2543,7 @@ function renderLive(){
   else if (!HULP.aanwezig && LIVE.sites.length && splitList(LIVE.model || '').length) el.insertAdjacentHTML('beforeend', '<div class="help" style="margin-top:8px">Verkoop NL: alleen met de KAAP-extensie (Gaspedaal).</div>');
   if (LIVE.zonderHulp && LIVE.zonderHulp.length) el.insertAdjacentHTML('beforeend', `<div class="help" style="margin-top:8px">${esc(LIVE.zonderHulp.join(' en '))} ${LIVE.zonderHulp.length === 1 ? 'staat' : 'staan'} er niet bij: daarvoor is de KAAP-extensie nodig (zie Instellingen).</div>`);
   groepen.forEach(g => {
-    const items = voegSamen(g.delen);
+    const items = g.items;
     const box = document.createElement('div'); box.className = 'mt';
     const kop = g.bezig ? '<small class="muted">bezig…</small>'
       : g.fouten.length === g.delen.length ? '<small class="muted">mislukt</small>'
@@ -2522,13 +2552,15 @@ function renderLive(){
       + (g.fouten.length ? `<div class="note warn" style="margin-top:6px">${esc(g.fouten[0])}</div>` : '')
       + g.meldingen.map(m => `<div class="note warn" style="margin-top:6px">${esc(m)}</div>`).join('')
       + (g.weg ? `<div class="help" style="margin-top:4px">${g.weg} resulta${g.weg === 1 ? 'at voldeed' : 'ten voldeden'} niet aan je zoekopdracht: ander model of buiten je grenzen.</div>` : '')
-      + (g.geleerd ? `<div class="help" style="margin-top:4px">De app heeft het modelnummer van ${esc(g.geleerd)} op mobile.de zelf opgezocht en bewaard.</div>` : '');
+      + (g.dubbel ? `<div class="help" style="margin-top:4px">${dubbelTekst(g.dubbel)}</div>` : '')
+      // Tot v1.70 stond hier bij elke site "op mobile.de"; de site waar het om gaat is die van dit blok.
+      + (g.geleerd ? `<div class="help" style="margin-top:4px">De app heeft opgezocht hoe ${esc(g.naam)} het model ${esc(g.geleerd)} noemt, en dat bewaard voor de volgende keer.</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const TOON = 60;
     const ref = (LIVE.nlRef || {})[normTekst(g.model || '')];
     items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, false, null, idx, {model: g.model, prijsIdx, nlRef: ref && ref.status === 'klaar' ? ref : null})));
     if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond. Scherper filteren of op de site kijken.</div>`);
-    if (!g.bezig && !items.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    if (!g.bezig && !items.length && !g.dubbel) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
 }
@@ -2704,20 +2736,23 @@ function renderResultaten(){
   });
   const alleItems = Object.values(pr.sites || {}).flatMap(s => s.items || []);
   const idx = co2Index(alleItems);
-  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, land: g.land, items: voegSamen(g.delen)})));
+  groepen.forEach(g => { g.items = voegSamen(g.delen); });
+  zonderDubbeleSites([...groepen.values()]);
+  const prijsIdx = prijsIndex([...groepen.values()].map(g => ({model: g.model, land: g.land, items: g.items})));
   groepen.forEach(g => {
-    const items = voegSamen(g.delen);
+    const items = g.items;
     totaal += items.length;
     const nNew = items.filter(it => gezien ? new Date(it.first_seen) > gezien : true).length; nieuw += nNew;
     const box = document.createElement('div'); box.className = 'mt';
     box.innerHTML = `<div class="row between"><h3 style="margin:0">${esc(g.naam)} <span class="tag land">${esc(g.land || '')}</span>${g.model ? ' · ' + esc(g.model) : ''} <small class="muted">${g.count ? num(g.count) + ' op de site, ' : ''}${items.length} opgehaald${nNew ? ', ' + nNew + ' nieuw' : ''}${g.delen.length > 1 ? ' · ' + g.delen.length + ' uitvoeringen samengevoegd' : ''}</small></h3>${g.url ? `<a class="btn sec sm" href="${esc(g.url)}" target="_blank" rel="noopener">Open zoekopdracht</a>` : ''}</div>` +
       (g.fouten.length ? `<div class="note warn" style="margin-top:6px">Ophalen mislukt: ${esc(g.fouten[0])}</div>` : '') +
-      (g.warns.length ? `<div class="note warn" style="margin-top:6px">${esc(g.warns[0])}</div>` : '');
+      (g.warns.length ? `<div class="note warn" style="margin-top:6px">${esc(g.warns[0])}</div>` : '') +
+      (g.dubbel ? `<div class="help" style="margin-top:4px">${dubbelTekst(g.dubbel)}</div>` : '');
     const lijst = document.createElement('div'); lijst.style.marginTop = '6px';
     const TOON = 60;
     items.slice(0, TOON).forEach(it => lijst.appendChild(resKaart(it, g.land, gezien ? new Date(it.first_seen) > gezien : true, null, idx, {model: g.model, prijsIdx})));
     if (items.length > TOON) lijst.insertAdjacentHTML('beforeend', `<div class="help">Nog ${items.length - TOON} niet getoond.</div>`);
-    if (!items.length && !g.fouten.length) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
+    if (!items.length && !g.fouten.length && !g.dubbel) lijst.innerHTML = '<div class="empty">Geen resultaten.</div>';
     box.appendChild(lijst); el.appendChild(box);
   });
   meta.textContent = `${groepen.size} blok${groepen.size===1?'':'ken'}, ${totaal} resultaten${nieuw ? ', ' + nieuw + ' nieuw sinds ' + (gezien ? gezien.toLocaleString('nl-NL') : 'altijd') : ''}${verborgen ? ', ' + verborgen + ' verborgen door uitsluiting' : ''}. Opgehaald: ${RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend'}.`;
@@ -3024,6 +3059,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.71', 'Een prijs onder \u20ac 2.500 (meestal een maandbedrag, zoals een X5 voor \u20ac 1.372 bij Marktplaats) staat grijs met \u201cgeen echte prijs\u201d, onderaan het blok. Hij telt niet als scherp geprijsd en niet als vergelijking, en Naar kandidaat neemt hem niet over. 2ememain is 2dehands in het Frans: dezelfde advertentie staat er nu \u00e9\u00e9n keer, bij 2dehands. Bij een nieuw opgezocht model noemt de app de juiste site (stond altijd op mobile.de).'],
   ['1.70', 'Advertentiekosten in de kostprijs: een vast bedrag per auto (standaard \u20ac 42, uit \u20ac 252 per maand voor Mobilox, Marktplaats en Gaspedaal), in te stellen bij Kosten en aannames. Staat als regel Advertenties in Marge en kostprijs en telt mee in de marge.'],
   ['1.69', 'Geen verkeerde modellen meer: staat het model in geen enkele titel, dan toont de app niets meer van die site (voorheen alles, met \u201cniet op model gecontroleerd\u201d; zo verscheen een CLA bij GLC). Wat wegvalt, staat eronder als aantal.'],
   ['1.68', 'Veiligheid voor de ophaler: de app vervangt een gevulde lijst zoekopdrachten op GitHub nooit meer door een lege, en een lokale kopie van de app stuurt niets door. Op 05-10-2026 zette een lokale kopie zo per ongeluk een lege lijst op GitHub; je X5-zoekopdracht is teruggezet.'],

@@ -7,14 +7,14 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { bouwMelding, korteTitel, testMelding } from '../tools/melding.mjs';
+import { bouwMelding, korteTitel, testMelding, GEEN_PRIJS_ONDER } from '../tools/melding.mjs';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const nu = new Date('2026-10-05T16:17:00Z');
 const auto = (id, extra) => Object.assign({ soort: 'nieuw', profiel: 'BMW X5 M Sport, M-Sport 2022+', siteNaam: 'AutoScout24 DE', land: 'DE', model: 'X5', id,
   url: 'https://www.autoscout24.de/angebote/' + id, title: 'BMW X5 xDrive45e M Sport | Pano | HUD | 22"', price: 46900, km: 72000, ez: '2022-03' }, extra || {});
 
-describe('Melding bij een nieuwe treffer (ophaler v1.13)', () => {
+describe('Melding bij een nieuwe treffer (ophaler v1.13, melding v1.2)', () => {
   test('niets nieuws: geen melding', () => {
     const m = bouwMelding([], {}, nu);
     assert.equal(m.melding, false);
@@ -67,6 +67,36 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13)', () => {
     const terug = bouwMelding([auto('a1', { price: 44900 })], eerder, nu);
     assert.equal(terug.onderwerp, 'Prijs verlaagd: BMW X5 xDrive45e M Sport · € 44.900');
   });
+  test('geen melding bij een prijs onder € 2.500 (v1.2): de X5 van € 1.372 van 06-10-2026', () => {
+    // Marktplaats, live nagekeken: de verkoper vulde een maandbedrag in als vaste prijs.
+    const nep = auto('m2450639879', { siteNaam: 'Marktplaats', land: 'NL', url: 'https://www.marktplaats.nl/v/auto-s/bmw/m2450639879', title: 'BMW X5 50e 490PK xDrive M Sport Individual / Frozen Grey / C', price: 1372, ez: '2023' });
+    assert.equal(GEEN_PRIJS_ONDER, 2500);
+    const m = bouwMelding([nep], {}, nu);
+    assert.equal(m.melding, false);
+    assert.deepEqual(m.gemeld, {}, 'niet als gemeld onthouden');
+    const samen = bouwMelding([nep, auto('a1')], {}, nu);
+    assert.equal(samen.aantal, 1, 'een echte treffer in dezelfde ronde wel');
+    assert.equal(samen.onderwerp, 'Nieuw: BMW X5 xDrive45e M Sport · € 46.900');
+    assert.equal(bouwMelding([auto('a1', { price: 2499 })], {}, nu).melding, false);
+    assert.equal(bouwMelding([auto('a1', { price: 2500 })], {}, nu).melding, true, 'vanaf € 2.500 gewoon melden');
+    assert.equal(bouwMelding([auto('a1', { soort: 'prijs', prijs_was: 46900, price: 1372 })], { a1: { d: '2026-10-04T10:00:00Z', p: 46900 } }, nu).melding, false, 'naar een nep-prijs: niets');
+  });
+  test('eerst een nep-prijs, daarna een echte: melding als nieuwe treffer, zonder "was € 1.372"', () => {
+    const later = auto('m2450639879', { soort: 'prijs', prijs_was: 1372, siteNaam: 'Marktplaats', land: 'NL', title: 'BMW X5 50e 490PK xDrive M Sport Individual / Frozen Grey / C', price: 44900, ez: '2023' });
+    for (const eerder of [{}, { m2450639879: { d: '2026-10-06T15:16:24.398Z', p: 1372 } }]) {   // tweede: zoals in results.json sinds 06-10-2026
+      const m = bouwMelding([later], eerder, nu);
+      assert.equal(m.onderwerp, 'Nieuw: BMW X5 50e 490PK xDrive M Sport Individual · € 44.900');
+      assert.ok(!m.tekst.includes('was'), m.tekst);
+      assert.deepEqual(m.gemeld.m2450639879, { d: nu.toISOString(), p: 44900 });
+    }
+  });
+  test('dezelfde advertentie van 2dehands en 2ememain één keer, als 2dehands', () => {
+    const be = (siteNaam) => auto('m2451282545', { siteNaam, land: 'BE', url: `https://www.${siteNaam}.be/v/auto-s/bmw/m2451282545` });
+    const m = bouwMelding([be('2dehands'), be('2ememain')], {}, nu);
+    assert.equal(m.aantal, 1);
+    assert.match(m.tekst, /2dehands \(BE\)/);
+    assert.ok(!m.tekst.includes('2ememain'));
+  });
   test('titels worden veilig in de mail gezet', () => {
     const m = bouwMelding([auto('x', { title: 'BMW X5 <script>alert(1)</script> & co' })], {}, nu);
     assert.ok(!m.html.includes('<script>'));
@@ -94,7 +124,7 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13)', () => {
     const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
     execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer }, stdio: 'pipe' });
     const res = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
-    assert.equal(res.tool, 'inkoop-fetch 1.14');
+    assert.equal(res.tool, 'inkoop-fetch 1.15');
     assert.deepEqual(Object.keys(res.gemeld), ['a1'], 'eerder gemelde auto\'s blijven onthouden');
     assert.match(readFileSync(uitvoer, 'utf8'), /melding=false\nonderwerp=\n/);
     assert.equal(existsSync(join(map, 'melding.html')), false);

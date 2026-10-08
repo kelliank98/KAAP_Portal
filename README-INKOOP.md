@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.70
+# KAAP Inkoop Radar v1.71
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -22,7 +22,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.70_2026-10-08.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.71_2026-10-08.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -113,6 +113,11 @@ Daarna doet de knop *Zoeken* mobile.de en Gaspedaal vanzelf mee. Testen kan bij 
 - Voorbeelden op echte Gaspedaal-data (500 nieuwste X5's, 05-10-2026, facelift 2023): 45e 2020/165.000 km € 36.950; 45e 2021/120.000 km € 43.749; 45e 2022/60.000 km € 53.899; 50e 2024/30.000 km € 79.695; 30d 2020/150.000 km geen bedrag (2 vergelijkbare).
 - **Naar kandidaat** vult de verkoopprijs in het kandidaatformulier in. Het zijn Nederlandse vraagprijzen, inclusief BPM.
 
+## Geen echte prijs en dubbele advertenties (v1.71)
+
+- **Prijs onder € 2.500**: de kaart staat grijs met *geen echte prijs*, onderaan zijn blok. Bij deze auto's is zo'n bedrag een maandbedrag (lease of financiering), een bod of prijs op aanvraag. Hij krijgt geen label *scherp*, telt niet mee als vergelijking (scherp geprijsd en verkoop NL), en *Naar kandidaat* neemt het bedrag niet over. De ophaler stuurt er geen melding voor. Besluit van de gebruiker op 08-10-2026, na een X5 50e uit 2023 voor € 1.372 bij Marktplaats (live nagekeken: vaste prijs, dezelfde verkoper vraagt € 77.995 en € 84.995 voor vergelijkbare X5's). Op dat moment stond er tussen de 300 X5's die Gaspedaal als vergelijking gaf geen enkele prijs onder € 2.500, dus de verkoopprijs NL veranderde er niet door.
+- **2ememain** is 2dehands in het Frans, met dezelfde advertenties onder hetzelfde nummer (live nagemeten 08-10-2026: allebei 533 BMW X5's, de eerste 100 precies dezelfde). Staan beide sites in je zoekopdracht, dan staat elke advertentie één keer in de resultaten, bij 2dehands; onder 2ememain staat hoeveel er daarom zijn weggelaten.
+
 ## BPM volgens Autotelex (v1.50)
 
 - In het kandidaatformulier staat het veld **BPM volgens Autotelex (€)**, direct onder Vraagprijs (v1.51). Vul je het in, dan gaat dat bedrag in kostprijs en marge in plaats van de indicatie van de app. De indicatie staat ernaast als controle, met het verschil. In de kandidatenlijst staat een **A** achter de BPM als die van Autotelex komt.
@@ -137,7 +142,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 239 punten:
+De tests draaien zonder netwerk en controleren 248 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -212,12 +217,13 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Bladwijzer prijshistorie** (AutoScout24) heeft een eigen versienummer dat in zijn URL meegaat. Is de jouwe ouder, dan zegt de app dat bij gebruik en sleep je hem opnieuw.
 - **Alles wissen** downloadt eerst een reservekopie.
 
-## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.14)
+## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.15)
 
 Vindt de ophaler een nieuwe advertentie voor een opgeslagen zoekopdracht, dan stuurt hij een mail en/of een WhatsApp-bericht (`tools/melding.mjs`).
 
 - **Alleen bij een nieuwe treffer**, of opnieuw als de prijs van een gemelde auto verandert (v1.13, met de oude prijs erbij). Geen bericht als er niets nieuws is of bij een storing. Hooguit één bericht per ronde, dus hooguit elke 2 uur.
 - **Niet twee keer dezelfde auto bij dezelfde prijs**: wat gemeld is, staat met de prijs 90 dagen in `results.json` (`gemeld`), ook als een site een advertentie even kwijt is en weer terugzet. Dezelfde auto uit twee uitvoeringen (M Sport en M-Sport) telt één keer. Na een nieuw of gewijzigd profiel meldt de eerste ronde niets; die legt alleen vast wat er al staat.
+- **Geen melding bij een prijs onder € 2.500** (ophaler v1.15, melding v1.2): dat is bij deze auto's een maandbedrag, een bod of prijs op aanvraag. Aanleiding: op 06-10-2026 stuurde de ophaler een melding voor een X5 50e uit 2023 voor € 1.372 bij Marktplaats; de verkoper had een maandbedrag als vaste prijs ingevuld. Krijgt zo'n advertentie later een echte prijs, dan volgt een melding als nieuwe treffer. Dezelfde advertentie van 2dehands en 2ememain wordt één keer gemeld, als 2dehands.
 - **Onderwerp** zonder codetaal: "Nieuw: BMW X5 xDrive45e M Sport · € 46.900" bij één auto, "2 nieuwe X5's" bij meer. In de mail per auto de titel, prijs, km, eerste toelating, site en een link.
 - De weekcontrole stuurt geen storingsberichten, tenzij je het secret `MELD_DIRECT` op `1` zet.
 - Alleen de sites van de ophaler: mobile.de en Gaspedaal niet (zie Beperkingen).

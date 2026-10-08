@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.14
+  KAAP Inkoop-radar – ophaler  v1.15
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md. Sinds v1.12 maakt
   de ophaler daarnaast een melding (melding.html, melding.txt) voor mail en WhatsApp, alleen bij
   een nieuwe treffer die nog niet eerder gemeld is, en sinds v1.13 opnieuw bij een prijswijziging; zie tools/melding.mjs.
+  Sinds v1.15 geen melding meer bij een prijs onder € 2.500: dat is een maandbedrag of bod (melding.mjs v1.2).
 
   Gebruik:  node tools/inkoop-fetch.mjs [profiles.json] [results.json]
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
@@ -321,7 +322,7 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.14', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.15', profiles: {} };
 const newItems = [];
 let fouten = 0;
 
