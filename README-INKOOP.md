@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.73
+# KAAP Inkoop Radar v1.74
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -24,7 +24,7 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.73_2026-10-09.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.74_2026-10-09.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -146,7 +146,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 258 punten:
+De tests draaien zonder netwerk en controleren 257 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -210,7 +210,7 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Kostprijs** = inkoop excl. BTW (bij een BTW-auto gedeeld door 1,19 voor DE, 1,21 voor NL/BE, 1,25 voor DK) + transport + importkosten + advertentiekosten + BPM. Advertentiekosten (v1.70) zijn een vast bedrag per auto, standaard € 42: de € 252 per maand voor Mobilox, Marktplaats en Gaspedaal, verdeeld zoals de gebruiker koos (Instellingen > Kosten en aannames > Advertenties per auto). Ook een NL-auto krijgt dit bedrag.
 - **BPM**: forfaitaire afschrijving is standaard. Vul je een percentage in bij *Afschrijving koerslijst / taxatie*, dan staan beide uitkomsten onder elkaar en gaat de koerslijst-uitkomst de kostprijs in. Voeg de koerslijst of het taxatierapport bij de aangifte.
 - **BPM volgens Autotelex**: vul je die in, dan gaat dat bedrag in de kostprijs in plaats van de indicatie van de app (v1.50).
-- **Verkoopprijs** vul je sinds v1.72 in de tabel zelf in (regel *Verkoopprijs NL*); het veld links in het formulier is weg. *Naar kandidaat* vult hem nog steeds in vanuit de verwachte verkoopprijs NL.
+- **Verkoopprijs** vul je links in het formulier in; de tabel toont hem alleen (v1.74, keuze van de gebruiker op 09-10-2026; in v1.72 en v1.73 was hij in de tabel in te vullen). *Naar kandidaat* vult hem in vanuit de verwachte verkoopprijs NL.
 - **Marge**: vul de verwachte verkoopprijs in Nederland in (incl. BTW). Bij een BTW-auto draag je 21% over de verkoop af; bij een margeauto alleen BTW over verkoop − inkoop (margeregeling). Marge = verkoop − BTW − kostprijs. Het percentage is het rendement op je investering (v1.72, keuze van de gebruiker op 09-10-2026): bij een Nederlandse BTW-auto over de brutoprijs, want die BTW schiet je voor tot je aangifte; bij een BTW-auto uit Duitsland of een ander land over de netto kostprijs, want daar betaal je geen BTW; bij een margeauto over de kostprijs. Het bedrag van de marge en de tabel blijven gelijk. Voorbeeld NL BTW-auto van € 60.000 die je voor € 79.950 verkoopt: marge € 16.446, rendement 27% (over de netto kostprijs zou het 33% zijn). De kolom Marge in de kandidatenlijst kleurt op de doelmarge uit Instellingen (standaard 20%), over hetzelfde bedrag.
 
 ## Onderhoud

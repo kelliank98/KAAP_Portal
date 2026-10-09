@@ -194,7 +194,6 @@ table.t tr.on td{background:var(--sel-bg)}
 .kp tr.kop td{color:var(--muted);font-size:11.5px;padding-top:10px}
 .kp tr.min td{color:var(--muted)}
 .kp tr.som td{border-top:1px solid var(--line2);font-weight:600;padding-top:5px}
-.kp input.kpin{width:110px;padding:3px 8px;border-radius:8px;text-align:right;font-variant-numeric:tabular-nums}
 .bpm dt{color:var(--muted)}
 .bpm dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line)}
@@ -222,7 +221,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.73</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.74</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -332,7 +331,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>BPM volgens Autotelex (€)</span><input type="number" id="k_bpmatx" step="1" min="0" placeholder="leeg = indicatie van de app"></label>
           <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnAtx" type="button" style="width:100%" title="Opent AutotelexPRO en vult de zoekvelden in. Klik op Zoeken en kies de uitvoering; het voordeligste Rest-BPM-bedrag komt hier vanzelf.">BPM uit Autotelex</button></div>
           <label class="f"><span>BTW-status</span><select id="k_btw"><option value="btw">BTW-auto (MwSt. ausweisbar)</option><option value="marge">Marge (differenzbesteuert)</option></select></label>
-          <label class="f" hidden><span>Verwachte verkoopprijs NL (incl. BTW)</span><input type="number" id="k_verkoop" step="500" placeholder="79950"></label><!-- invullen in de kostentabel rechts (v1.72); dit veld bewaart het bedrag -->
+          <label class="f"><span>Verwachte verkoopprijs NL (incl. BTW)</span><input type="number" id="k_verkoop" step="500" placeholder="79950"></label>
           <label class="f"><span>Kilometerstand</span><input type="number" id="k_km" step="1000" placeholder="85000"></label>
           <label class="f"><span>Eerste toelating</span><input type="date" id="k_det"></label>
           <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
@@ -484,7 +483,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.73';
+const APP_VERSIE = '1.74';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -1291,10 +1290,6 @@ const bpmTeBetalen = (r) => (r && !r.fout) ? (r.nettoKoers != null ? r.nettoKoer
 // bedrag (Autotelex als dat is ingevuld, anders de indicatie van de app).
 function renderBpm(){
   const k = leesKandForm();
-  // De verkoopprijs vul je sinds v1.72 in de tabel zelf in (wens gebruiker 09-10-2026). Bij elke toets wordt dit blok
-  // opnieuw opgebouwd; wat je typt en waar de cursor staat, blijven staan.
-  const typ = document.activeElement && document.activeElement.id === 'kp_verkoop' ? document.activeElement : null;
-  const typTekst = typ ? typ.value : (k.verkoop ? String(k.verkoop) : ''), typCursor = typ ? typ.selectionStart : null;
   const el = $('#bpmOut');
   const r = bpmVoor(k);
   const kp = kostprijs(k, r);
@@ -1307,7 +1302,7 @@ function renderBpm(){
     const doel = Math.round(mg.basis * doelPct / 100);
     h += `<div class="help">${mg.marge >= doel ? `Boven je doelmarge van ${doelPct}%` : `Onder je doelmarge van ${doelPct}%: nog ${eur(doel - mg.marge)} te kort`}</div>`;
   } else {
-    h += `<div class="help">${!k.verkoop ? 'Vul hieronder de verkoopprijs in' : 'Vul vraagprijs, CO2 en datum eerste toelating in'}</div>`;
+    h += `<div class="help">${!k.verkoop ? 'Vul de verwachte verkoopprijs in' : 'Vul vraagprijs, CO2 en datum eerste toelating in'}</div>`;
   }
   const btwAuto = k.btw === 'btw', btwp = Math.round((BTW_PCT[k.land]||0.21)*100);
   const bpmLabel = kp.bpmBron === 'autotelex' ? 'BPM (Autotelex)' : kp.bpmBron === 'nl' ? 'BPM (NL-kenteken)'
@@ -1319,9 +1314,11 @@ function renderBpm(){
     + rij(btwAuto ? 'Inkoop excl. BTW' : 'Inkoop', eur(k.prijs ? kp.netto : null))
     + kop('Kosten') + rij(`Transport ${esc(k.land)}`, eur(kp.transport)) + rij('Import, RDW, kenteken', eur(kp.imp)) + rij('Advertenties', eur(kp.adv)) + rij(bpmLabel, kp.bpm == null ? '–' : eur(kp.bpm))
     + rij('Kostprijs', (k.prijs && kp.totaal != null) ? eur(kp.totaal) : '–', 'som');
-  t += kop('Verkoop') + `<tr><td><label for="kp_verkoop">Verkoopprijs NL</label></td><td class="r"><input id="kp_verkoop" class="kpin" type="text" inputmode="numeric" autocomplete="off" placeholder="vul in" value="${esc(typTekst)}"></td></tr>`;
+  // Verkoopprijs vul je in het formulier links in; de tabel toont hem alleen (v1.74, wens gebruiker 09-10-2026,
+  // nadat v1.72/v1.73 hem in de tabel invulbaar maakte).
   if (k.verkoop){
-    t += rij(btwAuto ? 'BTW 21% eraf' : 'BTW over de marge', mg ? '− ' + eur(mg.btw) : '–', 'min')
+    t += kop('Verkoop') + rij('Verkoopprijs NL', eur(k.verkoop))
+      + rij(btwAuto ? 'BTW 21% eraf' : 'BTW over de marge', mg ? '− ' + eur(mg.btw) : '–', 'min')
       + rij(btwAuto ? 'Verkoop excl. BTW' : 'Verkoop na BTW', mg ? eur(k.verkoop - mg.btw) : '–')
       + rij('Marge', mg ? `${eur(mg.marge)} <span class="tag ${kleur}">${pct}</span>` : '–', 'som');
   }
@@ -1333,14 +1330,7 @@ function renderBpm(){
     const app = bpmTeBetalen(r); if (app != null) h += `<div class="help">Indicatie van de app: ${eur(app)}</div>`;
   }
   el.innerHTML = h;
-  if (typ){ const i = $('#kp_verkoop'); i.focus(); if (typCursor != null) i.setSelectionRange(typCursor, typCursor); }
 }
-// Verkoopprijs uit de kostentabel naar het (verborgen) veld k_verkoop; alleen cijfers, punten mogen ("79.950").
-document.addEventListener('input', (e) => {
-  if (!e.target || e.target.id !== 'kp_verkoop') return;
-  $('#k_verkoop').value = String(e.target.value).replace(/[^\d]/g, '');
-  renderBpm();
-});
 // ---------- BPM uit Autotelex (via de KAAP-extensie 1.2, v1.55/v1.56) ----------
 // De extensie opent AutotelexPRO en vult de zoekvelden in met de gegevens van deze kandidaat (eerste
 // toelating, merk, brandstof, automaat, model). De gebruiker klikt op Zoeken en kiest de uitvoering. Staat
@@ -3096,6 +3086,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.74', 'Verkoopprijs vul je weer links in het formulier in; in de tabel Marge en kostprijs staat hij alleen ter info.'],
   ['1.73', 'Je zoekopdrachten en de resultaten van de ophaler staan nu op een eigen plek in GitHub (de tak data), niet meer bij de code van de apps. Daardoor hoef je in GitHub Desktop niet steeds Pull origin te doen. Werkt samen met ophaler v1.17: een treffer telt pas als gemeld als WhatsApp hem heeft aangenomen.'],
   ['1.72', 'Verkoopprijs vul je nu in de tabel Marge en kostprijs in (het veld links is weg). Verkoop NL: staan er binnen 30.000 km minder dan vijf vergelijkbare auto\u2019s, dan telt 50.000 km verschil (zo krijgt ook een auto met heel weinig km een bedrag). Zonder bedrag zegt de kaart waarom: te weinig vergelijkbaar of bouwjaar onbekend. Marge in procenten: bij een Nederlandse BTW-auto over de brutoprijs (de BTW schiet je voor), bij een BTW-auto uit het buitenland over de nettoprijs; het bedrag blijft gelijk.'],
   ['1.71', 'Een prijs onder \u20ac 2.500 (meestal een maandbedrag, zoals een X5 voor \u20ac 1.372 bij Marktplaats) staat grijs met \u201cgeen echte prijs\u201d, onderaan het blok. Hij telt niet als scherp geprijsd en niet als vergelijking, en Naar kandidaat neemt hem niet over. 2ememain is 2dehands in het Frans: dezelfde advertentie staat er nu \u00e9\u00e9n keer, bij 2dehands. Bij een nieuw opgezocht model noemt de app de juiste site (stond altijd op mobile.de).'],
