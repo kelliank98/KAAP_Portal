@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-09T19:20:44.499Z",
+ "generated": "2026-10-09T19:25:58.580Z",
  "tool": "inkoop-fetch 1.16",
  "profiles": {
   "srg94noru15d": {
@@ -10,8 +10,8 @@
      "land": "DE",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T19:20:44.499Z",
+     "url": "https://www.autoscout24.de/lst/bmw?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M+Sport",
+     "checked": "2026-10-09T19:25:58.580Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -22,8 +22,8 @@
      "land": "DE",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T19:20:47.480Z",
+     "url": "https://www.autoscout24.de/lst/bmw?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M-Sport",
+     "checked": "2026-10-09T19:26:01.782Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -34,8 +34,8 @@
      "land": "DE",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-09T19:20:50.557Z",
+     "url": "https://www.kleinanzeigen.de/s-autos/preis::44000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+     "checked": "2026-10-09T19:26:05.020Z",
      "count": null,
      "items": [],
      "error": null,
@@ -46,8 +46,8 @@
      "land": "DE",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-09T19:20:56.217Z",
+     "url": "https://www.kleinanzeigen.de/s-autos/preis::44000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+     "checked": "2026-10-09T19:26:10.440Z",
      "count": null,
      "items": [],
      "error": null,
@@ -58,8 +58,8 @@
      "land": "NL",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T19:21:01.649Z",
+     "url": "https://www.autoscout24.nl/lst/bmw?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M+Sport",
+     "checked": "2026-10-09T19:26:15.780Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -70,8 +70,8 @@
      "land": "NL",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T19:21:04.338Z",
+     "url": "https://www.autoscout24.nl/lst/bmw?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M-Sport",
+     "checked": "2026-10-09T19:26:18.357Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -82,8 +82,8 @@
      "land": "NL",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:07.272Z",
+     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:21.080Z",
      "count": 1,
      "items": [
       {
@@ -116,8 +116,8 @@
      "land": "NL",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:09.583Z",
+     "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:23.248Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -128,8 +128,8 @@
      "land": "BE",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T19:21:11.765Z",
+     "url": "https://www.autoscout24.be/nl/lst/bmw?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M+Sport",
+     "checked": "2026-10-09T19:26:25.367Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -140,8 +140,8 @@
      "land": "BE",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T19:21:14.603Z",
+     "url": "https://www.autoscout24.be/nl/lst/bmw?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=44000&fuel=2&mmmv=13%7C16406%7C%7C&version=M-Sport",
+     "checked": "2026-10-09T19:26:28.083Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -152,8 +152,8 @@
      "land": "BE",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:17.821Z",
+     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:30.597Z",
      "count": 1,
      "items": [],
      "error": null,
@@ -164,8 +164,8 @@
      "land": "BE",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:20.001Z",
+     "url": "https://www.2dehands.be/l/auto-s/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:32.703Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -176,8 +176,8 @@
      "land": "BE",
      "model": "X5",
      "variant": "M Sport",
-     "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:22.007Z",
+     "url": "https://www.2ememain.be/l/autos/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:34.786Z",
      "count": 1,
      "items": [],
      "error": null,
@@ -188,8 +188,127 @@
      "land": "BE",
      "model": "X5",
      "variant": "M-Sport",
-     "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T19:21:24.317Z",
+     "url": "https://www.2ememain.be/l/autos/bmw/#f:618,534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4400000|q:M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:36.950Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    }
+   }
+  },
+  "5u1wp7h4o9ir": {
+   "naam": "Volvo XC60 T8 2023+",
+   "sites": {
+    "as24de:XC60|T8": {
+     "naam": "AutoScout24 DE",
+     "land": "DE",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.autoscout24.de/lst/volvo?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&custtype=D&fregfrom=2023&fregto=2024&kmto=85000&priceto=37000&fuel=2&mmmv=73%7C19124%7C%7C&version=T8",
+     "checked": "2026-10-09T19:26:38.955Z",
+     "count": 1,
+     "items": [
+      {
+       "id": "150567ed-0aa4-41ad-a1b2-2cf9321b8617",
+       "title": "Volvo XC60 XC60 T8 AWD Recharge Plus Bright|ACC|AHK|360CAM",
+       "price": 36970,
+       "km": 64441,
+       "ez": "2023-04",
+       "fuel": "hybride",
+       "co2": 30,
+       "img": "https://prod.pictures.autoscout24.net/listing-images/150567ed-0aa4-41ad-a1b2-2cf9321b8617_47b2b050-ac8f-4f56-88df-1b560ff29238.jpg/250x188.webp",
+       "seller": "Auto Naim GmbH",
+       "city": "Darmstadt",
+       "url": "https://www.autoscout24.de/angebote/volvo-xc60-xc60-t8-awd-recharge-plus-bright-acc-ahk-360cam-elektro-benzin-cat_ma73gr201518ge1346va2204mt5334tr5936-150567ed-0aa4-41ad-a1b2-2cf9321b8617",
+       "first_seen": "2026-10-09T19:26:38.955Z",
+       "prijsverloop": [
+        {
+         "d": "2026-10-09",
+         "p": 36970
+        }
+       ]
+      }
+     ],
+     "error": null,
+     "warn": null
+    },
+    "kleinanzeigen:XC60|T8": {
+     "naam": "Kleinanzeigen",
+     "land": "DE",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.kleinanzeigen.de/s-autos/anbieter:gewerblich/preis::37000/xc60-t8/k0c216+autos.marke_s:volvo+autos.ez_i:2023,2024+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
+     "checked": "2026-10-09T19:26:41.222Z",
+     "count": null,
+     "items": [
+      {
+       "id": "3532625121",
+       "title": "Volvo XC 60 T8 AWD Plus Dark PlugIn PANO MEM NAVI 360",
+       "price": 19989,
+       "km": 68691,
+       "ez": "2024-05",
+       "fuel": "benzine",
+       "co2": null,
+       "seller": null,
+       "city": "Zossen",
+       "img": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/c5/c5ed3e01-7c69-4374-b9c1-164e77ac9b9c?rule=$_35.AUTO",
+       "url": "https://www.kleinanzeigen.de/s-anzeige/volvo-xc-60-t8-awd-plus-dark-plugin-pano-mem-navi-360/3532625121-216-7897",
+       "first_seen": "2026-10-09T19:26:41.222Z",
+       "prijsverloop": [
+        {
+         "d": "2026-10-09",
+         "p": 19989
+        }
+       ]
+      }
+     ],
+     "error": null,
+     "warn": null
+    },
+    "as24nl:XC60|T8": {
+     "naam": "AutoScout24 NL",
+     "land": "NL",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.autoscout24.nl/lst/volvo?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&custtype=D&fregfrom=2023&fregto=2024&kmto=85000&priceto=37000&fuel=2&mmmv=73%7C19124%7C%7C&version=T8",
+     "checked": "2026-10-09T19:26:48.987Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "Versoepel prijs, bouwjaar, km of uitvoering."
+    },
+    "marktplaats:XC60|T8": {
+     "naam": "Marktplaats",
+     "land": "NL",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.marktplaats.nl/l/auto-s/volvo/#f:1301,534,10882,10899,13838|constructionYearFrom:2023|constructionYearTo:2024|mileageTo:85000|PriceCentsTo:3700000|q:T8|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:51.968Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": null
+    },
+    "as24be:XC60|T8": {
+     "naam": "AutoScout24 BE",
+     "land": "BE",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.autoscout24.be/nl/lst/volvo?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&custtype=D&fregfrom=2023&fregto=2024&kmto=85000&priceto=37000&fuel=2&mmmv=73%7C19124%7C%7C&version=T8",
+     "checked": "2026-10-09T19:26:54.945Z",
+     "count": 0,
+     "items": [],
+     "error": null,
+     "warn": "Versoepel prijs, bouwjaar, km of uitvoering."
+    },
+    "twodehands:XC60|T8": {
+     "naam": "2dehands",
+     "land": "BE",
+     "model": "XC60",
+     "variant": "T8",
+     "url": "https://www.2dehands.be/l/auto-s/volvo/#f:1301,534,10882,10899,13838|constructionYearFrom:2023|constructionYearTo:2024|mileageTo:85000|PriceCentsTo:3700000|q:T8|sortBy:SORT_INDEX|sortOrder:DECREASING",
+     "checked": "2026-10-09T19:26:57.661Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -199,8 +318,8 @@
   }
  },
  "volume": {
-  "opgehaald": 1,
-  "moment": "2026-10-09T19:21:26.308Z"
+  "opgehaald": 3,
+  "moment": "2026-10-09T19:26:59.704Z"
  },
  "gemeld": {
   "m2450639879": {
