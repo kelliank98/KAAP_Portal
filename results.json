@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-09T00:26:18.308Z",
+ "generated": "2026-10-09T09:11:52.117Z",
  "tool": "inkoop-fetch 1.16",
  "profiles": {
   "srg94noru15d": {
@@ -11,7 +11,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T00:26:18.309Z",
+     "checked": "2026-10-09T09:11:52.118Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -23,7 +23,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.de/lst/bmw/x5?atype=C&cy=D&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T00:26:23.024Z",
+     "checked": "2026-10-09T09:11:55.474Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -35,7 +35,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-09T00:26:26.303Z",
+     "checked": "2026-10-09T09:11:58.740Z",
      "count": null,
      "items": [],
      "error": null,
@@ -47,7 +47,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.kleinanzeigen.de/s-autos/preis::46000/x5-m-sport/k0c216+autos.marke_s:bmw+autos.ez_i:2022,2023+autos.km_i:,85000+autos.getriebe_s:automatik+autos.fuel_s:hybrid",
-     "checked": "2026-10-09T00:26:32.047Z",
+     "checked": "2026-10-09T09:12:04.400Z",
      "count": null,
      "items": [],
      "error": null,
@@ -59,7 +59,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T00:26:37.386Z",
+     "checked": "2026-10-09T09:12:09.999Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -71,7 +71,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.nl/lst/bmw/x5?atype=C&cy=NL&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T00:26:41.353Z",
+     "checked": "2026-10-09T09:12:13.222Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -83,12 +83,12 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:26:44.733Z",
+     "checked": "2026-10-09T09:12:15.893Z",
      "count": 1,
      "items": [
       {
        "id": "m2450639879",
-       "title": "BMW X5 50e 490PK xDrive M Sport Individual / Frozen Grey / C",
+       "title": "Bmw X5 50e 490PK xDrive M Sport Individual / Frozen Grey / C",
        "price": 1372,
        "km": 64000,
        "ez": "2023",
@@ -117,7 +117,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.marktplaats.nl/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:26:47.301Z",
+     "checked": "2026-10-09T09:12:20.261Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -129,7 +129,7 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M+Sport",
-     "checked": "2026-10-09T00:26:49.361Z",
+     "checked": "2026-10-09T09:12:22.368Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -141,7 +141,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.autoscout24.be/nl/lst/bmw/x5?atype=C&cy=B&ustate=N%2CU&damaged_listing=exclude&sort=age&desc=1&gear=A&fregfrom=2022&fregto=2023&kmto=85000&priceto=46000&fuel=2&version=M-Sport",
-     "checked": "2026-10-09T00:26:53.357Z",
+     "checked": "2026-10-09T09:12:25.456Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -153,11 +153,11 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:26:56.650Z",
-     "count": 2,
+     "checked": "2026-10-09T09:12:29.216Z",
+     "count": 1,
      "items": [],
      "error": null,
-     "warn": "2 van 2 weggelaten: passen niet bij je zoekopdracht."
+     "warn": "1 van 1 weggelaten: past niet bij je zoekopdracht."
     },
     "twodehands:X5|M-Sport": {
      "naam": "2dehands",
@@ -165,7 +165,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.2dehands.be/l/auto-s/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:26:59.188Z",
+     "checked": "2026-10-09T09:12:31.524Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -177,11 +177,11 @@
      "model": "X5",
      "variant": "M Sport",
      "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M+Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:27:01.488Z",
-     "count": 2,
+     "checked": "2026-10-09T09:12:33.920Z",
+     "count": 1,
      "items": [],
      "error": null,
-     "warn": "2 van 2 weggelaten: passen niet bij je zoekopdracht."
+     "warn": "1 van 1 weggelaten: past niet bij je zoekopdracht."
     },
     "twoememain:X5|M-Sport": {
      "naam": "2ememain",
@@ -189,7 +189,7 @@
      "model": "X5",
      "variant": "M-Sport",
      "url": "https://www.2ememain.be/l/autos/bmw/#f:534,10882,13838|constructionYearFrom:2022|constructionYearTo:2023|mileageTo:85000|PriceCentsTo:4600000|q:X5+M-Sport|sortBy:SORT_INDEX|sortOrder:DECREASING",
-     "checked": "2026-10-09T00:27:03.991Z",
+     "checked": "2026-10-09T09:12:36.086Z",
      "count": 0,
      "items": [],
      "error": null,
@@ -200,7 +200,7 @@
  },
  "volume": {
   "opgehaald": 1,
-  "moment": "2026-10-09T00:27:06.122Z"
+  "moment": "2026-10-09T09:12:38.298Z"
  },
  "gemeld": {
   "m2450639879": {
