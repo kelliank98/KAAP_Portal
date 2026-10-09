@@ -222,7 +222,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.72</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.73</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -484,7 +484,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.72';
+const APP_VERSIE = '1.73';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -2605,6 +2605,11 @@ function download(naam, tekst){ const blob = new Blob([tekst], {type:'applicatio
 // zodra de bewaarde zoekopdrachten veranderen, en start hij de workflow Inkoop-radar. De sleutel staat alleen in deze
 // browser (eigen opslag, niet in de reservekopie).
 const GH_REPO = 'kelliank98/KAAP_Portal', GH_KEY = 'kaap_github', GH_WORKFLOW = 'inkoop-radar.yml';
+// Zoekopdrachten en resultaten staan sinds v1.73 op de tak "data" (ophaler v1.17), niet meer op main. Zo zet de ophaler
+// geen commits meer op main en hoef je in GitHub Desktop niet steeds Pull origin te doen (wens gebruiker 09-10-2026).
+// Bestaat die tak nog niet (vóór de eerste run van de nieuwe ophaler), dan schrijft de app nog even naar main.
+const GH_DATA = 'data', RESULTS_DATA_URL = `https://raw.githubusercontent.com/${GH_REPO}/${GH_DATA}/results.json`;
+async function ghTak(){ return (await ghApi('/branches/' + GH_DATA, {}, true)) ? GH_DATA : 'main'; }
 function ghLees(){ try { return JSON.parse(localStorage.getItem(GH_KEY) || '{}') || {}; } catch(e){ return {}; } }
 function ghZet(o){ try { localStorage.setItem(GH_KEY, JSON.stringify(Object.assign(ghLees(), o))); } catch(e){} }
 async function ghApi(pad, opties = {}, mag404){
@@ -2630,7 +2635,8 @@ async function syncProfielen(meld){
   if (location.protocol === 'file:') throw new Error('dit is een lokale kopie van de app; zoekopdrachten gaan alleen vanuit kelliank98.github.io/KAAP_Portal/inkoop.html naar de ophaler');
   const out = profielenExport(), kern = JSON.stringify(out.profiles);
   if (kern === ghLees().laatst){ if (meld) toast('profiles.json is al bijgewerkt.'); return false; }
-  const huidig = await ghApi('/contents/profiles.json', {}, true);
+  const tak = await ghTak();
+  const huidig = await ghApi('/contents/profiles.json?ref=' + tak, {}, true);
   // Nooit een gevulde lijst op GitHub vervangen door een lege: dan staan je zoekopdrachten in een andere browser.
   if (!out.profiles.length && huidig && huidig.content){
     let daar = 0;
@@ -2639,7 +2645,7 @@ async function syncProfielen(meld){
   }
   const inhoud = btoa(unescape(encodeURIComponent(JSON.stringify(out, null, 2) + '\n')));
   const n = out.profiles.length;
-  await ghApi('/contents/profiles.json', {method: 'PUT', body: JSON.stringify({message: `profiles.json bijgewerkt vanuit de Inkoop Radar (${n} profiel${n === 1 ? '' : 'en'})`, content: inhoud, sha: huidig ? huidig.sha : undefined, branch: 'main'})});
+  await ghApi('/contents/profiles.json', {method: 'PUT', body: JSON.stringify({message: `profiles.json bijgewerkt vanuit de Inkoop Radar (${n} profiel${n === 1 ? '' : 'en'})`, content: inhoud, sha: huidig ? huidig.sha : undefined, branch: tak})});
   ghZet({laatst: kern, op: Date.now(), fout: null}); zetGhStatus();
   if (meld) toast(`profiles.json bijgewerkt: ${n} profiel${n === 1 ? '' : 'en'} voor de ophaler.`);
   return true;
@@ -2678,7 +2684,7 @@ function exportProfiles(){
 async function laadResultaten(stil){
   const eigen = (S.instellingen.resultsUrl || '').trim();
   // De app kan in de hoofdmap staan of in een submap; probeer de gangbare plekken.
-  const kandidaten = eigen ? [eigen] : ['results.json', 'inkoop/results.json', '../results.json'];
+  const kandidaten = eigen ? [eigen] : [RESULTS_DATA_URL, 'results.json', 'inkoop/results.json', '../results.json'];
   if (!stil) $('#resMeta').textContent = 'Laden\u2026';
   const mislukt = [];
   for (const url of kandidaten){
@@ -2686,7 +2692,7 @@ async function laadResultaten(stil){
       const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {cache:'no-store'});
       if (!r.ok){ mislukt.push(`${url} (HTTP ${r.status})`); continue; }
       RES = await r.json();
-      if (!eigen && url !== 'results.json'){ S.instellingen.resultsUrl = url; bewaar(); $('#s_resurl').value = url; }
+      if (!eigen && url !== 'results.json' && url !== RESULTS_DATA_URL){ S.instellingen.resultsUrl = url; bewaar(); $('#s_resurl').value = url; }
       renderResultaten();
       $('#s_lastrun').textContent = RES && RES.generated ? new Date(RES.generated).toLocaleString('nl-NL') : 'onbekend';
       zetOphaalStatus();
@@ -3090,6 +3096,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.73', 'Je zoekopdrachten en de resultaten van de ophaler staan nu op een eigen plek in GitHub (de tak data), niet meer bij de code van de apps. Daardoor hoef je in GitHub Desktop niet steeds Pull origin te doen. Werkt samen met ophaler v1.17: een treffer telt pas als gemeld als WhatsApp hem heeft aangenomen.'],
   ['1.72', 'Verkoopprijs vul je nu in de tabel Marge en kostprijs in (het veld links is weg). Verkoop NL: staan er binnen 30.000 km minder dan vijf vergelijkbare auto\u2019s, dan telt 50.000 km verschil (zo krijgt ook een auto met heel weinig km een bedrag). Zonder bedrag zegt de kaart waarom: te weinig vergelijkbaar of bouwjaar onbekend. Marge in procenten: bij een Nederlandse BTW-auto over de brutoprijs (de BTW schiet je voor), bij een BTW-auto uit het buitenland over de nettoprijs; het bedrag blijft gelijk.'],
   ['1.71', 'Een prijs onder \u20ac 2.500 (meestal een maandbedrag, zoals een X5 voor \u20ac 1.372 bij Marktplaats) staat grijs met \u201cgeen echte prijs\u201d, onderaan het blok. Hij telt niet als scherp geprijsd en niet als vergelijking, en Naar kandidaat neemt hem niet over. 2ememain is 2dehands in het Frans: dezelfde advertentie staat er nu \u00e9\u00e9n keer, bij 2dehands. Bij een nieuw opgezocht model noemt de app de juiste site (stond altijd op mobile.de).'],
   ['1.70', 'Advertentiekosten in de kostprijs: een vast bedrag per auto (standaard \u20ac 42, uit \u20ac 252 per maand voor Mobilox, Marktplaats en Gaspedaal), in te stellen bij Kosten en aannames. Staat als regel Advertenties in Marge en kostprijs en telt mee in de marge.'],

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { bouwMelding, korteTitel, testMelding, GEEN_PRIJS_ONDER } from '../tools/melding.mjs';
+import { bouwMelding, korteTitel, testMelding, GEEN_PRIJS_ONDER, nogNietAangekomen, bevestigGemeld } from '../tools/melding.mjs';
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const nu = new Date('2026-10-05T16:17:00Z');
@@ -97,6 +97,53 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13, melding v1.2)', () => {
     assert.match(m.tekst, /2dehands \(BE\)/);
     assert.ok(!m.tekst.includes('2ememain'));
   });
+  test("WhatsApp: ' wordt ’, want CallMeBot liet de gewone apostrof weg (\"zon bericht met de autos\", 09-10-2026)", () => {
+    const t = testMelding(nu).tekst;
+    assert.match(t, /zo’n bericht met de auto’s erin/);
+    assert.ok(!t.includes("'"), t);
+    const m = bouwMelding([auto('a1'), auto('a2')], {}, nu);
+    assert.equal(m.onderwerp, "2 nieuwe X5's", 'het onderwerp van de mail houdt de gewone apostrof');
+    assert.match(m.tekst, /^\*KAAP: 2 nieuwe X5’s\*/);
+    assert.ok(!m.tekst.includes("'"));
+  });
+  test('pas gemeld na aankomst (v1.3): wat in een vorig bericht stond maar niet aankwam, komt opnieuw', () => {
+    const gemeld = { a1: { d: '2026-10-01T10:00:00Z', p: 46900 }, oud: '2026-10-01T10:00:00Z' };
+    const voorstel = { ...gemeld, b2: { d: '2026-10-07T10:00:00Z', p: 41990 }, a1: { d: '2026-10-07T10:00:00Z', p: 44900 } };
+    assert.deepEqual([...nogNietAangekomen(gemeld, voorstel)].sort(), ['a1', 'b2'], 'b2 nieuw en a1 met een nieuwe prijs, niet aangekomen');
+    assert.deepEqual([...nogNietAangekomen(gemeld, undefined)], [], 'geen voorstel: niets');
+    assert.deepEqual([...nogNietAangekomen(voorstel, voorstel)], [], 'alles bevestigd: niets');
+    // De volgende ronde staan a1 (nu € 44.900) en b2 er nog: de ophaler geeft ze als nieuw mee, de melding zegt wat het is.
+    const m = bouwMelding([auto('b2', { price: 41990 }), auto('a1', { price: 44900 })], gemeld, nu);
+    assert.equal(m.aantal, 2);
+    assert.match(m.html, /€ 44\.900 \(was € 46\.900\)/, 'a1 als prijsverlaging t.o.v. wat wél aankwam');
+  });
+  test('bevestigen: na een geslaagde verzending wordt het voorstel het nieuwe gemeld; zonder voorstel verandert niets', () => {
+    const res = { generated: 'x', profiles: {}, gemeld: { a1: { d: 'd1', p: 1 } }, gemeld_voorstel: { a1: { d: 'd1', p: 1 }, b2: { d: 'd2', p: 2 } } };
+    const uit = bevestigGemeld(res);
+    assert.deepEqual(uit, { generated: 'x', profiles: {}, gemeld: { a1: { d: 'd1', p: 1 }, b2: { d: 'd2', p: 2 } } });
+    const zonder = { profiles: {}, gemeld: {} };
+    assert.equal(bevestigGemeld(zonder), zonder);
+    const map = mkdtempSync(join(tmpdir(), 'kaap-bevestig-'));
+    writeFileSync(join(map, 'results.json'), JSON.stringify(res));
+    const log = execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'melding-bevestigen.mjs'), join(map, 'results.json')], { encoding: 'utf8' });
+    assert.match(log, /Bevestigd: 2 auto/);
+    const na = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
+    assert.deepEqual(Object.keys(na.gemeld), ['a1', 'b2']);
+    assert.equal(na.gemeld_voorstel, undefined);
+    assert.match(execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'melding-bevestigen.mjs'), join(map, 'results.json')], { encoding: 'utf8' }), /Niets te bevestigen/);
+  });
+  test('ophaler: een voorstel dat niet aankwam blijft staan, het bevestigde gemeld blijft gelijk', () => {
+    const map = mkdtempSync(join(tmpdir(), 'kaap-voorstel-'));
+    writeFileSync(join(map, 'profiles.json'), JSON.stringify({ profiles: [{ id: 'p1', naam: 'X5', exclude: [], links: [] }] }));
+    const gemeld = { a1: { d: new Date().toISOString(), p: 46900 } };
+    writeFileSync(join(map, 'results.json'), JSON.stringify({ profiles: {}, gemeld, gemeld_voorstel: { ...gemeld, b2: { d: new Date().toISOString(), p: 41990 } } }));
+    const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
+    execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer }, stdio: 'pipe' });
+    const res = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
+    assert.deepEqual(Object.keys(res.gemeld), ['a1'], 'b2 is nooit aangekomen en telt dus niet als gemeld');
+    assert.equal(res.gemeld_voorstel, undefined, 'b2 staat niet meer te koop (geen resultaten): er valt niets opnieuw te melden');
+    assert.match(readFileSync(uitvoer, 'utf8'), /melding=false/);
+  });
   test('titels worden veilig in de mail gezet', () => {
     const m = bouwMelding([auto('x', { title: 'BMW X5 <script>alert(1)</script> & co' })], {}, nu);
     assert.ok(!m.html.includes('<script>'));
@@ -124,7 +171,8 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13, melding v1.2)', () => {
     const uitvoer = join(map, 'output.txt'); writeFileSync(uitvoer, '');
     execFileSync(process.execPath, [resolve(hier, '..', 'tools', 'inkoop-fetch.mjs'), 'profiles.json', 'results.json'], { cwd: map, env: { ...process.env, GITHUB_OUTPUT: uitvoer }, stdio: 'pipe' });
     const res = JSON.parse(readFileSync(join(map, 'results.json'), 'utf8'));
-    assert.equal(res.tool, 'inkoop-fetch 1.16');
+    assert.equal(res.tool, 'inkoop-fetch 1.17');
+    assert.equal(res.gemeld_voorstel, undefined, 'niets te melden: geen voorstel');
     assert.deepEqual(Object.keys(res.gemeld), ['a1'], 'eerder gemelde auto\'s blijven onthouden');
     assert.match(readFileSync(uitvoer, 'utf8'), /melding=false\nonderwerp=\n/);
     assert.equal(existsSync(join(map, 'melding.html')), false);
@@ -141,5 +189,6 @@ describe('Melding bij een nieuwe treffer (ophaler v1.13, melding v1.2)', () => {
     assert.match(readFileSync(uitvoer, 'utf8'), /melding=true\nonderwerp=Testbericht van de KAAP Inkoop Radar\n/);
     assert.match(readFileSync(join(map, 'melding.txt'), 'utf8'), /^\*KAAP: testbericht\*/);
     assert.deepEqual(JSON.parse(readFileSync(join(map, 'results.json'), 'utf8')).gemeld, {});
+    assert.equal(JSON.parse(readFileSync(join(map, 'results.json'), 'utf8')).gemeld_voorstel, undefined, 'een testbericht stelt niets voor');
   });
 });

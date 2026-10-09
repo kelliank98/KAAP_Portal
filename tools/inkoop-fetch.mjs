@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  KAAP Inkoop-radar – ophaler  v1.16
+  KAAP Inkoop-radar – ophaler  v1.17
   Leest profiles.json (geëxporteerd uit de app), haalt per profiel de zoekopdrachten op bij
   AutoScout24 (NL/DE/BE), Marktplaats, 2dehands en Kleinanzeigen, en schrijft results.json.
   Nieuwe advertenties (niet in de vorige results.json) komen in new_items.md. Sinds v1.12 maakt
@@ -9,13 +9,16 @@
   Sinds v1.15 geen melding meer bij een prijs onder € 2.500: dat is een maandbedrag of bod (melding.mjs v1.2).
   v1.16: kortere meldingen. AutoScout24 met nul resultaten terwijl het model bestaat: "Versoepel prijs, bouwjaar, km of uitvoering."
   Marktplaats/2dehands: "2 van 2 weggelaten: passen niet bij je zoekopdracht."
+  v1.17: een treffer telt pas als gemeld als WhatsApp (of de mail) hem heeft aangenomen. De ophaler schrijft zijn
+  voorstel in gemeld_voorstel; de workflow zet het pas na een geslaagde verzending door (tools/melding-bevestigen.mjs).
+  Kwam het niet aan, dan neemt de volgende ronde die auto's opnieuw mee, zolang ze nog te koop staan.
 
   Gebruik:  node tools/inkoop-fetch.mjs [profiles.json] [results.json]
   Vereist:  Node 20 of nieuwer. Geen npm-pakketten.
 */
 import fs from 'node:fs';
 import { apifyAan, haalViaApify } from './bron-apify.mjs';
-import { bouwMelding, testMelding } from './melding.mjs';
+import { bouwMelding, testMelding, nogNietAangekomen } from './melding.mjs';
 
 const [, , PROFILES = 'profiles.json', RESULTS = 'results.json'] = process.argv;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -328,9 +331,11 @@ const HANDLERS = { as24nl: fetchAs24, as24de: fetchAs24, as24be: fetchAs24, mark
 // ---------- Hoofdprogramma ----------
 const src = readJson(PROFILES);
 const prev = readJson(RESULTS, { profiles: {} });
-const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.16', profiles: {} };
+const out = { generated: new Date().toISOString(), tool: 'inkoop-fetch 1.17', profiles: {} };
 const newItems = [];
 let fouten = 0;
+// In een vorig bericht gezet maar (nog) niet aangekomen, bijvoorbeeld tijdens een storing bij CallMeBot (v1.17).
+const nietAangekomen = nogNietAangekomen(prev.gemeld, prev.gemeld_voorstel);
 
 for (const p of (src.profiles || [])) {
   const P = { naam: p.naam, sites: {} };
@@ -363,8 +368,9 @@ for (const p of (src.profiles || [])) {
           : vorige;
         return o;
       });
+      const bron = { profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), siteNaam: l.naam, land: l.land, model: l.model || '' };
+      site.items.filter(it => nietAangekomen.has(it.id)).forEach(it => newItems.push({ ...bron, soort: 'nieuw', ...it }));
       if (prevSite) {
-        const bron = { profiel: p.naam, site: l.naam + (l.model ? ' ' + l.model : ''), siteNaam: l.naam, land: l.land, model: l.model || '' };
         site.items.filter(it => !prevMap.has(it.id)).forEach(it => newItems.push({ ...bron, soort: 'nieuw', ...it }));
         // Prijs veranderd sinds de vorige ronde, omlaag of omhoog.
         site.items.filter(it => { const o = prevMap.get(it.id); return o && o.price && it.price && o.price !== it.price; })
@@ -386,9 +392,11 @@ for (const p of (src.profiles || [])) {
 // Hoeveel advertenties deze ronde opleverde; bij een betaalde bron is dit je kostenbasis.
 const opgehaald = Object.values(out.profiles).reduce((n, pr) => n + Object.values(pr.sites).reduce((m, s2) => m + (s2.items?.length || 0), 0), 0);
 out.volume = {opgehaald, moment: new Date().toISOString()};
-// Melding voor mail en WhatsApp: alleen nieuwe treffers die nog niet eerder gemeld zijn.
+// Melding voor mail en WhatsApp: alleen nieuwe treffers die nog niet eerder gemeld zijn. Wat gemeld is, verandert pas
+// na een geslaagde verzending (v1.17): tot dan staat het voorstel apart in gemeld_voorstel.
 let melding = bouwMelding(newItems, prev.gemeld);
-out.gemeld = melding.gemeld;
+out.gemeld = bouwMelding([], prev.gemeld).gemeld;   // alleen opgeschoond (90 dagen), niets nieuws erbij
+if (melding.melding) out.gemeld_voorstel = melding.gemeld;
 // Testbericht (v1.14): handmatig gestart met "Stuur een testbericht", zonder echte treffer. Er wordt niets als gemeld onthouden.
 if (process.env.TESTBERICHT === 'true' && !melding.melding) melding = { ...melding, ...testMelding() };
 fs.writeFileSync(RESULTS, JSON.stringify(out, null, 1));

@@ -961,13 +961,14 @@ describe('Model als keuzelijst (v1.66)', () => {
 });
 
 describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testbericht starten (v1.67)', () => {
-  function laad(){
+  function laad(takBestaat = true){
     const verzoeken = [];
     const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
       beforeParse(x){ x.scrollTo = () => {}; x.HTMLElement.prototype.scrollIntoView = function(){};
         x.fetch = (adres, o = {}) => { const u = String(adres); verzoeken.push({ u, methode: o.method || 'GET', headers: o.headers || {}, body: o.body ? JSON.parse(o.body) : null });
-          if (u.endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc123' }) });
-          if (u.endsWith('/contents/profiles.json')) return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+          if (u.endsWith('/branches/data')) return Promise.resolve(takBestaat ? { ok: true, status: 200, json: async () => ({ name: 'data' }) } : { ok: false, status: 404, json: async () => ({}) });
+          if (u.includes('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc123' }) });
+          if (u.includes('/contents/profiles.json')) return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
           if (u.endsWith('/dispatches')) return Promise.resolve({ ok: true, status: 204, json: async () => null });
           return Promise.reject(new Error('geen netwerk in test')); }; } }).window;
     return { win, verzoeken };
@@ -982,7 +983,8 @@ describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testberic
     assert.ok(put, 'profiles.json geschreven');
     assert.equal(put.u, 'https://api.github.com/repos/kelliank98/KAAP_Portal/contents/profiles.json');
     assert.equal(put.headers.Authorization, 'Bearer github_pat_TEST');
-    assert.equal(put.body.sha, 'abc123'); assert.equal(put.body.branch, 'main');
+    assert.equal(put.body.sha, 'abc123'); assert.equal(put.body.branch, 'data', 'sinds v1.73 op de tak data, niet op main');
+    assert.ok(verzoeken.some(v => v.methode === 'GET' && v.u.endsWith('/contents/profiles.json?ref=data')), 'de huidige versie komt ook van de tak data');
     assert.match(put.body.message, /profiles\.json bijgewerkt vanuit de Inkoop Radar \(1 profiel\)/);
     const inhoud = JSON.parse(Buffer.from(put.body.content, 'base64').toString('utf8'));
     assert.equal(inhoud.profiles[0].naam, 'BMW X5'); assert.ok(inhoud.profiles[0].links.length > 0);
@@ -1004,6 +1006,31 @@ describe('GitHub-koppeling: zoekopdrachten naar de ophaler, ophaler en testberic
     d.querySelector('#btnOphalerStart').click(); await new Promise(r => setTimeout(r, 30));
     assert.deepEqual(verzoeken.filter(v => v.u.endsWith('/dispatches')).pop().body.inputs, { testbericht: 'false' });
   });
+  test('tak data bestaat nog niet (vóór de eerste run van ophaler v1.17): nog even naar main', async () => {
+    const { win, verzoeken } = laad(false);
+    win.localStorage.setItem('kaap_github', JSON.stringify({ sleutel: 'github_pat_TEST' }));
+    win.eval("S.profielen.push(Object.assign(leesProfielForm(), {id: 'p1', naam: 'BMW X5', merk: 'BMW', model: 'X5'}))");
+    assert.equal(await win.syncProfielen(false), true);
+    const put = verzoeken.find(v => v.methode === 'PUT');
+    assert.equal(put.body.branch, 'main');
+    assert.ok(verzoeken.some(v => v.u.endsWith('/contents/profiles.json?ref=main')));
+  });
+  test('resultaten van de ophaler: eerst van de tak data (raw.githubusercontent.com), daarna de oude plek; niet als instelling bewaard', async () => {
+    const { win, verzoeken } = laad();
+    await new Promise(r => setTimeout(r, 30));   // de app laadt de resultaten bij het openen
+    const adressen = verzoeken.filter(v => /results\.json/.test(v.u)).map(v => v.u.replace(/[?&]t=\d+$/, ''));
+    assert.deepEqual(adressen.slice(0, 2), ['https://raw.githubusercontent.com/kelliank98/KAAP_Portal/data/results.json', 'results.json'], 'eerst de tak data, lukt dat niet dan de oude plek');
+    const gehaald = [];
+    const met = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
+      beforeParse(x){ x.scrollTo = () => {};
+        x.fetch = (adres) => { gehaald.push(String(adres));
+          if (String(adres).startsWith('https://raw.githubusercontent.com/kelliank98/KAAP_Portal/data/results.json?t=')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ generated: '2026-10-09T20:00:00Z', profiles: {} }) });
+          return Promise.reject(new Error('geen netwerk in test')); }; } }).window;
+    await new Promise(r => setTimeout(r, 30));
+    assert.equal(met.eval('RES.generated'), '2026-10-09T20:00:00Z');
+    assert.equal(gehaald.filter(u => /results\.json/.test(u)).length, 1, 'gevonden op de tak data: de oude plek niet meer geprobeerd');
+    assert.ok(!met.eval('S.instellingen.resultsUrl'), 'geen vaste instelling, zodat een latere verhuizing gewoon werkt');
+  });
   test('zonder sleutel: duidelijke melding, niets naar GitHub', async () => {
     const { win, verzoeken } = laad(), d = win.document;
     d.querySelector('#btnOphalerStart').click(); await new Promise(r => setTimeout(r, 30));
@@ -1020,7 +1047,7 @@ describe('Ophaler: nooit een gevulde lijst op GitHub vervangen door een lege (v1
     const win = new JSDOM(html, { url: 'https://kaap.test/inkoop.html', runScripts: 'dangerously', virtualConsole: new VirtualConsole(),
       beforeParse(x){ x.scrollTo = () => {}; x.localStorage.setItem('kaap_github', JSON.stringify({ sleutel: 'github_pat_TEST' }));
         x.fetch = (adres, o = {}) => { verzoeken.push({ u: String(adres), methode: o.method || 'GET' });
-          if (String(adres).endsWith('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc', content: opGithub }) });
+          if (String(adres).includes('/contents/profiles.json') && !o.method) return Promise.resolve({ ok: true, status: 200, json: async () => ({ sha: 'abc', content: opGithub }) });
           return Promise.resolve({ ok: true, status: 200, json: async () => ({}) }); }; } }).window;
     await assert.rejects(win.syncProfielen(true), /in deze browser staan geen bewaarde zoekopdrachten, op GitHub staan er 1/);
     assert.equal(verzoeken.filter(v => v.methode === 'PUT').length, 0, 'profiles.json niet overschreven');

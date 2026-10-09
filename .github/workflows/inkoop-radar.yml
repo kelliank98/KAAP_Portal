@@ -26,8 +26,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PROFILES: profiles.json          # pad in de repo (zelfde map als inkoop.html)
-  RESULTS: results.json
+  # Sinds ophaler v1.17 op de tak "data" (map data/ in de run), niet meer op main: zo komen er geen commits van de
+  # ophaler meer op main en hoeft de gebruiker in GitHub Desktop niet steeds Pull origin te doen (09-10-2026).
+  PROFILES: data/profiles.json
+  RESULTS: data/results.json
 
 jobs:
   ophalen:
@@ -42,6 +44,15 @@ jobs:
         with:
           ref: main
 
+      # De tak data met profiles.json en results.json. De eerste run na v1.17 maakt hem aan met de bestanden van main.
+      - name: Tak data klaarzetten
+        run: bash tools/tak-data.sh
+
+      - uses: actions/checkout@v7
+        with:
+          ref: data
+          path: data
+
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -52,21 +63,13 @@ jobs:
           TESTBERICHT: ${{ inputs.testbericht }}
         run: node tools/inkoop-fetch.mjs "$PROFILES" "$RESULTS"
 
-      - name: results.json vastleggen
-        run: |
-          git config user.name "inkoop-radar"
-          git config user.email "inkoop-radar@users.noreply.github.com"
-          git add "$RESULTS"
-          git diff --cached --quiet || git commit -m "Inkoop-radar: resultaten $(date -u +'%Y-%m-%d %H:%M') UTC"
-          git pull --rebase -X theirs --quiet   # er kan intussen iets gepusht zijn; bij results.json wint deze, nieuwere ronde
-          git push
-
-      # Melding bij een nieuwe treffer: alleen als de ophaler een nieuwe advertentie vond die nog niet
-      # eerder gemeld is (zie tools/melding.mjs). Geen mail bij "niets nieuws" of bij een prijsdaling.
+      # Melding bij een nieuwe treffer: alleen als de ophaler een nieuwe advertentie of een prijswijziging vond die
+      # nog niet gemeld is (zie tools/melding.mjs). Geen bericht bij "niets nieuws".
       # Mail: secrets MAIL_TO (ontvanger), MAIL_USERNAME (Gmail-adres) en MAIL_PASSWORD (app-wachtwoord
       # van dat Gmail-account, niet het gewone wachtwoord). Zonder MAIL_TO wordt deze stap overgeslagen.
       # De mailactie staat vast op één versie (commit), zodat die later niet ongemerkt kan veranderen.
       - name: Mail bij een nieuwe treffer
+        id: mail
         if: ${{ env.MAIL_TO != '' && steps.fetch.outputs.melding == 'true' }}
         continue-on-error: true
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968   # v22
@@ -84,6 +87,7 @@ jobs:
       # WhatsApp bij een nieuwe treffer, via de gratis dienst CallMeBot. Secrets CALLMEBOT_PHONE
       # (jouw nummer met landcode, bijv. +31612345678) en CALLMEBOT_APIKEY (die je van de bot krijgt).
       - name: WhatsApp bij een nieuwe treffer
+        id: whatsapp
         if: ${{ env.CALLMEBOT_PHONE != '' && steps.fetch.outputs.melding == 'true' }}
         continue-on-error: true
         env:
@@ -91,7 +95,7 @@ jobs:
         # CallMeBot antwoordt bij een fout met HTTP 203 en een tekst als "APIKey is invalid" (nagemeten 06-10-2026).
         # Dan faalt deze stap met een waarschuwing in de samenvatting van de run; de rest van de run gaat door.
         run: |
-          antwoord=$(curl -s -G "https://api.callmebot.com/whatsapp.php" \
+          antwoord=$(curl -s --max-time 60 -G "https://api.callmebot.com/whatsapp.php" \
             --data-urlencode "phone=$CALLMEBOT_PHONE" \
             --data-urlencode "apikey=$CALLMEBOT_APIKEY" \
             --data-urlencode "text@melding.txt" \
@@ -106,3 +110,21 @@ jobs:
             echo "::warning title=WhatsApp niet verstuurd::CallMeBot gaf HTTP $code: $tekst"
             exit 1
           fi
+
+      # Een treffer telt pas als gemeld als WhatsApp of de mail hem echt heeft aangenomen (ophaler v1.17). Lukte dat
+      # niet, dan blijft hij in results.json als voorstel staan en neemt de volgende ronde hem opnieuw mee.
+      - name: Melding bevestigen
+        if: ${{ steps.fetch.outputs.melding == 'true' && (steps.mail.outcome == 'success' || steps.whatsapp.outcome == 'success') }}
+        continue-on-error: true
+        run: node tools/melding-bevestigen.mjs "$RESULTS"
+
+      # Pas na het versturen vastleggen, zodat results.json weet of het bericht is aangekomen.
+      - name: results.json vastleggen (tak data)
+        working-directory: data
+        run: |
+          git config user.name "inkoop-radar"
+          git config user.email "inkoop-radar@users.noreply.github.com"
+          git add results.json
+          git diff --cached --quiet || git commit -m "Inkoop-radar: resultaten $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase -X theirs --quiet origin data   # de app kan intussen profiles.json hebben bijgewerkt; bij results.json wint deze ronde
+          git push origin HEAD:data

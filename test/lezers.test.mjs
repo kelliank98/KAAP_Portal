@@ -1089,7 +1089,8 @@ describe('Modelnamen op alle sites (v1.64)', () => {
     const tax = {props: {pageProps: {taxonomy: {modelLines: [{id: 114, label: 'GLE (alle)', makeId: 47}, {id: 115, label: 'GLC (alle)', makeId: 47}],
       models: {47: [{value: 20920, label: 'GLE 350', makeId: 47, modelLineId: 114}]}}}}};
     const gevraagd = [];
-    const { w, G } = laadApp({ fetch: (adres) => { const doel = new URL(String(adres)).searchParams.get('url'); gevraagd.push(doel);
+    // Alleen verzoeken via de proxy tellen; bij het openen haalt de app ook results.json van de tak data (v1.73).
+    const { w, G } = laadApp({ fetch: (adres) => { const doel = new URL(String(adres)).searchParams.get('url'); if (doel) gevraagd.push(doel);
       return Promise.resolve({ ok: true, status: 200, text: async () => '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify(tax) + '</script>' }); } });
     assert.equal(await w.leerAs24('https://www.autoscout24.de/lst/mercedes-benz/gle-coupe?atype=C', 'Mercedes-Benz', 'GLE Coupé'), true);
     assert.equal(gevraagd[0], 'https://www.autoscout24.de/lst/mercedes-benz?atype=C', 'modellijst van het merk');

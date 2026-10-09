@@ -1,5 +1,5 @@
 /*
-  KAAP Inkoop-radar – melding bij een nieuwe treffer  v1.2
+  KAAP Inkoop-radar – melding bij een nieuwe treffer  v1.3
   Maakt van de nieuwe advertenties van één ronde van de ophaler een kort mailonderwerp, een mail (HTML)
   en een WhatsApp-tekst. Geen bericht bij "niets nieuws". Dezelfde auto wordt alleen opnieuw gemeld als
   de prijs veranderd is (v1.1, op verzoek: "alleen bij prijswijziging"); wat gemeld is, staat met de
@@ -7,6 +7,9 @@
   v1.2: geen melding bij een prijs onder € 2.500. Dat is bij deze auto's een maandbedrag, een bod of prijs
   op aanvraag (op 06-10-2026 kwam zo een X5 voor € 1.372 binnen). Zelfde grens als GEEN_PRIJS_ONDER in
   inkoop.html. Krijgt zo'n advertentie later een echte prijs, dan volgt een melding als nieuwe treffer.
+  v1.3: een treffer telt pas als gemeld als het bericht is aangekomen (zie nogNietAangekomen en bevestigGemeld;
+  wens gebruiker 09-10-2026 na de storing bij CallMeBot van 06 t/m 09-10). In de WhatsApp-tekst wordt ' een ’:
+  CallMeBot liet de gewone apostrof weg ("zon bericht met de autos").
 */
 const APP_URL = 'https://kelliank98.github.io/KAAP_Portal/inkoop.html';
 const BEWAAR_DAGEN = 90;     // zo lang onthoudt de ophaler wat hij meldde
@@ -16,6 +19,7 @@ export const GEEN_PRIJS_ONDER = 2500;   // gelijk aan inkoop.html
 export const geenEchtePrijs = (prijs) => +prijs > 0 && +prijs < GEEN_PRIJS_ONDER;
 
 const eur = (n) => '€ ' + Math.round(n).toLocaleString('nl-NL');
+const waTekst = (s) => String(s).replace(/'/g, '\u2019');   // CallMeBot laat ' weg, ’ komt wel aan
 const kmTekst = (n) => Math.round(n).toLocaleString('nl-NL') + ' km';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -95,7 +99,21 @@ ${blokken}
   if (lijst.length > MAX_WA) tekst += `\n\n+ ${lijst.length - MAX_WA} meer in de app.`;
   if (tekst.length > MAX_WA_TEKENS) tekst = tekst.slice(0, MAX_WA_TEKENS - 3) + '...';
 
-  return { melding: true, onderwerp, html, tekst, aantal: lijst.length, gemeld: bewaard };
+  return { melding: true, onderwerp, html, tekst: waTekst(tekst), aantal: lijst.length, gemeld: bewaard };
+}
+
+// Wat in een vorig bericht stond maar niet is aangekomen: in gemeld_voorstel en nog niet (met die prijs) in gemeld.
+// De ophaler neemt die auto's de volgende ronde opnieuw mee, zolang ze nog te koop staan.
+export function nogNietAangekomen(gemeld = {}, voorstel = {}) {
+  const prijs = (v) => (v && typeof v === 'object' && v.p != null) ? v.p : null;
+  return new Set(Object.keys(voorstel || {}).filter(id => !(gemeld || {})[id] || prijs(gemeld[id]) !== prijs(voorstel[id])));
+}
+
+// Na een geslaagde WhatsApp of mail (workflow-stap "Melding bevestigen"): het voorstel wordt het nieuwe gemeld.
+export function bevestigGemeld(res) {
+  if (!res || !res.gemeld_voorstel) return res;
+  const { gemeld_voorstel, ...rest } = res;
+  return { ...rest, gemeld: gemeld_voorstel };
 }
 
 // Testbericht: zelfde opbouw als een echte melding, zodat je de mail en WhatsApp kunt controleren.
@@ -104,7 +122,7 @@ export function testMelding(nu = new Date()) {
   return {
     melding: true, aantal: 0, onderwerp: 'Testbericht van de KAAP Inkoop Radar',
     html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.45;color:#111"><p style="margin:0 0 6px"><b>Testbericht</b> · ${esc(moment)}</p><p style="margin:0">De melding werkt. Bij een nieuwe treffer of een prijswijziging krijg je zo'n bericht met de auto's erin.</p><p style="margin:18px 0 0"><a href="${APP_URL}">Open de Inkoop Radar</a></p></div>\n`,
-    tekst: `*KAAP: testbericht*\n\nDe melding werkt (${moment}). Bij een nieuwe treffer of een prijswijziging krijg je zo'n bericht met de auto's erin.`,
+    tekst: waTekst(`*KAAP: testbericht*\n\nDe melding werkt (${moment}). Bij een nieuwe treffer of een prijswijziging krijg je zo'n bericht met de auto's erin.`),
   };
 }
 

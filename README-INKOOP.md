@@ -1,4 +1,4 @@
-# KAAP Inkoop Radar v1.72
+# KAAP Inkoop Radar v1.73
 
 Eén pagina (`inkoop.html`) die je zoekcriteria vertaalt naar zoeklinks op twaalf sites, resultaten toont die de ophaler, de proxy of de KAAP-extensie heeft gevonden, en per auto een BPM-, kostprijs- en marge-indicatie geeft. Opslag in de browser (localStorage), exporteerbaar als JSON.
 
@@ -14,15 +14,17 @@ De wijzigingsgeschiedenis staat in de app zelf: klik op het versienummer in de k
 | `test/fixtures/` | bewaarde voorbeeldpagina's van de sites, waar de tests tegen draaien | `test/fixtures/` |
 | `test/e2e-extensie.mjs` | test van de extensie in een echte Chrome (`npm run test:browser`) | `test/` |
 | `package.json` | alleen voor de test (`npm test`), de app heeft geen pakketten nodig | hoofdmap |
-| `profiles.json` | je zoekprofielen, geëxporteerd uit de app | hoofdmap |
-| `results.json` | gevonden advertenties, geschreven door de ophaler | wordt door de workflow aangemaakt |
+| `profiles.json` | je zoekprofielen; de app schrijft ze zelf (met je GitHub-sleutel) | tak **data** (sinds v1.73) |
+| `results.json` | gevonden advertenties, geschreven door de ophaler | tak **data** (sinds ophaler v1.17) |
+| `tools/tak-data.sh` | maakt de tak data één keer aan (eerste run na v1.17) | `tools/` |
+| `tools/melding-bevestigen.mjs` | zet een melding pas als gemeld na een geslaagde WhatsApp of mail | `tools/` |
 | `tools/inkoop-fetch.mjs` | de ophaler (v1.14, Node 22 in de workflow, geen pakketten) | `tools/` |
 | `tools/melding.mjs` | maakt de mail en het WhatsApp-bericht bij een nieuwe treffer | `tools/` |
 | `tools/kaap-proxy.js` | Cloudflare Worker (v1.02) voor live zoeken vanuit de app | Cloudflare, niet in Pages |
 | `tools/kaap-check.mjs` | weekcontrole (v1.02) van sites, parsers en proxy | `tools/` |
 | `.github/workflows/inkoop-radar.yml` | draait de ophaler elke 2 uur, dag en nacht (sinds 05-10-2026 weer; van 14-09 tot 05-10 stond het uit). Met de hand: *Actions > Inkoop-radar > Run workflow* | `.github/workflows/` |
 | `.github/workflows/weekcontrole.yml` | draait de weekcontrole elke zondag | `.github/workflows/` |
-| `KAAP-Inkoop-Radar-v1.72_2026-10-09.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
+| `KAAP-Inkoop-Radar-v1.73_2026-10-09.html` | gedateerde archiefkopie van de app | bewaren, niet plaatsen |
 
 ## Uiterlijk
 
@@ -144,7 +146,7 @@ npm install     # eenmalig, installeert alleen jsdom
 npm test
 ```
 
-De tests draaien zonder netwerk en controleren 252 punten:
+De tests draaien zonder netwerk en controleren 258 punten:
 
 - `test/inkoop.test.mjs` laadt de app in jsdom: BPM-referentiegevallen per tarieftabel (benzine, diesel, PHEV, diesel-PHEV, EV vóór en na 2025, NEDC/WLTP rond 1 juli 2020), forfaitaire afschrijving, koerslijst-afschrijving, kostprijs en marge per land, prijsbenchmark, de URL en API-URL per site voor een vast profiel (BMW X5 M Sport), model-koppelingen, parserfouten, sitestatus, ophaler-status en de UI (versienummer op drie plekken gelijk, opslag in localStorage, export van `profiles.json`).
 - `test/lezers.test.mjs` test de paginalezers tegen bewaarde pagina's in `test/fixtures/`: zoekresultaten van mobile.de (ook bij weinig of geen treffers), Gaspedaal en Kleinanzeigen (nieuwe opbouw), advertenties van AutoScout24 DE/NL/BE en Smyle, Marktplaats, 2dehands, Kleinanzeigen en mobile.de, het zoeken met en zonder extensie, het leren van het modelnummer, de controlepagina, *Naar kandidaat*, *Kandidaten bijwerken*, de verwachte verkoopprijs NL en het gelijk houden van twee tabbladen.
@@ -220,13 +222,24 @@ Merk en model zijn vrije velden; het model mag leeg blijven (dan zoek je het hel
 - **Bladwijzer prijshistorie** (AutoScout24) heeft een eigen versienummer dat in zijn URL meegaat. Is de jouwe ouder, dan zegt de app dat bij gebruik en sleep je hem opnieuw.
 - **Alles wissen** downloadt eerst een reservekopie.
 
-## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.16)
+## Tak data: geen Pull origin meer (v1.73, ophaler v1.17)
+
+Tot ophaler v1.16 zette de ophaler elke ronde een commit met `results.json` op main (zo'n vijf per dag), en de app een commit met `profiles.json`. Daardoor liep de kopie op de Mac steeds achter en moest de gebruiker in GitHub Desktop telkens *Pull origin* doen, ook voor de Factuur-App (zelfde repo). Sinds 09-10-2026 staan `profiles.json` en `results.json` op een eigen tak **data**:
+- De workflow haalt main (code) en de tak data (in de map `data/`) op. De ophaler leest `data/profiles.json` en schrijft `data/results.json`, en legt die vast op de tak data.
+- De eerste run na deze versie maakt de tak data aan met `profiles.json` en `results.json` zoals ze op main stonden (`tools/tak-data.sh`). Bestaat de tak al, dan doet dat script niets.
+- De app leest de resultaten van `https://raw.githubusercontent.com/kelliank98/KAAP_Portal/data/results.json` (GitHub bewaart dat tot 5 minuten in een cache). Lukt dat niet, dan probeert hij nog de oude plek naast de app. Zijn sleutel schrijft `profiles.json` naar de tak data. Zolang die tak nog niet bestaat, schrijft hij nog naar main.
+- Op main verandert nu alleen nog wat de gebruiker zelf pusht. De weekcontrole zet nog één keer per week `STATUS.md` op main.
+- De oude `profiles.json` en `results.json` op main blijven staan maar worden niet meer bijgewerkt. Ze kunnen weg zodra de tak data een week goed werkt.
+
+## Melding bij een nieuwe treffer: mail en WhatsApp (ophaler v1.17)
 
 Vindt de ophaler een nieuwe advertentie voor een opgeslagen zoekopdracht, dan stuurt hij een mail en/of een WhatsApp-bericht (`tools/melding.mjs`).
 
 - **Alleen bij een nieuwe treffer**, of opnieuw als de prijs van een gemelde auto verandert (v1.13, met de oude prijs erbij). Geen bericht als er niets nieuws is of bij een storing. Hooguit één bericht per ronde, dus hooguit elke 2 uur.
 - **Niet twee keer dezelfde auto bij dezelfde prijs**: wat gemeld is, staat met de prijs 90 dagen in `results.json` (`gemeld`), ook als een site een advertentie even kwijt is en weer terugzet. Dezelfde auto uit twee uitvoeringen (M Sport en M-Sport) telt één keer. Na een nieuw of gewijzigd profiel meldt de eerste ronde niets; die legt alleen vast wat er al staat.
 - **Geen melding bij een prijs onder € 2.500** (ophaler v1.15, melding v1.2): dat is bij deze auto's een maandbedrag, een bod of prijs op aanvraag. Aanleiding: op 06-10-2026 stuurde de ophaler een melding voor een X5 50e uit 2023 voor € 1.372 bij Marktplaats; de verkoper had een maandbedrag als vaste prijs ingevuld. Krijgt zo'n advertentie later een echte prijs, dan volgt een melding als nieuwe treffer. Dezelfde advertentie van 2dehands en 2ememain wordt één keer gemeld, als 2dehands.
+- **Pas gemeld na aankomst** (ophaler v1.17, melding v1.3, wens van de gebruiker na de storing bij CallMeBot van 06 tot en met 09-10-2026): de ophaler zet wat hij wil melden in `gemeld_voorstel`. Pas als WhatsApp (of de mail) het bericht aanneemt, zet de workflow-stap *Melding bevestigen* dat door naar `gemeld`. Kwam het niet aan, dan neemt de volgende ronde die auto's opnieuw mee, zolang ze nog te koop staan.
+- **Apostrof**: CallMeBot laat de gewone ' weg ("zon bericht met de autos"); in de WhatsApp-tekst staat daarom ’ (melding v1.3). Het onderwerp van de mail houdt de gewone apostrof.
 - **Onderwerp** zonder codetaal: "Nieuw: BMW X5 xDrive45e M Sport · € 46.900" bij één auto, "2 nieuwe X5's" bij meer. In de mail per auto de titel, prijs, km, eerste toelating, site en een link.
 - De weekcontrole stuurt geen storingsberichten, tenzij je het secret `MELD_DIRECT` op `1` zet.
 - Alleen de sites van de ophaler: mobile.de en Gaspedaal niet (zie Beperkingen).
