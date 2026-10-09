@@ -194,6 +194,7 @@ table.t tr.on td{background:var(--sel-bg)}
 .kp tr.kop td{color:var(--muted);font-size:11.5px;padding-top:10px}
 .kp tr.min td{color:var(--muted)}
 .kp tr.som td{border-top:1px solid var(--line2);font-weight:600;padding-top:5px}
+.kp input.kpin{width:110px;padding:3px 8px;border-radius:8px;text-align:right;font-variant-numeric:tabular-nums}
 .bpm dt{color:var(--muted)}
 .bpm dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line)}
@@ -221,7 +222,7 @@ details summary{cursor:pointer;font-weight:500}
 <header class="top">
   <div class="hwrap">
     <h1 class="brand"><b class="merknaam">KAAP</b><span>Inkoop Radar</span></h1>
-    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.71</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
+    <div class="top-r"><span class="ext" id="hulpStatus" hidden title="KAAP-extensie actief: Zoeken haalt mobile.de en Gaspedaal mee op. Klik voor Instellingen.">extensie</span><span class="ver" id="ver" title="Wat er is veranderd">v1.72</span><span class="dot" id="ophaalStatus" title="Ophaler: nog niet geladen"></span></div>
     <nav>
       <button class="on" data-tab="profielen">Zoeken</button>
       <button data-tab="kandidaten">Kandidaten</button>
@@ -331,7 +332,7 @@ details summary{cursor:pointer;font-weight:500}
           <label class="f"><span>BPM volgens Autotelex (€)</span><input type="number" id="k_bpmatx" step="1" min="0" placeholder="leeg = indicatie van de app"></label>
           <div class="f"><span>&nbsp;</span><button class="btn sec" id="btnAtx" type="button" style="width:100%" title="Opent AutotelexPRO en vult de zoekvelden in. Klik op Zoeken en kies de uitvoering; het voordeligste Rest-BPM-bedrag komt hier vanzelf.">BPM uit Autotelex</button></div>
           <label class="f"><span>BTW-status</span><select id="k_btw"><option value="btw">BTW-auto (MwSt. ausweisbar)</option><option value="marge">Marge (differenzbesteuert)</option></select></label>
-          <label class="f"><span>Verwachte verkoopprijs NL (incl. BTW)</span><input type="number" id="k_verkoop" step="500" placeholder="79950"></label>
+          <label class="f" hidden><span>Verwachte verkoopprijs NL (incl. BTW)</span><input type="number" id="k_verkoop" step="500" placeholder="79950"></label><!-- invullen in de kostentabel rechts (v1.72); dit veld bewaart het bedrag -->
           <label class="f"><span>Kilometerstand</span><input type="number" id="k_km" step="1000" placeholder="85000"></label>
           <label class="f"><span>Eerste toelating</span><input type="date" id="k_det"></label>
           <label class="f"><span>Brandstof</span><select id="k_brandstof"><option value="benzine">Benzine</option><option value="diesel">Diesel</option><option value="hybride">Hybride benzine</option><option value="hybride_diesel">Hybride diesel</option><option value="elektrisch">Elektrisch</option></select></label>
@@ -483,7 +484,7 @@ details summary{cursor:pointer;font-weight:500}
    forfaitaire tabel (Belastingdienst, geraadpleegd 09-2026).
    Test: npm test   (zie test/inkoop.test.mjs, vereist jsdom)
    ======================================================================= */
-const APP_VERSIE = '1.71';
+const APP_VERSIE = '1.72';
 // Versie van de drie bladwijzers. Gaat mee in hun URL (bv=); een oudere bladwijzer krijgt een melding.
 const BLADWIJZER_VERSIE = 2;
 const STORE_KEY = 'kaap_inkoop_v1';
@@ -793,15 +794,19 @@ function kostprijs(k, bpm){
 // Verkoop in Nederland. BTW-auto: 21% over de hele verkoopprijs. Margeauto: BTW alleen over
 // de winstmarge (verkoop − inkoopprijs van de auto), volgens de margeregeling.
 // Marge = verkoop − af te dragen BTW − kostprijs (inkoop excl., transport, import, advertenties, BPM).
+// Het percentage is het rendement op de investering. Keuze gebruiker 09-10-2026: bij een Nederlandse BTW-auto telt de
+// brutoprijs (de BTW schiet je voor tot je aangifte), bij een BTW-auto uit Duitsland of een ander land de nettoprijs
+// (daar betaal je geen BTW, die wordt verlegd). Het bedrag van de marge blijft hetzelfde; de tabel ook.
 function margeVoor(k, kp){
   const verkoop = +k.verkoop || 0;
   if (!verkoop || !kp || kp.totaal == null) return null;
   const btw = k.btw === 'btw' ? verkoop - verkoop / 1.21 : Math.max(0, verkoop - (+k.prijs || 0)) * 21 / 121;
   const marge = verkoop - btw - kp.totaal;
-  return {verkoop, btw, marge, pct: kp.totaal ? marge / kp.totaal * 100 : null};
+  const basis = kp.totaal + ((k.land || 'DE') === 'NL' && k.btw === 'btw' ? (+k.prijs || 0) - kp.netto : 0);
+  return {verkoop, btw, marge, basis, pct: basis ? marge / basis * 100 : null};
 }
 // Kleur van de marge (wens gebruiker 05-10-2026): groen als de doelmarge uit Instellingen gehaald wordt
-// (een percentage van de kostprijs), oranje tot 10%, daaronder rood.
+// (een percentage van de investering, zie margeVoor), oranje tot 10%, daaronder rood.
 const MARGE_ROOD_ONDER = 10;
 function margeKleur(mg){
   if (!mg || mg.marge == null || mg.pct == null) return '';
@@ -1286,6 +1291,10 @@ const bpmTeBetalen = (r) => (r && !r.fout) ? (r.nettoKoers != null ? r.nettoKoer
 // bedrag (Autotelex als dat is ingevuld, anders de indicatie van de app).
 function renderBpm(){
   const k = leesKandForm();
+  // De verkoopprijs vul je sinds v1.72 in de tabel zelf in (wens gebruiker 09-10-2026). Bij elke toets wordt dit blok
+  // opnieuw opgebouwd; wat je typt en waar de cursor staat, blijven staan.
+  const typ = document.activeElement && document.activeElement.id === 'kp_verkoop' ? document.activeElement : null;
+  const typTekst = typ ? typ.value : (k.verkoop ? String(k.verkoop) : ''), typCursor = typ ? typ.selectionStart : null;
   const el = $('#bpmOut');
   const r = bpmVoor(k);
   const kp = kostprijs(k, r);
@@ -1295,10 +1304,10 @@ function renderBpm(){
   const pct = mg && mg.pct != null ? Math.round(mg.pct) + '%' : '–';
   let h = `<div class="margeregel"><span class="muted" style="font-size:13px">Marge</span><span class="tag pct ${kleur}">${pct}</span>${mg ? `<span class="bedrag">${eur(mg.marge)}</span>` : ''}</div>`;
   if (mg){
-    const doel = Math.round(kp.totaal * doelPct / 100);
+    const doel = Math.round(mg.basis * doelPct / 100);
     h += `<div class="help">${mg.marge >= doel ? `Boven je doelmarge van ${doelPct}%` : `Onder je doelmarge van ${doelPct}%: nog ${eur(doel - mg.marge)} te kort`}</div>`;
   } else {
-    h += `<div class="help">${!k.verkoop ? 'Vul de verwachte verkoopprijs in' : 'Vul vraagprijs, CO2 en datum eerste toelating in'}</div>`;
+    h += `<div class="help">${!k.verkoop ? 'Vul hieronder de verkoopprijs in' : 'Vul vraagprijs, CO2 en datum eerste toelating in'}</div>`;
   }
   const btwAuto = k.btw === 'btw', btwp = Math.round((BTW_PCT[k.land]||0.21)*100);
   const bpmLabel = kp.bpmBron === 'autotelex' ? 'BPM (Autotelex)' : kp.bpmBron === 'nl' ? 'BPM (NL-kenteken)'
@@ -1310,9 +1319,9 @@ function renderBpm(){
     + rij(btwAuto ? 'Inkoop excl. BTW' : 'Inkoop', eur(k.prijs ? kp.netto : null))
     + kop('Kosten') + rij(`Transport ${esc(k.land)}`, eur(kp.transport)) + rij('Import, RDW, kenteken', eur(kp.imp)) + rij('Advertenties', eur(kp.adv)) + rij(bpmLabel, kp.bpm == null ? '–' : eur(kp.bpm))
     + rij('Kostprijs', (k.prijs && kp.totaal != null) ? eur(kp.totaal) : '–', 'som');
+  t += kop('Verkoop') + `<tr><td><label for="kp_verkoop">Verkoopprijs NL</label></td><td class="r"><input id="kp_verkoop" class="kpin" type="text" inputmode="numeric" autocomplete="off" placeholder="vul in" value="${esc(typTekst)}"></td></tr>`;
   if (k.verkoop){
-    t += kop('Verkoop') + rij('Verkoopprijs NL', eur(k.verkoop))
-      + rij(btwAuto ? 'BTW 21% eraf' : 'BTW over de marge', mg ? '− ' + eur(mg.btw) : '–', 'min')
+    t += rij(btwAuto ? 'BTW 21% eraf' : 'BTW over de marge', mg ? '− ' + eur(mg.btw) : '–', 'min')
       + rij(btwAuto ? 'Verkoop excl. BTW' : 'Verkoop na BTW', mg ? eur(k.verkoop - mg.btw) : '–')
       + rij('Marge', mg ? `${eur(mg.marge)} <span class="tag ${kleur}">${pct}</span>` : '–', 'som');
   }
@@ -1324,7 +1333,14 @@ function renderBpm(){
     const app = bpmTeBetalen(r); if (app != null) h += `<div class="help">Indicatie van de app: ${eur(app)}</div>`;
   }
   el.innerHTML = h;
+  if (typ){ const i = $('#kp_verkoop'); i.focus(); if (typCursor != null) i.setSelectionRange(typCursor, typCursor); }
 }
+// Verkoopprijs uit de kostentabel naar het (verborgen) veld k_verkoop; alleen cijfers, punten mogen ("79.950").
+document.addEventListener('input', (e) => {
+  if (!e.target || e.target.id !== 'kp_verkoop') return;
+  $('#k_verkoop').value = String(e.target.value).replace(/[^\d]/g, '');
+  renderBpm();
+});
 // ---------- BPM uit Autotelex (via de KAAP-extensie 1.2, v1.55/v1.56) ----------
 // De extensie opent AutotelexPRO en vult de zoekvelden in met de gegevens van deze kandidaat (eerste
 // toelating, merk, brandstof, automaat, model). De gebruiker klikt op Zoeken en kiest de uitvoering. Staat
@@ -1559,18 +1575,22 @@ function scherpPrijs(it, model, idx, land){
 // anders het vermogen ±12%), zelfde brandstof, km ±30.000 en niet over de facelift heen (faceliftjaar per
 // zoekprofiel). Eerst hetzelfde bouwjaar; zijn dat er minder dan vijf, dan aangevuld met de goedkoopste uit
 // een jaar ouder of nieuwer. Van die vijf goedkoopste is de derde de verkoopprijs. Minder dan vijf: geen bedrag.
-const NL_TOP = 5, NL_PLEK = 3, NL_KM = 30000;
+// Sinds v1.72 (keuze gebruiker 09-10-2026): zijn er binnen 30.000 km minder dan vijf, dan telt 50.000 km verschil.
+// Zo krijgt ook een auto met heel weinig km een bedrag (een X5 50e met 4.818 km: 15 vergelijkbaar in plaats van 3).
+// Zo'n bedrag valt eerder laag uit; de kaart zegt dat de km ruimer is genomen. De auto's van Gaspedaal zelf komen nog
+// steeds uit de zoekopdracht met je km-grens plus 30.000 km, dus naar boven toe blijft het daarbij.
+const NL_TOP = 5, NL_PLEK = 3, NL_KM = 30000, NL_KM_RUIM = 50000;
 function motorCode(titel){
   const m = String(titel || '').toLowerCase().match(/(?:^|[^a-z0-9])(?:xdr(?:ive)?|sdr(?:ive)?|edrive|m)?\s?(\d{2,3})\s?(de|d|e|i|li|tdi|tfsi|tsi|cdi|hybrid)(?![a-z0-9])/);
   return m ? m[1] + m[2] : null;
 }
-function nlVergelijkbaar(it, r, facelift){
+function nlVergelijkbaar(it, r, facelift, km){
   if (!r.price || geenEchtePrijs(r.price) || (it.id && r.id === it.id) || (it.url && r.url === it.url)) return false;
   if (it.fuel && r.fuel && it.fuel !== r.fuel) return false;
   const j1 = +String(it.ez).slice(0, 4), j2 = r.ez ? +String(r.ez).slice(0, 4) : null;
   if (!j2 || Math.abs(j1 - j2) > 1) return false;
   if (facelift && (j1 >= facelift) !== (j2 >= facelift)) return false;
-  if (it.km != null && r.km != null && Math.abs(it.km - r.km) > NL_KM) return false;
+  if (it.km != null && r.km != null && Math.abs(it.km - r.km) > (km || NL_KM)) return false;
   const m1 = motorCode(it.title), m2 = motorCode(r.title);
   if (m1 && m2) return m1 === m2;
   if (it.kw && r.kw) return Math.abs(it.kw - r.kw) <= it.kw * 0.12;
@@ -1579,15 +1599,25 @@ function nlVergelijkbaar(it, r, facelift){
 function nlVerkoop(it, ref){
   if (!it.ez || !ref || !ref.items || !ref.items.length) return null;
   const jaar = +String(it.ez).slice(0, 4), goedkoop = (a, b) => a.price - b.price;
-  // Dezelfde auto staat op Gaspedaal soms twee keer (andere titel, zelfde bouwjaar, km en prijs): één keer tellen.
-  const uniek = new Map();
-  ref.items.filter(r => nlVergelijkbaar(it, r, ref.facelift)).forEach(r => { const k = String(r.ez).slice(0, 4) + '|' + r.km + '|' + r.price; if (!uniek.has(k)) uniek.set(k, r); });
-  const alle = [...uniek.values()];
-  const zelfde = alle.filter(r => +String(r.ez).slice(0, 4) === jaar).sort(goedkoop);
-  const top = zelfde.length >= NL_TOP ? zelfde.slice(0, NL_TOP)
-    : zelfde.concat(alle.filter(r => +String(r.ez).slice(0, 4) !== jaar).sort(goedkoop).slice(0, NL_TOP - zelfde.length)).sort(goedkoop);
-  if (top.length < NL_TOP) return null;
-  return {prijs: top[NL_PLEK - 1].price, autos: top, n: alle.length, bron: ref.bron};
+  const vijf = (km) => {
+    // Dezelfde auto staat op Gaspedaal soms twee keer (andere titel, zelfde bouwjaar, km en prijs): één keer tellen.
+    const uniek = new Map();
+    ref.items.filter(r => nlVergelijkbaar(it, r, ref.facelift, km)).forEach(r => { const k = String(r.ez).slice(0, 4) + '|' + r.km + '|' + r.price; if (!uniek.has(k)) uniek.set(k, r); });
+    const alle = [...uniek.values()];
+    const zelfde = alle.filter(r => +String(r.ez).slice(0, 4) === jaar).sort(goedkoop);
+    const top = zelfde.length >= NL_TOP ? zelfde.slice(0, NL_TOP)
+      : zelfde.concat(alle.filter(r => +String(r.ez).slice(0, 4) !== jaar).sort(goedkoop).slice(0, NL_TOP - zelfde.length)).sort(goedkoop);
+    return {top, n: alle.length};
+  };
+  let v = vijf(NL_KM), kmRuim = false;
+  if (v.top.length < NL_TOP){ v = vijf(NL_KM_RUIM); kmRuim = true; }
+  if (v.top.length < NL_TOP) return null;
+  return {prijs: v.top[NL_PLEK - 1].price, autos: v.top, n: v.n, bron: ref.bron, kmRuim};
+}
+// Waarom er geen verkoopprijs staat (v1.72): kort op de kaart, uitleg in de tooltip.
+function nlZonderReden(it){
+  return !it.ez ? {kort: 'bouwjaar onbekend', uitleg: 'De advertentie noemt geen datum van eerste toelating.'}
+    : {kort: 'te weinig vergelijkbaar', uitleg: `Op Gaspedaal staan minder dan ${NL_TOP} vergelijkbare auto's te koop: zelfde motor en brandstof, bouwjaar hooguit een jaar verschil, km hooguit ${num(NL_KM_RUIM)} verschil.`};
 }
 // Per model de eerste drie pagina's van Gaspedaal (tot 300 auto's die nu in Nederland te koop staan),
 // zonder je filters op prijs en uitvoering, met een bouwjaar ruimer en een kilometergrens 30.000 km ruimer.
@@ -1633,6 +1663,7 @@ function resKaart(it, land, isNew, prevPrijs, idx, ctx){
   const band = bpm ? null : bpmBereik(it, land, idx);
   const scherp = ctx ? scherpPrijs(it, ctx.model, ctx.prijsIdx, land) : null;
   const nl = ctx && ctx.nlRef ? nlVerkoop(it, ctx.nlRef) : null;
+  const nlGeen = ctx && ctx.nlRef && !nl ? nlZonderReden(it) : null;
   const nep = geenEchtePrijs(it.price);
   const nepUitleg = `Prijs onder ${eur(GEEN_PRIJS_ONDER)}: bij een auto als deze bijna altijd een maandbedrag (lease of financiering), een bod of prijs op aanvraag. Kijk in de advertentie voor de echte prijs. De ophaler stuurt hier geen melding voor.`;
   const r = document.createElement('div'); r.className = 'res' + (nep ? ' geenprijs' : '');
@@ -1651,8 +1682,8 @@ function resKaart(it, land, isNew, prevPrijs, idx, ctx){
     it.btw === true ? '<span class="tag btw">BTW</span>' : (it.btw === false ? '<span class="tag">Marge</span>' : '')].filter(Boolean).join(' · ');
   r.dataset.it = JSON.stringify({oms: it.title, url: it.url, prijs: nep ? null : it.price, km: it.km, ez: it.ez, fuel: it.fuel, co2: it.co2, btw: it.btw, land, verkoop: nl ? nl.prijs : null});
   r.innerHTML = `<a class="foto${it.img ? '' : ' leeg'}" href="${esc(it.url)}" target="_blank" rel="noopener">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('leeg');this.remove()">` : 'geen foto'}</a>
-    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${nep ? `<span class="tag" title="${esc(nepUitleg)}">geen echte prijs</span> ` : ''}${it.price_prev && !nep ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}${scherp ? `<span class="tag marge" title="Gemiddelde van de 5 goedkoopste NL-advertenties van dit model uit ${scherp.jaar} in deze zoekopdracht: ${eur(scherp.ref)} (${scherp.vijf.map(eur).join(', ')})">scherp: −${scherp.pct}% t.o.v. 5 goedkoopste NL</span> ` : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div>${nl ? `<ol class="nlvlijst" hidden>${nl.autos.map((r, n) => `<li${n === NL_PLEK - 1 ? ' class="gekozen"' : ''}>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">` : ''}${esc(String(r.ez || '').slice(0, 4))} · ${r.km != null ? num(r.km) + ' km' : 'km onbekend'} · ${eur(r.price)}${r.url ? '</a>' : ''} · ${esc((r.title || '').slice(0, 60))}</li>`).join('')}</ol>` : ''}</div>
-    <div class="geld"><b${nep ? ` title="${esc(nepUitleg)}"` : ''}>${it.price ? eur(it.price) : '–'}</b>${nl ?`<br><a href="#" class="nlv" title="3e van de 5 goedkoopste vergelijkbare op ${esc(nl.bron)}. Klik voor de auto's.">verkoop NL ≈ ${eur(nl.prijs)}</a>` : ''}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price && !nep ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}<br><button class="btn sec sm naarkand" style="margin-top:4px">Naar kandidaat</button></div>`;
+    <div class="tekst"><h4>${isNew ? '<span class="tag bod">nieuw</span> ' : ''}${nep ? `<span class="tag" title="${esc(nepUitleg)}">geen echte prijs</span> ` : ''}${it.price_prev && !nep ? '<span class="tag gekocht">prijs verlaagd</span> ' : ''}${scherp ? `<span class="tag marge" title="Gemiddelde van de 5 goedkoopste NL-advertenties van dit model uit ${scherp.jaar} in deze zoekopdracht: ${eur(scherp.ref)} (${scherp.vijf.map(eur).join(', ')})">scherp: −${scherp.pct}% t.o.v. 5 goedkoopste NL</span> ` : ''}<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title || '(zonder titel)')}</a></h4><div class="meta">${meta}</div>${nl ? `<ol class="nlvlijst" hidden>${nl.kmRuim ? `<li class="help" style="list-style:none;margin-left:-18px">Km tot ${num(NL_KM_RUIM)} verschil: binnen ${num(NL_KM)} km stonden er minder dan ${NL_TOP} te koop.</li>` : ''}${nl.autos.map((r, n) => `<li${n === NL_PLEK - 1 ? ' class="gekozen"' : ''}>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">` : ''}${esc(String(r.ez || '').slice(0, 4))} · ${r.km != null ? num(r.km) + ' km' : 'km onbekend'} · ${eur(r.price)}${r.url ? '</a>' : ''} · ${esc((r.title || '').slice(0, 60))}</li>`).join('')}</ol>` : ''}</div>
+    <div class="geld"><b${nep ? ` title="${esc(nepUitleg)}"` : ''}>${it.price ? eur(it.price) : '–'}</b>${nl ?`<br><a href="#" class="nlv" title="3e van de 5 goedkoopste vergelijkbare op ${esc(nl.bron)}${nl.kmRuim ? `, met km tot ${num(NL_KM_RUIM)} verschil` : ''}. Klik voor de auto's.">verkoop NL ≈ ${eur(nl.prijs)}</a>` : nlGeen ? `<br><small class="muted" title="${esc(nlGeen.uitleg)}">verkoop NL: ${nlGeen.kort}</small>` : ''}${it.price_prev ? `<br><small class="muted">was ${eur(it.price_prev)}${it.price && !nep ? ' (−' + eur(it.price_prev - it.price) + ')' : ''}</small>` : ''}${it.prijsverloop && it.prijsverloop.length > 1 ? `<br><small class="muted" title="prijsverloop sinds de radar hem ziet">${it.prijsverloop.map(x => eur(x.p)).join(' → ')}</small>` : ''}${(historieVoor(it.url) || (EXTENSIE && /autoscout24\.(nl|de|be)/.test(it.url || ''))) ? `<br><button class="btn sec sm histknop" data-url="${encodeURIComponent(it.url)}" data-titel="${esc(it.title || '')}" style="margin-top:3px">€ historie${historieVoor(it.url) ? ' (' + historieVoor(it.url).rijen.length + ')' : ''}</button>` : ''}${bpm ? `<br><small class="muted" title="${it.co2_geschat ? 'CO2 geschat: ' + esc(it.co2_geschat) + '. ' : ''}Indicatie BPM, forfaitaire afschrijving, gunstigste tarief">BPM ± ${eur(bpm.netto)}${it.co2_geschat ? '*' : ''}</small>` : (band ? `<br><small class="muted" title="Schatting op basis van ${band.n} vergelijkbare advertenties met bekende CO2 (${band.laag}-${band.hoog} g/km). De CO2 van deze auto staat niet in het overzicht; reserveer het hoogste bedrag.">BPM ${eur(band.min)} – ${eur(band.max)} geschat</small>` : '')}<br><button class="btn sec sm naarkand" style="margin-top:4px">Naar kandidaat</button></div>`;
   return r;
 }
 
@@ -3059,6 +3090,7 @@ $('#btnHulpTest').addEventListener('click', async () => {
 
 // ---------- Versiegeschiedenis ----------
 const VERSIES = [
+  ['1.72', 'Verkoopprijs vul je nu in de tabel Marge en kostprijs in (het veld links is weg). Verkoop NL: staan er binnen 30.000 km minder dan vijf vergelijkbare auto\u2019s, dan telt 50.000 km verschil (zo krijgt ook een auto met heel weinig km een bedrag). Zonder bedrag zegt de kaart waarom: te weinig vergelijkbaar of bouwjaar onbekend. Marge in procenten: bij een Nederlandse BTW-auto over de brutoprijs (de BTW schiet je voor), bij een BTW-auto uit het buitenland over de nettoprijs; het bedrag blijft gelijk.'],
   ['1.71', 'Een prijs onder \u20ac 2.500 (meestal een maandbedrag, zoals een X5 voor \u20ac 1.372 bij Marktplaats) staat grijs met \u201cgeen echte prijs\u201d, onderaan het blok. Hij telt niet als scherp geprijsd en niet als vergelijking, en Naar kandidaat neemt hem niet over. 2ememain is 2dehands in het Frans: dezelfde advertentie staat er nu \u00e9\u00e9n keer, bij 2dehands. Bij een nieuw opgezocht model noemt de app de juiste site (stond altijd op mobile.de).'],
   ['1.70', 'Advertentiekosten in de kostprijs: een vast bedrag per auto (standaard \u20ac 42, uit \u20ac 252 per maand voor Mobilox, Marktplaats en Gaspedaal), in te stellen bij Kosten en aannames. Staat als regel Advertenties in Marge en kostprijs en telt mee in de marge.'],
   ['1.69', 'Geen verkeerde modellen meer: staat het model in geen enkele titel, dan toont de app niets meer van die site (voorheen alles, met \u201cniet op model gecontroleerd\u201d; zo verscheen een CLA bij GLC). Wat wegvalt, staat eronder als aantal.'],

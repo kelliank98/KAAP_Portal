@@ -744,15 +744,20 @@ describe('Verwachte verkoopprijs NL: 3e van de 5 goedkoopste vergelijkbare op Ga
     assert.equal(nl.prijs, 62000);
   });
 
-  test('km ±30.000 vast, ook bij veel kilometers; minder dan vijf vergelijkbare: geen bedrag', () => {
+  test('km ±30.000; minder dan vijf vergelijkbare: dan ±50.000 (v1.72); ook dan minder dan vijf: geen bedrag', () => {
     const { w } = laadApp();
     const ref = { bron: 'Gaspedaal', items: [auto(2020, 150000, 40000), auto(2020, 170000, 39000), auto(2020, 125000, 42000), auto(2020, 180000, 38000), auto(2020, 185000, 30000), auto(2020, 115000, 45000)] };
-    // 185.000 en 115.000 km liggen 35.000 km van 150.000 af: die tellen niet mee (met 30% zouden ze wel meetellen).
-    assert.equal(w.nlVerkoop(doel(2020, 150000), ref), null, 'vier over: geen bedrag');
+    // Binnen 30.000 km van 150.000 staan er vier; 185.000 en 115.000 km liggen 35.000 km af. Met 50.000 km tellen die mee.
+    const ruim = w.nlVerkoop(doel(2020, 150000), ref);
+    assert.deepEqual(plain(ruim.autos.map(a => a.price)), [30000, 38000, 39000, 40000, 42000]);
+    assert.equal(ruim.prijs, 39000);
+    assert.equal(ruim.kmRuim, true);
+    assert.equal(w.nlVerkoop(doel(2020, 150000), { bron: 'Gaspedaal', items: ref.items.slice(0, 4).concat([auto(2020, 205000, 30000)]) }), null, 'ook binnen 50.000 km maar vier: geen bedrag');
     ref.items.push(auto(2020, 140000, 41000));
     const nl = w.nlVerkoop(doel(2020, 150000), ref);
     assert.deepEqual(plain(nl.autos.map(a => a.price)), [38000, 39000, 40000, 41000, 42000]);
     assert.equal(nl.prijs, 40000);
+    assert.equal(nl.kmRuim, false, 'vijf binnen 30.000 km: de ruimere grens is niet nodig en het bedrag blijft gelijk');
   });
 
   test('dezelfde auto twee keer op Gaspedaal (zelfde bouwjaar, km en prijs) telt één keer', () => {

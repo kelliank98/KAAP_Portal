@@ -703,7 +703,9 @@ describe('UI en opslag', () => {
     zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
     const uit = d.querySelector('#bpmOut').textContent;
     assert.ok(uit.includes('5.838'), 'te betalen BPM 5.838 in beeld: ' + uit.slice(0, 200));
-    assert.match(uit, /Vul de verwachte verkoopprijs in/);
+    assert.match(uit, /Vul hieronder de verkoopprijs in/);
+    assert.equal(d.querySelector('#bpmOut table.kp #kp_verkoop').value, '', 'verkoopprijs is in de tabel in te vullen (v1.72)');
+    assert.ok(d.querySelector('#k_verkoop').closest('label').hidden, 'het oude veld links is verborgen');
     zet('k_verkoop', '79950');
     const met = d.querySelector('#bpmOut').textContent;
     assert.match(met, /^Marge/, 'de marge staat bovenaan');
@@ -714,8 +716,9 @@ describe('UI en opslag', () => {
     assert.equal(d.querySelector('#bpmOut .margeregel').textContent.replace(/\s+/g, ' '), 'Marge16%€ 9.124', 'naast elkaar op één regel');
     const regels = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.deepEqual(regels, ['Inkoop', 'Vraagprijs (DE)€ 60.000', 'BTW 19% eraf− € 9.580', 'Inkoop excl. BTW€ 50.420', 'Kosten', 'Transport DE€ 400',
-      'Import, RDW, kenteken€ 250', 'Advertenties€ 42', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.950', 'Verkoop', 'Verkoopprijs NL€ 79.950', 'BTW 21% eraf− € 13.876',
+      'Import, RDW, kenteken€ 250', 'Advertenties€ 42', 'BPM (forfaitair)€ 5.838', 'Kostprijs€ 56.950', 'Verkoop', 'Verkoopprijs NL', 'BTW 21% eraf− € 13.876',
       'Verkoop excl. BTW€ 66.074', 'Marge€ 9.124 16%'], 'de harde spatie na € is hierboven al een gewone spatie geworden');
+    assert.equal(d.querySelector('#kp_verkoop').value, '79950', 'de verkoopprijs staat in het invulvak van de tabel');
     zet('k_btw', 'marge', 'change');
     const marge = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
     assert.ok(marge.includes('Geen BTW-aftrek€ 0') && marge.includes('Inkoop€ 60.000'), 'margeauto: geen BTW eraf bij inkoop');
@@ -1098,5 +1101,64 @@ describe('Geen echte prijs, 2ememain één keer, juiste site bij een opgezocht m
     assert.match(blok('2ememain').textContent, /2 advertenties van 2ememain staan ook bij 2dehands/);
     assert.match(d.querySelector('#resMeta').textContent, /^2 blokken, 2 resultaten, 2 nieuw/);
     w.eval('profielId = null; RES = null; true');
+  });
+});
+
+describe('Verkoopprijs in de kostentabel, rendement bij een NL BTW-auto, reden zonder verkoopprijs (v1.72)', () => {
+  const zet = (id, v, ev) => { const e = d.querySelector('#' + id); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', {bubbles: true})); };
+  const nieuw = (land, btw) => {
+    d.querySelector('#btnNieuwKand').click();
+    zet('k_oms', 'BMW X5 xDrive45e M Sport'); zet('k_land', land, 'change'); zet('k_btw', btw, 'change'); zet('k_prijs', '60000');
+    zet('k_det', '2021-03-15'); zet('k_keuring', '2026-10-06'); zet('k_brandstof', 'benzine', 'change'); zet('k_co2w', '187');
+  };
+  const typ = (tekst) => { const i = d.querySelector('#kp_verkoop'); i.focus(); i.value = tekst; i.setSelectionRange(tekst.length, tekst.length); i.dispatchEvent(new w.Event('input', {bubbles: true})); };
+  test('typen in de tabel: het bedrag gaat naar de kandidaat, de marge rekent mee, het vak houdt focus en tekst', () => {
+    nieuw('DE', 'btw');
+    typ('79.95');
+    assert.equal(d.querySelector('#k_verkoop').value, '7995', 'punten tellen niet, alleen cijfers');
+    typ('79.950');
+    assert.equal(d.querySelector('#k_verkoop').value, '79950');
+    const vak = d.querySelector('#kp_verkoop');
+    assert.equal(d.activeElement, vak, 'na het opnieuw opbouwen blijft de cursor in het vak');
+    assert.equal(vak.value, '79.950', 'wat je typt blijft staan');
+    assert.equal(vak.selectionStart, 6);
+    assert.equal(d.querySelector('#bpmOut .margeregel .tag.pct').textContent, '16%');
+    assert.ok(d.querySelector('#bpmOut .margeregel .bedrag').textContent.includes('9.124'));
+    assert.equal(w.leesKandForm().verkoop, 79950, 'bewaren neemt het bedrag mee');
+  });
+  test('rendement: NL BTW-auto over de brutoprijs, buitenlandse BTW-auto over de netto; bedrag en tabel blijven gelijk', () => {
+    nieuw('NL', 'btw'); typ('79950');
+    // kostprijs 60.000/1,21 + 0 transport + 42 advertenties = 49.628,78; marge 66.074,38 − 49.628,78 = 16.445,60
+    // investering = kostprijs + voorgeschoten BTW (10.413,22) = 60.042,00 → 27,4%
+    assert.ok(d.querySelector('#bpmOut .margeregel .bedrag').textContent.replace(/\s/g, ' ').includes('€ 16.446'), d.querySelector('#bpmOut .margeregel').textContent);
+    assert.equal(d.querySelector('#bpmOut .margeregel .tag.pct').textContent, '27%', 'over de brutoprijs (over de netto zou het 33% zijn)');
+    const regels = [...d.querySelectorAll('#bpmOut table.kp tr')].map(tr => tr.textContent.replace(/\s+/g, ' ').trim());
+    assert.ok(regels.includes('Kostprijs€ 49.629'), 'de tabel blijft netto: ' + regels.join(' | '));
+    assert.ok(!regels.some(x => /Investering/.test(x)), 'geen extra regel');
+    assert.match(d.querySelector('#bpmOut').textContent, /Boven je doelmarge van 20%/, '20% van 60.042 = 12.008, dus erboven');
+    const k = w.leesKandForm(), kp = w.kostprijs(k, w.bpmVoor(k));
+    assert.equal(Math.round(w.margeVoor(k, kp).basis), 60042);
+    assert.equal(Math.round(w.margeVoor(Object.assign({}, k, {btw: 'marge'}), w.kostprijs(Object.assign({}, k, {btw: 'marge'}), null)).basis), 60042, 'margeauto: de prijs zelf');
+    nieuw('BE', 'btw'); typ('79950');
+    const kBe = w.leesKandForm(), kpBe = w.kostprijs(kBe, w.bpmVoor(kBe));
+    assert.equal(w.margeVoor(kBe, kpBe).basis, kpBe.totaal, 'BTW-auto uit het buitenland: de netto kostprijs');
+  });
+  test('kaart zonder verkoopprijs zegt waarom; zonder vergelijking van Gaspedaal staat er niets', () => {
+    const ref = {bron: 'Gaspedaal', items: [1, 2, 3].map(i => ({id: 'g' + i, title: 'BMW X5 xDrive45e', price: 50000 + i * 1000, km: 60000 + i, ez: '2021', fuel: 'hybride', url: 'https://g.test/' + i}))};
+    const auto = {title: 'BMW X5 xDrive45e M Sport', price: 48000, km: 60000, ez: '2021-05', fuel: 'hybride', url: 'https://x.test/a'};
+    const weinig = w.resKaart(auto, 'DE', false, null, {}, {model: 'X5', nlRef: ref});
+    assert.match(weinig.querySelector('.geld').textContent, /verkoop NL: te weinig vergelijkbaar/);
+    assert.match(weinig.querySelector('.geld small[title]').getAttribute('title'), /minder dan 5 vergelijkbare/);
+    const zonderJaar = w.resKaart(Object.assign({}, auto, {ez: null, url: 'https://x.test/b'}), 'DE', false, null, {}, {model: 'X5', nlRef: ref});
+    assert.match(zonderJaar.querySelector('.geld').textContent, /verkoop NL: bouwjaar onbekend/);
+    const geenRef = w.resKaart(Object.assign({}, auto, {url: 'https://x.test/c'}), 'DE', false, null, {}, {model: 'X5'});
+    assert.ok(!geenRef.textContent.includes('verkoop NL'), 'zonder extensie of in de resultaten van de ophaler: geen regel');
+  });
+  test('kaart met km ruimer: zegt dat in de uitleg en in de lijst', () => {
+    const items = [5000, 9000, 41000, 46000, 52000].map((km, i) => ({id: 'h' + i, title: 'BMW X5 xDrive50e', price: 70000 + i * 1000, km, ez: '2023', fuel: 'hybride', url: 'https://g.test/h' + i}));
+    const kaart = w.resKaart({title: 'BMW X5 xDrive50e M Sport', price: 72000, km: 4818, ez: '2023-03', fuel: 'hybride', url: 'https://x.test/z'}, 'DE', false, null, {}, {model: 'X5', nlRef: {bron: 'Gaspedaal', items}});
+    assert.match(kaart.querySelector('.nlv').getAttribute('title'), /met km tot 50\.000 verschil/);
+    assert.match(kaart.querySelector('.nlvlijst').textContent, /Km tot 50\.000 verschil: binnen 30\.000 km stonden er minder dan 5 te koop/);
+    assert.match(kaart.querySelector('.nlv').textContent.replace(/\s/g, ' '), /verkoop NL ≈ € 72\.000/);
   });
 });
